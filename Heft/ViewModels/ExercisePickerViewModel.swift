@@ -18,11 +18,17 @@ final class ExercisePickerViewModel {
 
     // MARK: - Filtering / search
 
-    /// Top-8 exercises by frecency score (shown in the recents grid).
-    func recentExercises(from all: [ExerciseDefinition]) -> [ExerciseDefinition] {
-        all.sorted { scoreFor($0) > scoreFor($1) }
-           .prefix(8)
-           .map { $0 }
+    /// Top-8 exercises by frecency score the user has actually used (score > 0).
+    /// Pass a muscleGroup to scope recents to that filter chip.
+    func recentExercises(from all: [ExerciseDefinition], muscleGroup: String? = nil) -> [ExerciseDefinition] {
+        var candidates = all.filter { scoreFor($0) > 0 }
+        if let group = muscleGroup {
+            candidates = candidates.filter { $0.muscleGroups.contains(group) }
+        }
+        return candidates
+            .sorted { scoreFor($0) > scoreFor($1) }
+            .prefix(8)
+            .map { $0 }
     }
 
     /// Exercises to show in the full library section.

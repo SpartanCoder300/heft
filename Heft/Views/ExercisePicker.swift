@@ -45,9 +45,9 @@ struct ExercisePicker: View {
                         }
                     }
 
-                    // ── Recents Grid (hidden during search/filter) ──────────
-                    let recents = vm.recentExercises(from: allExercises)
-                    if vm.searchText.isEmpty && vm.selectedMuscleGroup == nil && !recents.isEmpty {
+                    // ── Recents Grid (hidden during search, shown for All + per muscle group) ──
+                    let recents = vm.recentExercises(from: allExercises, muscleGroup: vm.selectedMuscleGroup)
+                    if vm.searchText.isEmpty && !recents.isEmpty {
                         VStack(alignment: .leading, spacing: Spacing.sm) {
                             pickerSectionLabel("Recent")
                             LazyVGrid(columns: recentsColumns, spacing: Spacing.sm) {
