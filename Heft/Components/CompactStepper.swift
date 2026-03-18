@@ -11,6 +11,8 @@ struct CompactStepper: View {
     let maxValue: Double
     let isInteger: Bool
     var isLogged: Bool = false
+    /// When set, the first + tap on a blank field jumps here instead of minValue + step.
+    var firstTapDefault: Double? = nil
 
     @State private var showingWheel = false
     @State private var wheelValue: Double = 0
@@ -76,7 +78,11 @@ struct CompactStepper: View {
 
             // Plus
             Button {
-                text = formatted(snapped(current + step))
+                if text.isEmpty, let jumpTo = firstTapDefault {
+                    text = formatted(jumpTo)
+                } else {
+                    text = formatted(snapped(current + step))
+                }
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
             } label: {
                 Image(systemName: "plus")

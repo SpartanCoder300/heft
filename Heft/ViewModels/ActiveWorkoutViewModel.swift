@@ -25,6 +25,7 @@ final class ActiveWorkoutViewModel {
     struct DraftExercise: Identifiable {
         var id = UUID()
         var exerciseName: String
+        var equipmentType: String = ""
         var sets: [DraftSet]
         var previousSets: [PreviousSet] = []
         var snapshot: ExerciseSnapshot? = nil
@@ -125,7 +126,7 @@ final class ActiveWorkoutViewModel {
                 let sets = (0 ..< entry.targetSets).map { _ in
                     DraftSet(repsText: "\(entry.targetRepsMin)")
                 }
-                return DraftExercise(exerciseName: def.name, sets: sets, restSeconds: entry.restSeconds)
+                return DraftExercise(exerciseName: def.name, equipmentType: def.equipmentType, sets: sets, restSeconds: entry.restSeconds)
             }
     }
 
@@ -186,7 +187,9 @@ final class ActiveWorkoutViewModel {
     // MARK: - Mutations
 
     func addExercise(named name: String) {
-        var draft = DraftExercise(exerciseName: name, sets: [DraftSet()])
+        let descriptor = FetchDescriptor<ExerciseDefinition>(predicate: #Predicate { $0.name == name })
+        let equipmentType = (try? modelContext.fetch(descriptor))?.first?.equipmentType ?? ""
+        var draft = DraftExercise(exerciseName: name, equipmentType: equipmentType, sets: [DraftSet()])
         applyPreviousPerformance(to: &draft)
         draftExercises.append(draft)
     }
@@ -261,6 +264,16 @@ final class ActiveWorkoutViewModel {
 
         draftExercises[eIdx].sets[sIdx].isLogged = true
 
+        // Propagate weight + reps forward to subsequent blank sets in the same exercise
+        for i in draftExercises[eIdx].sets.indices where i > sIdx {
+            guard !draftExercises[eIdx].sets[i].isLogged else { continue }
+            let isBlank = draftExercises[eIdx].sets[i].weightText.isEmpty ||
+                          draftExercises[eIdx].sets[i].weightText == "0"
+            guard isBlank else { continue }
+            draftExercises[eIdx].sets[i].weightText = draft.weightText
+            draftExercises[eIdx].sets[i].repsText = draft.repsText
+        }
+
         // Clear manual focus — auto-advance takes over
         manualFocus = nil
 
@@ -307,8 +320,27 @@ final class ActiveWorkoutViewModel {
         guard draftExercises.indices.contains(eIdx),
               draftExercises[eIdx].sets.indices.contains(sIdx) else { return }
         let current = Double(draftExercises[eIdx].sets[sIdx].weightText) ?? 0
+        if increment && current == 0 {
+            // First tap on an empty set: jump to a sensible starting weight
+            let start = firstTapDefault(for: draftExercises[eIdx].equipmentType)
+            draftExercises[eIdx].sets[sIdx].weightText = formatWeight(start)
+            return
+        }
         let next = increment ? current + weightStep : max(0, current - weightStep)
         draftExercises[eIdx].sets[sIdx].weightText = formatWeight(next)
+    }
+
+    /// Starting weight for the stepper when a set has no value yet.
+    private func firstTapDefault(for equipmentType: String) -> Double {
+        switch equipmentType {
+        case "Barbell":    return 45   // empty bar
+        case "Dumbbell":   return 10
+        case "Cable":      return 20
+        case "Machine":    return 45
+        case "Kettlebell": return 35
+        case "Bodyweight": return 0    // added weight, stay at 0
+        default:           return 45
+        }
     }
 
     func adjustReps(exerciseIndex eIdx: Int, setIndex sIdx: Int, increment: Bool) {

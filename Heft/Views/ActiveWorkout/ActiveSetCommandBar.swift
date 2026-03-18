@@ -50,7 +50,8 @@ struct ActiveSetCommandBar: View {
                         step: 2.5,
                         minValue: 0,
                         maxValue: 999,
-                        isInteger: false
+                        isInteger: false,
+                        firstTapDefault: weightDefault(for: exercise.equipmentType)
                     )
 
                     CompactStepper(
@@ -84,6 +85,18 @@ struct ActiveSetCommandBar: View {
             .padding(.bottom, Spacing.sm)
             .contentTransition(.numericText())
             .animation(Motion.standardSpring, value: focus)
+        }
+    }
+
+    private func weightDefault(for equipmentType: String) -> Double? {
+        switch equipmentType {
+        case "Barbell":    return 45
+        case "Dumbbell":   return 10
+        case "Cable":      return 20
+        case "Machine":    return 45
+        case "Kettlebell": return 35
+        case "Bodyweight": return nil
+        default:           return 45
         }
     }
 }
