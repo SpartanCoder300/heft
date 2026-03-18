@@ -5,17 +5,6 @@ import SwiftData
 
 private let allMuscleGroups = ["Chest", "Back", "Shoulders", "Arms", "Legs", "Core", "Cardio"]
 
-private let equipmentIcons: [String: String] = [
-    "Barbell":    "dumbbell.fill",
-    "Dumbbell":   "dumbbell.fill",
-    "Cable":      "cable.connector",
-    "Machine":    "gearshape.fill",
-    "Bodyweight": "figure.strengthtraining.functional",
-    "Kettlebell": "dumbbell.fill",
-    "Band":       "link",
-    "Cardio":     "figure.run",
-]
-
 struct ExercisePicker: View {
     let onSelect: (ExerciseDefinition) -> Void
 
@@ -166,7 +155,7 @@ private struct RecentTile: View {
     }
 
     private var iconName: String {
-        equipmentIcons[exercise.equipmentType] ?? "dumbbell.fill"
+        exercise.equipmentIconName
     }
 }
 
@@ -222,7 +211,7 @@ private struct LibraryRow: View {
     }
 
     private var iconName: String {
-        equipmentIcons[exercise.equipmentType] ?? "dumbbell.fill"
+        exercise.equipmentIconName
     }
 }
 

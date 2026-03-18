@@ -7,13 +7,22 @@ import SwiftUI
 @Observable @MainActor
 final class RoutineBuilderViewModel {
 
-    struct DraftEntry: Identifiable {
+    struct DraftEntry: Identifiable, Equatable {
         var id: UUID
         var exercise: ExerciseDefinition
         var targetSets: Int
         var targetRepsMin: Int
         var targetRepsMax: Int
         var restSeconds: Int
+
+        static func == (lhs: Self, rhs: Self) -> Bool {
+            lhs.id == rhs.id
+                && lhs.exercise.id == rhs.exercise.id
+                && lhs.targetSets == rhs.targetSets
+                && lhs.targetRepsMin == rhs.targetRepsMin
+                && lhs.targetRepsMax == rhs.targetRepsMax
+                && lhs.restSeconds == rhs.restSeconds
+        }
 
         init(exercise: ExerciseDefinition) {
             self.id = UUID()
@@ -24,9 +33,10 @@ final class RoutineBuilderViewModel {
             self.restSeconds = 90
         }
 
-        init(from entry: RoutineEntry) {
+        init?(from entry: RoutineEntry) {
+            guard let def = entry.exerciseDefinition else { return nil }
             self.id = entry.id
-            self.exercise = entry.exerciseDefinition!
+            self.exercise = def
             self.targetSets = entry.targetSets
             self.targetRepsMin = entry.targetRepsMin
             self.targetRepsMax = entry.targetRepsMax
@@ -39,20 +49,37 @@ final class RoutineBuilderViewModel {
 
     let existingRoutine: RoutineTemplate?
 
+    // Change detection
+    private let initialName: String
+    private let initialEntries: [DraftEntry]
+
     init(existingRoutine: RoutineTemplate? = nil) {
-        self.existingRoutine = existingRoutine
+        let name: String
+        let drafts: [DraftEntry]
         if let routine = existingRoutine {
-            routineName = routine.name
-            entries = routine.entries
+            name = routine.name
+            drafts = routine.entries
                 .sorted { $0.order < $1.order }
-                .compactMap { guard $0.exerciseDefinition != nil else { return nil }; return DraftEntry(from: $0) }
+                .compactMap { DraftEntry(from: $0) }
+        } else {
+            name = ""
+            drafts = []
         }
+        self.existingRoutine = existingRoutine
+        self.routineName = name
+        self.entries = drafts
+        self.initialName = name
+        self.initialEntries = drafts
     }
 
     var isEditingExisting: Bool { existingRoutine != nil }
 
     var canSave: Bool {
-        !routineName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !routineName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !entries.isEmpty
+    }
+
+    var hasUnsavedChanges: Bool {
+        routineName != initialName || entries != initialEntries
     }
 
     func addExercise(_ exercise: ExerciseDefinition) {
@@ -73,7 +100,7 @@ final class RoutineBuilderViewModel {
 
     func save(in context: ModelContext) {
         let name = routineName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return }
+        guard !name.isEmpty, !entries.isEmpty else { return }
 
         if let existing = existingRoutine {
             existing.name = name

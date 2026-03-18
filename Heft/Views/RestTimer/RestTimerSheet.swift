@@ -106,20 +106,21 @@ struct RestTimerSheet: View {
     }
 
     private var nextSetInfo: NextSetInfo? {
-        let eIdx = vm.activeExerciseIndex
-        guard vm.draftExercises.indices.contains(eIdx) else { return nil }
-        let exercise = vm.draftExercises[eIdx]
-        guard let sIdx = exercise.sets.firstIndex(where: { !$0.isLogged }) else { return nil }
-        let set = exercise.sets[sIdx]
-        return NextSetInfo(
-            exerciseName: exercise.exerciseName,
-            exerciseIndex: eIdx,
-            setIndex: sIdx,
-            setNumber: sIdx + 1,
-            totalSets: exercise.sets.count,
-            weight: set.weightText,
-            reps: set.repsText
-        )
+        for eIdx in vm.draftExercises.indices {
+            let exercise = vm.draftExercises[eIdx]
+            guard let sIdx = exercise.sets.firstIndex(where: { !$0.isLogged }) else { continue }
+            let set = exercise.sets[sIdx]
+            return NextSetInfo(
+                exerciseName: exercise.exerciseName,
+                exerciseIndex: eIdx,
+                setIndex: sIdx,
+                setNumber: sIdx + 1,
+                totalSets: exercise.sets.count,
+                weight: set.weightText,
+                reps: set.repsText
+            )
+        }
+        return nil
     }
 
     private func color(for phase: TimerTintPhase) -> Color {

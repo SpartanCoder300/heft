@@ -20,32 +20,22 @@ struct ActiveWorkoutView: View {
         @Bindable var vm = vm
 
         NavigationStack {
-            ScrollViewReader { proxy in
-                ScrollView {
-                    VStack(spacing: Spacing.md) {
-                        if vm.draftExercises.isEmpty {
-                            EmptyWorkoutPrompt(accentColor: theme.accentColor)
-                        } else {
+            ScrollView {
+                VStack(spacing: Spacing.md) {
+                    if vm.draftExercises.isEmpty {
+                        EmptyWorkoutPrompt(accentColor: theme.accentColor)
+                    } else {
+                        ForEach(Array(vm.draftExercises.enumerated()), id: \.element.id) { idx, _ in
                             ActiveExerciseCard(
                                 vm: vm,
-                                exerciseIndex: vm.activeExerciseIndex,
+                                exerciseIndex: idx,
                                 theme: theme
                             )
-                            .id("active")
-
-                            if vm.draftExercises.count > 1 {
-                                OtherExercisesSection(vm: vm)
-                            }
                         }
                     }
-                    .padding(.horizontal, Spacing.md)
-                    .padding(.vertical, Spacing.lg)
                 }
-                .onChange(of: vm.activeExerciseIndex) { _, _ in
-                    withAnimation(Motion.standardSpring) {
-                        proxy.scrollTo("active", anchor: .top)
-                    }
-                }
+                .padding(.horizontal, Spacing.md)
+                .padding(.vertical, Spacing.lg)
             }
             .themedBackground()
             .navigationBarTitleDisplayMode(.inline)

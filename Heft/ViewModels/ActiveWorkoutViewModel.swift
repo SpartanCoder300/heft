@@ -34,7 +34,6 @@ final class ActiveWorkoutViewModel {
     // MARK: - State
 
     var draftExercises: [DraftExercise] = []
-    var activeExerciseIndex: Int = 0
     var openedAt: Date = .now
     var isShowingEndConfirm: Bool = false
     var isShowingExercisePicker: Bool = false
@@ -76,6 +75,8 @@ final class ActiveWorkoutViewModel {
         )
         guard let routine = (try? modelContext.fetch(descriptor))?.first else { return }
 
+        routine.lastUsedAt = .now
+
         draftExercises = routine.entries
             .sorted { $0.order < $1.order }
             .compactMap { entry in
@@ -108,14 +109,19 @@ final class ActiveWorkoutViewModel {
 
         exercise.previousSets = sortedSets.map { PreviousSet(weight: $0.weight, reps: $0.reps) }
 
-        // Auto-fill: seed each draft set from the matching position, else last set
+        // If this exercise was added ad-hoc (starts with 1 blank set), expand to match
+        // last session's set count so the user doesn't have to tap "Add Set" repeatedly.
+        let isAdHoc = exercise.sets.count == 1 && exercise.sets[0].weightText.isEmpty
+        if isAdHoc && sortedSets.count > 1 {
+            exercise.sets = sortedSets.map { _ in DraftSet() }
+        }
+
+        // Auto-fill: seed each draft set from the matching position, else last set.
+        // Last session's actual reps always win — they're more accurate than the routine target.
         for i in exercise.sets.indices {
             let source = i < sortedSets.count ? sortedSets[i] : sortedSets[sortedSets.count - 1]
             exercise.sets[i].weightText = formatWeight(source.weight)
-            // Only overwrite reps if not already set from routine config
-            if exercise.sets[i].repsText.isEmpty {
-                exercise.sets[i].repsText = "\(source.reps)"
-            }
+            exercise.sets[i].repsText = "\(source.reps)"
         }
     }
 
@@ -123,9 +129,17 @@ final class ActiveWorkoutViewModel {
 
     func addExercise(named name: String) {
         var draft = DraftExercise(exerciseName: name, sets: [DraftSet()])
+        // applyPreviousPerformance will expand sets to match last session's count
+        // and fill all weights/reps — draft starts with 1 set as a floor only
         applyPreviousPerformance(to: &draft)
         draftExercises.append(draft)
-        activeExerciseIndex = draftExercises.count - 1
+    }
+
+    func removeSet(exerciseIndex eIdx: Int, setIndex sIdx: Int) {
+        guard draftExercises.indices.contains(eIdx),
+              draftExercises[eIdx].sets.indices.contains(sIdx),
+              !draftExercises[eIdx].sets[sIdx].isLogged else { return }
+        draftExercises[eIdx].sets.remove(at: sIdx)
     }
 
     func addSet(toExerciseAt index: Int) {
@@ -142,7 +156,6 @@ final class ActiveWorkoutViewModel {
     func removeExercise(at index: Int) {
         guard draftExercises.indices.contains(index) else { return }
         draftExercises.remove(at: index)
-        activeExerciseIndex = max(0, min(activeExerciseIndex, draftExercises.count - 1))
     }
 
     func addDropset(toExerciseAt index: Int) {

@@ -2,12 +2,14 @@
 
 import SwiftUI
 import SwiftData
+import UIKit
 
 struct RoutineBuilderView: View {
     @State private var vm: RoutineBuilderViewModel
     @State private var isShowingExercisePicker = false
     @State private var configEntryID: UUID? = nil
     @State private var isShowingDeleteConfirm = false
+    @State private var isShowingDiscardConfirm = false
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -30,23 +32,34 @@ struct RoutineBuilderView: View {
             List {
                 // ── Routine Name ──────────────────────────────────────
                 Section {
-                    TextField("Name", text: $vm.routineName)
+                    TextField("Routine Name", text: $vm.routineName)
                         .font(.title3.weight(.semibold))
                         .autocorrectionDisabled()
                 }
 
                 // ── Exercises ─────────────────────────────────────────
                 Section {
-                    ForEach(vm.entries) { entry in
-                        Button { configEntryID = entry.id } label: {
-                            ExerciseEntryRow(entry: entry)
+                    if vm.entries.isEmpty {
+                        Text("Add exercises to build your routine.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.vertical, Spacing.md)
+                            .listRowBackground(Color.clear)
+                    } else {
+                        ForEach(vm.entries) { entry in
+                            Button { configEntryID = entry.id } label: {
+                                ExerciseEntryRow(entry: entry)
+                            }
+                            .tint(.primary)
                         }
-                        .tint(.primary)
+                        .onMove { vm.move(from: $0, to: $1) }
+                        .onDelete { vm.removeEntries(at: $0) }
                     }
-                    .onMove { vm.move(from: $0, to: $1) }
-                    .onDelete { vm.removeEntries(at: $0) }
                 } header: {
-                    Text(vm.entries.isEmpty ? "" : "Exercises")
+                    if !vm.entries.isEmpty {
+                        Text("Exercises (\(vm.entries.count))")
+                    }
                 }
 
                 // ── Add Exercise ──────────────────────────────────────
@@ -59,12 +72,18 @@ struct RoutineBuilderView: View {
                     .tint(.accentColor)
                 }
             }
-            .environment(\.editMode, .constant(.active))
+            .environment(\.editMode, .constant(vm.entries.isEmpty ? .inactive : .active))
             .navigationTitle(vm.isEditingExisting ? "Edit Routine" : "New Routine")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") {
+                        if vm.hasUnsavedChanges {
+                            isShowingDiscardConfirm = true
+                        } else {
+                            dismiss()
+                        }
+                    }
                 }
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     if vm.isEditingExisting {
@@ -78,6 +97,7 @@ struct RoutineBuilderView: View {
                     }
                     Button("Save") {
                         vm.save(in: modelContext)
+                        UINotificationFeedbackGenerator().notificationOccurred(.success)
                         dismiss()
                     }
                     .fontWeight(.semibold)
@@ -105,6 +125,13 @@ struct RoutineBuilderView: View {
                 }
             }
             .confirmationDialog(
+                "Discard Changes?",
+                isPresented: $isShowingDiscardConfirm,
+                titleVisibility: .visible
+            ) {
+                Button("Discard", role: .destructive) { dismiss() }
+            }
+            .confirmationDialog(
                 "Delete \"\(vm.routineName)\"?",
                 isPresented: $isShowingDeleteConfirm,
                 titleVisibility: .visible
@@ -126,12 +153,19 @@ private struct ExerciseEntryRow: View {
     let entry: RoutineBuilderViewModel.DraftEntry
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(entry.exercise.name)
-                .foregroundStyle(.primary)
-            Text(subtitle)
-                .font(.caption)
+        HStack(spacing: 12) {
+            Image(systemName: entry.exercise.equipmentIconName)
+                .font(.system(size: 16, weight: .medium))
                 .foregroundStyle(.secondary)
+                .frame(width: 28)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(entry.exercise.name)
+                    .foregroundStyle(.primary)
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .padding(.vertical, 2)
     }
@@ -146,6 +180,7 @@ private struct ExerciseEntryRow: View {
     }
 
     private func restLabel(_ seconds: Int) -> String {
+        if seconds < 60 { return "\(seconds)s rest" }
         let m = seconds / 60
         let s = seconds % 60
         return s == 0 ? "\(m) min rest" : "\(m):\(String(format: "%02d", s)) rest"
@@ -164,7 +199,7 @@ private struct ExerciseConfigSheet: View {
 
     @Environment(\.dismiss) private var dismiss
 
-    private let restOptions = [30, 60, 90, 120, 180]
+    private let restOptions = [30, 45, 60, 90, 120, 150, 180, 240, 300]
 
     var body: some View {
         NavigationStack {
@@ -194,8 +229,6 @@ private struct ExerciseConfigSheet: View {
                             Text(restLabel(s)).tag(s)
                         }
                     }
-                    .pickerStyle(.segmented)
-                    .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
                 }
 
                 Section {
@@ -219,9 +252,10 @@ private struct ExerciseConfigSheet: View {
     }
 
     private func restLabel(_ seconds: Int) -> String {
+        if seconds < 60 { return "\(seconds)s" }
         let m = seconds / 60
         let s = seconds % 60
-        return s == 0 ? "\(m)m" : "\(m):\(String(format: "%02d", s))"
+        return s == 0 ? "\(m) min" : "\(m):\(String(format: "%02d", s))"
     }
 }
 

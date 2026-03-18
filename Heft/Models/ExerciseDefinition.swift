@@ -36,4 +36,18 @@ final class ExerciseDefinition {
         self.previousPR = previousPR
         self.prDate = prDate
     }
+
+    var equipmentIconName: String {
+        switch equipmentType {
+        case "Barbell":    "dumbbell.fill"
+        case "Dumbbell":   "dumbbell.fill"
+        case "Cable":      "cable.connector"
+        case "Machine":    "gearshape.fill"
+        case "Bodyweight": "figure.strengthtraining.functional"
+        case "Kettlebell": "dumbbell.fill"
+        case "Band":       "link"
+        case "Cardio":     "figure.run"
+        default:           "dumbbell.fill"
+        }
+    }
 }

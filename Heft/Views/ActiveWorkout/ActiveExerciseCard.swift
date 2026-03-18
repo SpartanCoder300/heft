@@ -101,7 +101,8 @@ struct ActiveExerciseCard: View {
                     isDropset: isDropset,
                     isLogged: set.isLogged,
                     onCycleType: { vm.cycleSetType(exerciseIndex: exerciseIndex, setIndex: sIdx) },
-                    onLog: { vm.logSet(exerciseIndex: exerciseIndex, setIndex: sIdx) }
+                    onLog: { vm.logSet(exerciseIndex: exerciseIndex, setIndex: sIdx) },
+                    onDelete: { vm.removeSet(exerciseIndex: exerciseIndex, setIndex: sIdx) }
                 )
 
                 if sIdx < exercise.sets.count - 1 {
@@ -164,6 +165,7 @@ private struct SetRow: View {
     let isLogged: Bool
     let onCycleType: () -> Void
     let onLog: () -> Void
+    let onDelete: () -> Void
 
     var body: some View {
         HStack(spacing: 0) {
@@ -220,6 +222,13 @@ private struct SetRow: View {
         .padding(.vertical, 4)
         .opacity(isLogged ? 0.5 : 1.0)
         .animation(Motion.standardSpring, value: isLogged)
+        .contextMenu {
+            if !isLogged {
+                Button(role: .destructive, action: onDelete) {
+                    Label("Delete Set", systemImage: "trash")
+                }
+            }
+        }
     }
 }
 
