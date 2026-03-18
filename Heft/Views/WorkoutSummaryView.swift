@@ -38,13 +38,13 @@ struct WorkoutSummaryView: View {
                                 VStack(alignment: .trailing, spacing: 2) {
                                     Text("PR")
                                         .font(.caption2.weight(.bold))
-                                        .foregroundStyle(Color.heftGreen)
+                                        .foregroundStyle(Color.heftAmber)
                                         .padding(.horizontal, 6)
                                         .padding(.vertical, 2)
-                                        .background(Color.heftGreen.opacity(0.15), in: Capsule())
+                                        .background(Color.heftAmber.opacity(0.15), in: Capsule())
                                     Text("\(vm.formatWeight(prWeight)) × \(prReps)")
                                         .font(.caption2)
-                                        .foregroundStyle(Color.heftGreen.opacity(0.8))
+                                        .foregroundStyle(Color.heftAmber.opacity(0.8))
                                 }
                             }
                         }
