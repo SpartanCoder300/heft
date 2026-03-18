@@ -81,12 +81,16 @@ struct ActiveExerciseCard: View {
 
             Divider().overlay(Color.white.opacity(0.07))
 
+            // ── Set type legend ───────────────────────────────────────
+            Text("W warmup  ·  N normal  ·  D dropset")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(Color.textFaint)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Spacing.md)
+                .padding(.top, Spacing.xs)
+
             // ── Set rows ──────────────────────────────────────────────
             ForEach(Array(exercise.sets.enumerated()), id: \.element.id) { sIdx, set in
-                let isDropset = set.setType == .dropset
-                let nextIsDropset = sIdx + 1 < exercise.sets.count
-                    && exercise.sets[sIdx + 1].setType == .dropset
-
                 SetRow(
                     setNumber: sIdx + 1,
                     weightText: Binding(
@@ -98,7 +102,6 @@ struct ActiveExerciseCard: View {
                         set: { vm.draftExercises[exerciseIndex].sets[sIdx].repsText = $0 }
                     ),
                     setType: set.setType,
-                    isDropset: isDropset,
                     isLogged: set.isLogged,
                     onCycleType: { vm.cycleSetType(exerciseIndex: exerciseIndex, setIndex: sIdx) },
                     onLog: { vm.logSet(exerciseIndex: exerciseIndex, setIndex: sIdx) },
@@ -106,18 +109,9 @@ struct ActiveExerciseCard: View {
                 )
 
                 if sIdx < exercise.sets.count - 1 {
-                    if nextIsDropset {
-                        // Vertical connector leading into the dropset row, aligned with the ↳ column
-                        Rectangle()
-                            .fill(Color.heftAccentAbyss.opacity(0.3))
-                            .frame(width: 1.5, height: Spacing.sm)
-                            .padding(.leading, Spacing.xl + 8)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    } else {
-                        Divider()
-                            .overlay(Color.white.opacity(0.05))
-                            .padding(.horizontal, Spacing.md)
-                    }
+                    Divider()
+                        .overlay(Color.white.opacity(0.05))
+                        .padding(.horizontal, Spacing.md)
                 }
             }
 
@@ -161,7 +155,6 @@ private struct SetRow: View {
     @Binding var weightText: String
     @Binding var repsText: String
     let setType: SetType
-    let isDropset: Bool
     let isLogged: Bool
     let onCycleType: () -> Void
     let onLog: () -> Void
@@ -172,14 +165,14 @@ private struct SetRow: View {
 
             // Set number + type chip
             HStack(spacing: 5) {
-                Text(isDropset ? "↳" : "\(setNumber)")
+                Text("\(setNumber)")
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundStyle(isDropset ? Color.heftAccentAbyss.opacity(0.7) : Color.textFaint)
+                    .foregroundStyle(Color.textFaint)
                     .frame(width: 18, alignment: .center)
 
                 SetTypeChip(setType: setType, onTap: isLogged ? nil : onCycleType)
             }
-            .padding(.leading, isDropset ? Spacing.xl : Spacing.md)
+            .padding(.leading, Spacing.md)
             .frame(width: 72, alignment: .leading)
 
             // Weight stepper

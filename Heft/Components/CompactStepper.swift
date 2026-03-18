@@ -58,6 +58,8 @@ struct CompactStepper: View {
                     Text(text.isEmpty ? "—" : formatted(current))
                         .font(.system(size: 22, weight: .semibold, design: .rounded))
                         .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.65)
                         .contentTransition(.numericText())
                         .animation(Motion.standardSpring, value: text)
                     Text(unit)

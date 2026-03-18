@@ -2,7 +2,8 @@
 
 import SwiftUI
 
-/// Tappable chip showing the set type (W / N / D). Cycles on tap with selection haptic.
+/// Tappable chip showing the set type (W / N / D).
+/// Tap cycles the type. Long press shows a legend popover.
 struct SetTypeChip: View {
     let setType: SetType
     var onTap: (() -> Void)?
@@ -37,6 +38,7 @@ struct SetTypeChip: View {
         }
     }
 }
+
 
 #Preview("All types") {
     @Previewable @State var current: SetType = .normal

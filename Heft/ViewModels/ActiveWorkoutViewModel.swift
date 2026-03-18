@@ -122,6 +122,7 @@ final class ActiveWorkoutViewModel {
             let source = i < sortedSets.count ? sortedSets[i] : sortedSets[sortedSets.count - 1]
             exercise.sets[i].weightText = formatWeight(source.weight)
             exercise.sets[i].repsText = "\(source.reps)"
+            exercise.sets[i].setType = source.setType
         }
     }
 
