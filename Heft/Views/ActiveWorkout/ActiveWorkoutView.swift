@@ -5,6 +5,7 @@ import SwiftData
 
 struct ActiveWorkoutView: View {
     @State private var vm: ActiveWorkoutViewModel
+    @State private var completedSession: WorkoutSession?
     @Environment(\.dismiss) private var dismiss
     @Environment(\.heftTheme) private var theme
 
@@ -72,14 +73,20 @@ struct ActiveWorkoutView: View {
                 isPresented: $vm.isShowingEndConfirm,
                 titleVisibility: .visible
             ) {
-                Button("End Workout", role: .destructive) {
-                    vm.endWorkout()
-                    dismiss()
+                Button("Finish") {
+                    if let session = vm.endWorkout() {
+                        completedSession = session
+                    } else {
+                        dismiss()
+                    }
                 }
             } message: {
                 Text(vm.isSessionStarted
-                     ? "Your logged sets have been saved."
+                     ? "\(vm.elapsedLabel(at: .now)) · \(vm.loggedSetCount) sets logged"
                      : "No sets logged — this session won't be saved.")
+            }
+            .navigationDestination(item: $completedSession) { session in
+                WorkoutSummaryView(session: session, onDone: { dismiss() })
             }
             .sheet(isPresented: $vm.isShowingExercisePicker) {
                 ExercisePicker { exercise in

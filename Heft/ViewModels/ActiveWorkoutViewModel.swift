@@ -231,10 +231,16 @@ final class ActiveWorkoutViewModel {
         draftExercises[eIdx].sets[sIdx].repsText = "\(next)"
     }
 
-    func endWorkout() {
-        guard let s = session else { return }
+    var loggedSetCount: Int {
+        draftExercises.flatMap { $0.sets }.filter { $0.isLogged }.count
+    }
+
+    @discardableResult
+    func endWorkout() -> WorkoutSession? {
+        guard let s = session else { return nil }
         s.completedAt = .now
         try? modelContext.save()
+        return s
     }
 
     // MARK: - Helpers
