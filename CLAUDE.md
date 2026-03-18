@@ -196,6 +196,27 @@ fast spring:     Animation.spring(response: 0.15, dampingFraction: 0.75)
 
 ---
 
+## Icons & Illustrations
+
+**Equipment type icons** — SF Symbols does not have sufficient coverage for all equipment categories. Use 6 custom SVG icons exported as single-scale PDF assets to Assets.xcassets (renders as vector at any size, zero runtime cost):
+
+| Asset name | Equipment |
+|---|---|
+| `icon-barbell` | Barbell |
+| `icon-dumbbell` | Dumbbell |
+| `icon-cable` | Cable machine |
+| `icon-machine` | Plate-loaded / selectorised machine |
+| `icon-bodyweight` | Bodyweight |
+| `icon-band` | Resistance band |
+
+These are the only custom icon assets in the project. Design them as simple, consistent line-art at 28×28pt. Reference via `Image("icon-barbell")` etc.
+
+**Muscle group chips** — text-only. No icon on the chip. "Chest", "Back", "Shoulders" etc. are faster to scan as labels than as small anatomical icons. Do not add icons to muscle group chips.
+
+**Exercise illustrations** — never. Heft is a logger, not a tutorial. No animated GIFs, no form guides, no movement diagrams.
+
+---
+
 ## Competitors (context for feature decisions)
 
 | App | Weakness |
@@ -216,3 +237,6 @@ fast spring:     Animation.spring(response: 0.15, dampingFraction: 0.75)
 - New nav buttons always go at the end of `.screen-nav`
 - When modifying wireframe screens, register new screen IDs in `meshMap` inside `showScreen()`
 - Documentation changes go in `.docx` format — the `.pages` files are the original binary sources and should not be edited
+- Never add exercise illustrations, animated GIFs, or form guides — Heft is a logger, not a tutorial
+- Muscle group chips are always text-only — never add icons to them
+- Equipment type icons use the custom PDF asset set (`icon-barbell` etc.) — never substitute SF Symbols for these
