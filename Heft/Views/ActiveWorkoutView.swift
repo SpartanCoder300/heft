@@ -60,14 +60,6 @@ struct ActiveWorkoutView: View {
                             .foregroundStyle(Color.textPrimary)
                     }
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    RestTimerToolbarIndicator(restTimer: vm.restTimer)
-                        .onTapGesture {
-                            if vm.restTimer.isActive {
-                                vm.isShowingRestTimer = true
-                            }
-                        }
-                }
             }
             .safeAreaInset(edge: .bottom) {
                 Button { vm.isShowingExercisePicker = true } label: {

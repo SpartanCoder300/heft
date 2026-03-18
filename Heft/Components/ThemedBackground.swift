@@ -3,7 +3,6 @@
 import SwiftUI
 
 /// Applies the Obsidian base + themed ambient gradient background to any root screen.
-/// Also sets the navigation bar to ultraThinMaterial so the gradient glows through it.
 /// Use `.themedBackground()` on every NavigationStack root view.
 struct ThemedBackgroundModifier: ViewModifier {
     @Environment(\.heftTheme) private var theme
@@ -21,7 +20,6 @@ struct ThemedBackgroundModifier: ViewModifier {
                 }
                 .ignoresSafeArea()
             )
-            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
     }
 }
 
