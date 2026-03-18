@@ -9,10 +9,11 @@ struct ActiveWorkoutView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.heftTheme) private var theme
 
-    init(modelContext: ModelContext, pendingRoutineID: UUID?) {
+    init(modelContext: ModelContext, pendingRoutineID: UUID?, pendingSessionID: UUID? = nil) {
         _vm = State(initialValue: ActiveWorkoutViewModel(
             modelContext: modelContext,
-            pendingRoutineID: pendingRoutineID
+            pendingRoutineID: pendingRoutineID,
+            pendingSessionID: pendingSessionID
         ))
     }
 

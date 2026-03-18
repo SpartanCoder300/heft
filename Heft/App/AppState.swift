@@ -16,6 +16,8 @@ final class AppState {
     var activeWorkoutID: UUID?
     var isShowingActiveWorkout: Bool = false
     var pendingRoutineID: UUID? = nil
+    /// Set when the user repeats a past session. Mutually exclusive with pendingRoutineID.
+    var pendingSessionID: UUID? = nil
 
     var accentTheme: AccentTheme = {
         let raw = UserDefaults.standard.string(forKey: "heft.accentTheme") ?? ""

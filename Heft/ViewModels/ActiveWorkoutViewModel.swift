@@ -85,14 +85,16 @@ final class ActiveWorkoutViewModel {
 
     private let modelContext: ModelContext
     private let pendingRoutineID: UUID?
+    private let pendingSessionID: UUID?
     private let weightStep: Double = 2.5
     private var zeroTask: Task<Void, Never>? = nil
 
     // MARK: - Init
 
-    init(modelContext: ModelContext, pendingRoutineID: UUID?) {
+    init(modelContext: ModelContext, pendingRoutineID: UUID?, pendingSessionID: UUID? = nil) {
         self.modelContext = modelContext
         self.pendingRoutineID = pendingRoutineID
+        self.pendingSessionID = pendingSessionID
     }
 
     // MARK: - Setup
@@ -100,6 +102,8 @@ final class ActiveWorkoutViewModel {
     func setup() {
         if let routineID = pendingRoutineID {
             loadRoutine(id: routineID)
+        } else if let sessionID = pendingSessionID {
+            loadSession(id: sessionID)
         }
         for i in draftExercises.indices {
             applyPreviousPerformance(to: &draftExercises[i])
@@ -122,6 +126,22 @@ final class ActiveWorkoutViewModel {
                     DraftSet(repsText: "\(entry.targetRepsMin)")
                 }
                 return DraftExercise(exerciseName: def.name, sets: sets, restSeconds: entry.restSeconds)
+            }
+    }
+
+    /// Loads exercises from a past WorkoutSession so the user can repeat it exactly,
+    /// even if it deviated from the original routine. applyPreviousPerformance then
+    /// fills in the most recent weight/reps for each exercise.
+    private func loadSession(id: UUID) {
+        let descriptor = FetchDescriptor<WorkoutSession>(
+            predicate: #Predicate { $0.id == id }
+        )
+        guard let session = (try? modelContext.fetch(descriptor))?.first else { return }
+        draftExercises = session.exercises
+            .sorted { $0.order < $1.order }
+            .map { snap in
+                // Start with one blank set; applyPreviousPerformance will expand and fill it.
+                DraftExercise(exerciseName: snap.exerciseName, sets: [DraftSet()], restSeconds: 90)
             }
     }
 

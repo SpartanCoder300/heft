@@ -15,11 +15,25 @@ struct HomeRootView: View {
     private var sessions: [WorkoutSession]
 
     @State private var stats = HomeStatsViewModel()
-    @State private var isShowingRoutineBuilder = false
-    @State private var routineToEdit: RoutineTemplate? = nil
+    @State private var routineBuilderRequest: RoutineBuilderRequest? = nil
 
     private var featuredRoutine: RoutineTemplate? { routines.first }
     private var remainingRoutines: [RoutineTemplate] { Array(routines.dropFirst()) }
+
+    /// Average workout duration in minutes, keyed by routineTemplateId.
+    private var routineAvgMinutes: [UUID: Int] {
+        var byRoutine: [UUID: [TimeInterval]] = [:]
+        for session in sessions {
+            guard let rid = session.routineTemplateId,
+                  let start = session.startedAt,
+                  let end = session.completedAt else { continue }
+            byRoutine[rid, default: []].append(end.timeIntervalSince(start))
+        }
+        return byRoutine.compactMapValues { durations -> Int? in
+            guard !durations.isEmpty else { return nil }
+            return Int(durations.reduce(0, +) / Double(durations.count) / 60)
+        }
+    }
 
     var body: some View {
         @Bindable var appState = appState
@@ -54,13 +68,14 @@ struct HomeRootView: View {
                     if let featured = featuredRoutine {
                         FeaturedRoutineCard(
                             routine: featured,
+                            avgMinutes: routineAvgMinutes[featured.id],
                             onTap: {
                                 appState.pendingRoutineID = featured.id
+                                appState.pendingSessionID = nil
                                 appState.isShowingActiveWorkout = true
                             },
                             onEdit: {
-                                routineToEdit = featured
-                                isShowingRoutineBuilder = true
+                                routineBuilderRequest = RoutineBuilderRequest(routine: featured)
                             }
                         )
                     } else {
@@ -89,20 +104,20 @@ struct HomeRootView: View {
                         ForEach(remainingRoutines) { routine in
                             RoutineListRow(
                                 routine: routine,
+                                avgMinutes: routineAvgMinutes[routine.id],
                                 onTap: {
                                     appState.pendingRoutineID = routine.id
+                                    appState.pendingSessionID = nil
                                     appState.isShowingActiveWorkout = true
                                 },
                                 onEdit: {
-                                    routineToEdit = routine
-                                    isShowingRoutineBuilder = true
+                                    routineBuilderRequest = RoutineBuilderRequest(routine: routine)
                                 }
                             )
                         }
 
                         NewRoutineCard {
-                            routineToEdit = nil
-                            isShowingRoutineBuilder = true
+                            routineBuilderRequest = RoutineBuilderRequest(routine: nil)
                         }
                     }
                 }
@@ -112,7 +127,11 @@ struct HomeRootView: View {
                     VStack(alignment: .leading, spacing: Spacing.sm) {
                         SectionHeader(title: "Recent")
                         ForEach(stats.recentSessions) { session in
-                            RecentWorkoutListRow(session: session)
+                            RecentWorkoutListRow(session: session) {
+                                appState.pendingRoutineID = nil
+                                appState.pendingSessionID = session.id
+                                appState.isShowingActiveWorkout = true
+                            }
                         }
                     }
                 }
@@ -124,27 +143,39 @@ struct HomeRootView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    routineToEdit = nil
-                    isShowingRoutineBuilder = true
+                    routineBuilderRequest = RoutineBuilderRequest(routine: nil)
                 } label: {
                     Image(systemName: "plus")
                         .fontWeight(.semibold)
                 }
             }
         }
-        .fullScreenCover(isPresented: $appState.isShowingActiveWorkout) {
+        .fullScreenCover(isPresented: $appState.isShowingActiveWorkout, onDismiss: {
+            appState.pendingRoutineID = nil
+            appState.pendingSessionID = nil
+        }) {
             ActiveWorkoutView(
                 modelContext: modelContext,
-                pendingRoutineID: appState.pendingRoutineID
+                pendingRoutineID: appState.pendingRoutineID,
+                pendingSessionID: appState.pendingSessionID
             )
         }
-        .sheet(isPresented: $isShowingRoutineBuilder) {
-            RoutineBuilderView(existingRoutine: routineToEdit)
+        .sheet(item: $routineBuilderRequest) { request in
+            RoutineBuilderView(existingRoutine: request.routine)
         }
         .onChange(of: sessions, initial: true) {
             stats.update(from: sessions, container: modelContext.container)
         }
     }
+}
+
+// MARK: - Routine Builder Request
+
+/// Wraps an optional RoutineTemplate in an Identifiable so sheet(item:) always
+/// receives the correct routine at the moment the user taps "Edit" or "New".
+private struct RoutineBuilderRequest: Identifiable {
+    let id = UUID()
+    let routine: RoutineTemplate?
 }
 
 // MARK: - Section Header
@@ -202,6 +233,7 @@ private struct StatChip: View {
 
 private struct FeaturedRoutineCard: View {
     let routine: RoutineTemplate
+    let avgMinutes: Int?
     let onTap: () -> Void
     let onEdit: () -> Void
     @Environment(\.heftTheme) private var theme
@@ -224,7 +256,7 @@ private struct FeaturedRoutineCard: View {
 
                 HStack(spacing: Spacing.md) {
                     MetadataPill(value: "\(routine.entries.count)", label: "exercises")
-                    MetadataPill(value: "—", label: "min avg")  // §15 analytics — placeholder
+                    MetadataPill(value: avgMinutes.map { "\($0)" } ?? "—", label: "min avg")
                     MetadataPill(value: "\(totalSets)", label: "sets")
                 }
             }
@@ -274,6 +306,7 @@ private struct MetadataPill: View {
 
 private struct RoutineListRow: View {
     let routine: RoutineTemplate
+    let avgMinutes: Int?
     let onTap: () -> Void
     let onEdit: () -> Void
 
@@ -296,7 +329,7 @@ private struct RoutineListRow: View {
                     Text("\(routine.entries.count) exercises")
                         .font(Typography.caption)
                         .foregroundStyle(Color.textMuted)
-                    Text("— min avg")      // §15 analytics — placeholder
+                    Text(avgMinutes.map { "\($0) min avg" } ?? "— min avg")
                         .font(Typography.caption)
                         .foregroundStyle(Color.textFaint)
                 }
@@ -361,31 +394,40 @@ private struct NewRoutineCard: View {
 
 private struct RecentWorkoutListRow: View {
     let session: WorkoutSession
+    let onRepeat: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.xs) {
+        Button(action: onRepeat) {
             HStack {
-                Text(dateLabel)
-                    .font(Typography.body)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(Color.textPrimary)
+                VStack(alignment: .leading, spacing: Spacing.xs) {
+                    Text(dateLabel)
+                        .font(Typography.body)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.textPrimary)
+                    if let summary = exerciseSummary {
+                        Text(summary)
+                            .font(Typography.caption)
+                            .foregroundStyle(Color.textMuted)
+                            .lineLimit(1)
+                    }
+                }
                 Spacer()
-                if let d = durationLabel {
-                    Text(d)
+                VStack(alignment: .trailing, spacing: Spacing.xs) {
+                    if let d = durationLabel {
+                        Text(d)
+                            .font(Typography.caption)
+                            .foregroundStyle(Color.textMuted)
+                    }
+                    Text("Repeat →")
                         .font(Typography.caption)
-                        .foregroundStyle(Color.textMuted)
+                        .foregroundStyle(Color.textFaint)
                 }
             }
-            if let summary = exerciseSummary {
-                Text(summary)
-                    .font(Typography.caption)
-                    .foregroundStyle(Color.textMuted)
-                    .lineLimit(1)
-            }
+            .padding(Spacing.md)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: Radius.medium, style: .continuous))
         }
-        .padding(Spacing.md)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: Radius.medium, style: .continuous))
+        .buttonStyle(.plain)
     }
 
     private var dateLabel: String {
