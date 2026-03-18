@@ -63,6 +63,10 @@ final class RoutineBuilderViewModel {
         entries.removeAll { $0.id == id }
     }
 
+    func removeEntries(at offsets: IndexSet) {
+        entries.remove(atOffsets: offsets)
+    }
+
     func move(from source: IndexSet, to destination: Int) {
         entries.move(fromOffsets: source, toOffset: destination)
     }

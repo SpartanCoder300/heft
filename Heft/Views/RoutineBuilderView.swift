@@ -11,7 +11,6 @@ struct RoutineBuilderView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.heftTheme) private var theme
 
     init(existingRoutine: RoutineTemplate? = nil) {
         _vm = State(initialValue: RoutineBuilderViewModel(existingRoutine: existingRoutine))
@@ -29,47 +28,40 @@ struct RoutineBuilderView: View {
 
         NavigationStack {
             List {
-                // ── Routine Name ────────────────────────────────────────
+                // ── Routine Name ──────────────────────────────────────
                 Section {
-                    TextField("Routine Name", text: $vm.routineName)
-                        .font(Typography.title)
-                        .fontWeight(.bold)
-                        .foregroundStyle(Color.textPrimary)
+                    TextField("Name", text: $vm.routineName)
+                        .font(.title3.weight(.semibold))
                         .autocorrectionDisabled()
                 }
-                .listRowBackground(Color.clear)
 
-                // ── Exercise List ────────────────────────────────────────
-                if !vm.entries.isEmpty {
-                    Section {
-                        ForEach(vm.entries) { entry in
-                            ExerciseEntryRow(
-                                entry: entry,
-                                accentColor: theme.accentColor,
-                                onConfig: { configEntryID = entry.id }
-                            )
-                            .listRowBackground(Color.clear)
-                            .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+                // ── Exercises ─────────────────────────────────────────
+                Section {
+                    ForEach(vm.entries) { entry in
+                        Button { configEntryID = entry.id } label: {
+                            ExerciseEntryRow(entry: entry)
                         }
-                        .onMove { vm.move(from: $0, to: $1) }
-                    } header: {
-                        Text("Exercises")
-                            .font(Typography.caption)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(Color.textFaint)
-                            .textCase(.uppercase)
-                            .tracking(0.8)
+                        .tint(.primary)
                     }
-                    .listSectionSpacing(Spacing.xs)
+                    .onMove { vm.move(from: $0, to: $1) }
+                    .onDelete { vm.removeEntries(at: $0) }
+                } header: {
+                    Text(vm.entries.isEmpty ? "" : "Exercises")
+                }
+
+                // ── Add Exercise ──────────────────────────────────────
+                Section {
+                    Button {
+                        isShowingExercisePicker = true
+                    } label: {
+                        Label("Add Exercise", systemImage: "plus.circle.fill")
+                    }
+                    .tint(.accentColor)
                 }
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .themedBackground()
             .environment(\.editMode, .constant(.active))
             .navigationTitle(vm.isEditingExisting ? "Edit Routine" : "New Routine")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }
@@ -92,31 +84,14 @@ struct RoutineBuilderView: View {
                     .disabled(!vm.canSave)
                 }
             }
-            .safeAreaInset(edge: .bottom) {
-                Button {
-                    isShowingExercisePicker = true
-                } label: {
-                    Label("Add Exercise", systemImage: "plus")
-                        .font(Typography.body)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(theme.accentColor)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, Spacing.md)
-                        .background(theme.accentColor.opacity(0.10), in: Capsule())
-                        .overlay(Capsule().strokeBorder(theme.accentColor.opacity(0.3), lineWidth: 1))
-                }
-                .buttonStyle(.plain)
-                .padding(.horizontal, Spacing.md)
-                .padding(.vertical, Spacing.sm)
-                .background(.ultraThinMaterial)
-            }
             .sheet(isPresented: $isShowingExercisePicker) {
                 ExercisePicker { exercise in
                     vm.addExercise(exercise)
                 }
             }
             .sheet(isPresented: configSheetIsPresented) {
-                if let id = configEntryID, let idx = vm.entries.firstIndex(where: { $0.id == id }) {
+                if let id = configEntryID,
+                   let idx = vm.entries.firstIndex(where: { $0.id == id }) {
                     ExerciseConfigSheet(
                         entry: Binding(
                             get: { vm.entries[idx] },
@@ -149,62 +124,36 @@ struct RoutineBuilderView: View {
 
 private struct ExerciseEntryRow: View {
     let entry: RoutineBuilderViewModel.DraftEntry
-    let accentColor: Color
-    let onConfig: () -> Void
-
-    private let equipmentIcons: [String: String] = [
-        "Barbell":    "dumbbell.fill",
-        "Dumbbell":   "dumbbell.fill",
-        "Cable":      "cable.connector",
-        "Machine":    "gearshape.fill",
-        "Bodyweight": "figure.strengthtraining.functional",
-        "Kettlebell": "dumbbell.fill",
-        "Band":       "link",
-        "Cardio":     "figure.run",
-    ]
 
     var body: some View {
-        HStack(spacing: Spacing.md) {
-            Image(systemName: equipmentIcons[entry.exercise.equipmentType] ?? "dumbbell.fill")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(accentColor)
-                .frame(width: 28)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(entry.exercise.name)
-                    .font(Typography.body)
-                    .foregroundStyle(Color.textPrimary)
-
-                HStack(spacing: Spacing.sm) {
-                    Text("\(entry.targetSets) × \(entry.targetRepsMin)–\(entry.targetRepsMax)")
-                        .font(Typography.caption)
-                        .foregroundStyle(Color.textMuted)
-                    if !entry.exercise.muscleGroups.isEmpty {
-                        Text("·")
-                            .font(Typography.caption)
-                            .foregroundStyle(Color.textFaint)
-                        Text(entry.exercise.muscleGroups.prefix(2).joined(separator: ", "))
-                            .font(Typography.caption)
-                            .foregroundStyle(Color.textFaint)
-                    }
-                }
-            }
-
-            Spacer()
-
-            Button(action: onConfig) {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(Color.textMuted)
-                    .frame(width: 36, height: 36)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
+        VStack(alignment: .leading, spacing: 3) {
+            Text(entry.exercise.name)
+                .foregroundStyle(.primary)
+            Text(subtitle)
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
-        .padding(.horizontal, Spacing.md)
-        .padding(.vertical, Spacing.sm)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: Radius.medium, style: .continuous))
+        .padding(.vertical, 2)
     }
+
+    private var subtitle: String {
+        var parts = ["\(entry.targetSets) sets · \(entry.targetRepsMin)–\(entry.targetRepsMax) reps"]
+        parts.append(restLabel(entry.restSeconds))
+        if let groups = entry.exercise.muscleGroups.prefix(2).joined(separator: ", ").nilIfEmpty {
+            parts.append(groups)
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    private func restLabel(_ seconds: Int) -> String {
+        let m = seconds / 60
+        let s = seconds % 60
+        return s == 0 ? "\(m) min rest" : "\(m):\(String(format: "%02d", s)) rest"
+    }
+}
+
+private extension String {
+    var nilIfEmpty: String? { isEmpty ? nil : self }
 }
 
 // MARK: - Exercise Config Sheet
@@ -214,54 +163,41 @@ private struct ExerciseConfigSheet: View {
     let onRemove: () -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.heftTheme) private var theme
 
     private let restOptions = [30, 60, 90, 120, 180]
 
     var body: some View {
         NavigationStack {
             Form {
-                // ── Sets ───────────────────────────────────────────────
                 Section("Sets") {
                     Stepper(
                         "\(entry.targetSets) set\(entry.targetSets == 1 ? "" : "s")",
                         value: $entry.targetSets,
                         in: 1...10
                     )
-                    .foregroundStyle(Color.textPrimary)
                 }
 
-                // ── Reps ───────────────────────────────────────────────
                 Section("Reps") {
-                    Stepper("Min: \(entry.targetRepsMin)", value: $entry.targetRepsMin, in: 1...99)
-                        .foregroundStyle(Color.textPrimary)
-                        .onChange(of: entry.targetRepsMin) { _, newVal in
-                            if newVal > entry.targetRepsMax { entry.targetRepsMax = newVal }
+                    Stepper("Min  \(entry.targetRepsMin)", value: $entry.targetRepsMin, in: 1...99)
+                        .onChange(of: entry.targetRepsMin) { _, v in
+                            if v > entry.targetRepsMax { entry.targetRepsMax = v }
                         }
-                    Stepper("Max: \(entry.targetRepsMax)", value: $entry.targetRepsMax, in: 1...99)
-                        .foregroundStyle(Color.textPrimary)
-                        .onChange(of: entry.targetRepsMax) { _, newVal in
-                            if newVal < entry.targetRepsMin { entry.targetRepsMin = newVal }
+                    Stepper("Max  \(entry.targetRepsMax)", value: $entry.targetRepsMax, in: 1...99)
+                        .onChange(of: entry.targetRepsMax) { _, v in
+                            if v < entry.targetRepsMin { entry.targetRepsMin = v }
                         }
                 }
 
-                // ── Rest Time ──────────────────────────────────────────
-                Section("Rest Time") {
-                    HStack(spacing: Spacing.sm) {
-                        ForEach(restOptions, id: \.self) { seconds in
-                            RestChip(
-                                label: restLabel(seconds),
-                                isSelected: entry.restSeconds == seconds,
-                                accentColor: theme.accentColor
-                            ) {
-                                entry.restSeconds = seconds
-                            }
+                Section("Rest") {
+                    Picker("Rest time", selection: $entry.restSeconds) {
+                        ForEach(restOptions, id: \.self) { s in
+                            Text(restLabel(s)).tag(s)
                         }
                     }
-                    .padding(.vertical, Spacing.xs)
+                    .pickerStyle(.segmented)
+                    .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
                 }
 
-                // ── Remove ─────────────────────────────────────────────
                 Section {
                     Button("Remove from Routine", role: .destructive) {
                         onRemove()
@@ -269,11 +205,8 @@ private struct ExerciseConfigSheet: View {
                     }
                 }
             }
-            .scrollContentBackground(.hidden)
-            .themedBackground()
             .navigationTitle(entry.exercise.name)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
@@ -288,42 +221,11 @@ private struct ExerciseConfigSheet: View {
     private func restLabel(_ seconds: Int) -> String {
         let m = seconds / 60
         let s = seconds % 60
-        return s == 0 ? "\(m):00" : "\(m):\(String(format: "%02d", s))"
+        return s == 0 ? "\(m)m" : "\(m):\(String(format: "%02d", s))"
     }
 }
 
-// MARK: - Rest Chip
-
-private struct RestChip: View {
-    let label: String
-    let isSelected: Bool
-    let accentColor: Color
-    let onTap: () -> Void
-
-    var body: some View {
-        Button(action: onTap) {
-            Text(label)
-                .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
-                .foregroundStyle(isSelected ? accentColor : Color.textMuted)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, Spacing.xs)
-                .background(
-                    isSelected
-                        ? accentColor.opacity(0.15)
-                        : Color.white.opacity(0.06),
-                    in: RoundedRectangle(cornerRadius: Radius.small, style: .continuous)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: Radius.small, style: .continuous)
-                        .strokeBorder(
-                            isSelected ? accentColor.opacity(0.4) : Color.clear,
-                            lineWidth: 1
-                        )
-                )
-        }
-        .buttonStyle(.plain)
-    }
-}
+// MARK: - Preview
 
 #Preview("New Routine") {
     RoutineBuilderView()
