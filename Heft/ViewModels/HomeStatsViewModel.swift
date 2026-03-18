@@ -10,12 +10,10 @@ final class HomeStatsViewModel {
     private(set) var streakLabel: String = "—"
     private(set) var thisWeekLabel: String = "—"
     private(set) var prCountLabel: String = "—"
-    private(set) var recentSessions: [WorkoutSession] = []
 
     private var refreshTask: Task<Void, Never>?
 
-    func update(from sessions: [WorkoutSession], container: ModelContainer) {
-        recentSessions = Array(sessions.filter { $0.completedAt != nil }.prefix(3))
+    func update(container: ModelContainer) {
         refreshTask?.cancel()
         refreshTask = Task { await refreshStats(container: container) }
     }

@@ -20,6 +20,12 @@ struct HomeRootView: View {
     private var featuredRoutine: RoutineTemplate? { routines.first }
     private var remainingRoutines: [RoutineTemplate] { Array(routines.dropFirst()) }
 
+    /// Computed directly from @Query so it updates the instant completedAt is saved —
+    /// no async hop, no onChange timing dependency.
+    private var recentSessions: [WorkoutSession] {
+        Array(sessions.filter { $0.completedAt != nil }.prefix(3))
+    }
+
     /// Average workout duration in minutes, keyed by routineTemplateId.
     private var routineAvgMinutes: [UUID: Int] {
         var byRoutine: [UUID: [TimeInterval]] = [:]
@@ -123,10 +129,10 @@ struct HomeRootView: View {
                 }
 
                 // ── Recent Workouts ────────────────────────────────────
-                if !stats.recentSessions.isEmpty {
+                if !recentSessions.isEmpty {
                     VStack(alignment: .leading, spacing: Spacing.sm) {
                         SectionHeader(title: "Recent")
-                        ForEach(stats.recentSessions) { session in
+                        ForEach(recentSessions) { session in
                             RecentWorkoutListRow(session: session) {
                                 appState.pendingRoutineID = nil
                                 appState.pendingSessionID = session.id
@@ -164,7 +170,7 @@ struct HomeRootView: View {
             RoutineBuilderView(existingRoutine: request.routine)
         }
         .onChange(of: sessions, initial: true) {
-            stats.update(from: sessions, container: modelContext.container)
+            stats.update(container: modelContext.container)
         }
     }
 }
