@@ -3,7 +3,7 @@
 import SwiftUI
 import SwiftData
 
-private let allMuscleGroups = ["Chest", "Back", "Shoulders", "Arms", "Legs", "Core", "Cardio"]
+private let allMuscleGroups = ["Chest", "Back", "Shoulders", "Biceps", "Triceps", "Forearms", "Legs", "Core"]
 
 struct ExercisePicker: View {
     let onSelect: (ExerciseDefinition) -> Void
@@ -155,7 +155,7 @@ private struct RecentTile: View {
     }
 
     private var iconName: String {
-        exercise.equipmentIconName
+        exercise.iconName
     }
 }
 
@@ -211,7 +211,7 @@ private struct LibraryRow: View {
     }
 
     private var iconName: String {
-        exercise.equipmentIconName
+        exercise.iconName
     }
 }
 

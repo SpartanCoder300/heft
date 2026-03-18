@@ -154,7 +154,7 @@ private struct ExerciseEntryRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: entry.exercise.equipmentIconName)
+            Image(systemName: entry.exercise.iconName)
                 .font(.system(size: 16, weight: .medium))
                 .foregroundStyle(.secondary)
                 .frame(width: 28)

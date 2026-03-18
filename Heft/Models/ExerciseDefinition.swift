@@ -37,17 +37,17 @@ final class ExerciseDefinition {
         self.prDate = prDate
     }
 
-    var equipmentIconName: String {
-        switch equipmentType {
-        case "Barbell":    "dumbbell.fill"
-        case "Dumbbell":   "dumbbell.fill"
-        case "Cable":      "cable.connector"
-        case "Machine":    "gearshape.fill"
-        case "Bodyweight": "figure.strengthtraining.functional"
-        case "Kettlebell": "dumbbell.fill"
-        case "Band":       "link"
-        case "Cardio":     "figure.run"
-        default:           "dumbbell.fill"
+    var iconName: String {
+        switch muscleGroups.first {
+        case "Chest":     "figure.strengthtraining.traditional"
+        case "Back":      "figure.climbing"
+        case "Shoulders": "figure.highintensityintervaltraining"
+        case "Biceps":    "figure.strengthtraining.functional"
+        case "Triceps":   "figure.gymnastics"
+        case "Forearms":  "hand.raised.fill"
+        case "Legs":      "figure.step.training"
+        case "Core":      "figure.core.training.mixed"
+        default:          "dumbbell.fill"
         }
     }
 }
