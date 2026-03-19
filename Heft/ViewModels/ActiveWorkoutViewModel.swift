@@ -15,6 +15,7 @@ final class ActiveWorkoutViewModel {
         var repsText: String = ""
         var setType: SetType = .normal
         var isLogged: Bool = false
+        var loggedRecord: SetRecord? = nil
     }
 
     struct PreviousSet {
@@ -201,6 +202,23 @@ final class ActiveWorkoutViewModel {
         draftExercises[eIdx].sets.remove(at: sIdx)
     }
 
+    func unlogSet(exerciseIndex eIdx: Int, setIndex sIdx: Int) {
+        guard draftExercises.indices.contains(eIdx),
+              draftExercises[eIdx].sets.indices.contains(sIdx),
+              draftExercises[eIdx].sets[sIdx].isLogged else { return }
+
+        // Remove the persisted SetRecord
+        if let record = draftExercises[eIdx].sets[sIdx].loggedRecord {
+            draftExercises[eIdx].snapshot?.sets.removeAll { $0.id == record.id }
+            modelContext.delete(record)
+        }
+
+        draftExercises[eIdx].sets[sIdx].isLogged = false
+        draftExercises[eIdx].sets[sIdx].loggedRecord = nil
+        try? modelContext.save()
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+    }
+
     func addSet(toExerciseAt index: Int) {
         guard draftExercises.indices.contains(index) else { return }
         var new = DraftSet()
@@ -263,6 +281,7 @@ final class ActiveWorkoutViewModel {
         }
 
         draftExercises[eIdx].sets[sIdx].isLogged = true
+        draftExercises[eIdx].sets[sIdx].loggedRecord = record
 
         // Propagate weight + reps forward to subsequent blank sets in the same exercise
         for i in draftExercises[eIdx].sets.indices where i > sIdx {

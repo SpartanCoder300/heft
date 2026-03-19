@@ -118,7 +118,8 @@ struct ActiveExerciseCard: View {
                     onCycleType: { vm.cycleSetType(exerciseIndex: exerciseIndex, setIndex: sIdx) },
                     onFocus: { vm.setManualFocus(exerciseIndex: exerciseIndex, setIndex: sIdx) },
                     onLog: { vm.logSet(exerciseIndex: exerciseIndex, setIndex: sIdx) },
-                    onDelete: { vm.removeSet(exerciseIndex: exerciseIndex, setIndex: sIdx) }
+                    onDelete: { vm.removeSet(exerciseIndex: exerciseIndex, setIndex: sIdx) },
+                    onUndo: { vm.unlogSet(exerciseIndex: exerciseIndex, setIndex: sIdx) }
                 )
 
                 if sIdx < exercise.sets.count - 1 {
@@ -178,6 +179,7 @@ private struct SetRow: View {
     let onFocus: () -> Void
     let onLog: () -> Void
     let onDelete: () -> Void
+    let onUndo: () -> Void
 
     var body: some View {
         HStack(spacing: 6) {
@@ -226,7 +228,11 @@ private struct SetRow: View {
         .animation(Motion.standardSpring, value: isLogged)
         .animation(Motion.standardSpring, value: isFocused)
         .contextMenu {
-            if !isLogged {
+            if isLogged {
+                Button(action: onUndo) {
+                    Label("Undo", systemImage: "arrow.uturn.backward")
+                }
+            } else {
                 Button(role: .destructive, action: onDelete) {
                     Label("Delete Set", systemImage: "trash")
                 }
