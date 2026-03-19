@@ -44,7 +44,8 @@ struct ActiveWorkoutView: View {
                     ActiveSetCommandBar(vm: vm)
                 }
                 .onChange(of: vm.currentFocus) { _, newFocus in
-                    guard let focus = newFocus else { return }
+                    guard let focus = newFocus,
+                          vm.draftExercises.indices.contains(focus.exerciseIndex) else { return }
                     withAnimation(Motion.standardSpring) {
                         proxy.scrollTo(
                             vm.draftExercises[focus.exerciseIndex].id,

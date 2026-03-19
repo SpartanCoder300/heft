@@ -78,8 +78,9 @@ final class ActiveWorkoutViewModel {
         let startSIdx = (lastLoggedFocus?.setIndex ?? -1) + 1
 
         for eIdx in startEIdx ..< draftExercises.count {
-            let firstS = eIdx == startEIdx ? startSIdx : 0
-            if let sIdx = draftExercises[eIdx].sets[firstS...].firstIndex(where: { !$0.isLogged }) {
+            let sets = draftExercises[eIdx].sets
+            let firstS = eIdx == startEIdx ? min(startSIdx, sets.count) : 0
+            if let sIdx = sets[firstS...].firstIndex(where: { !$0.isLogged }) {
                 return SetFocus(exerciseIndex: eIdx, setIndex: sIdx)
             }
         }
@@ -250,6 +251,15 @@ final class ActiveWorkoutViewModel {
     func removeExercise(at index: Int) {
         guard draftExercises.indices.contains(index) else { return }
         draftExercises.remove(at: index)
+        // Invalidate focus state that pointed into the removed (or now-shifted) exercise.
+        if let lf = lastLoggedFocus {
+            if lf.exerciseIndex == index { lastLoggedFocus = nil }
+            else if lf.exerciseIndex > index { lastLoggedFocus = SetFocus(exerciseIndex: lf.exerciseIndex - 1, setIndex: lf.setIndex) }
+        }
+        if let mf = manualFocus {
+            if mf.exerciseIndex == index { manualFocus = nil }
+            else if mf.exerciseIndex > index { manualFocus = SetFocus(exerciseIndex: mf.exerciseIndex - 1, setIndex: mf.setIndex) }
+        }
     }
 
     func moveExercise(at index: Int, direction: MoveDirection) {

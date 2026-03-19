@@ -12,11 +12,18 @@ struct ActiveExerciseCard: View {
 
     @State private var showingRemoveConfirm = false
 
-    private var exercise: ActiveWorkoutViewModel.DraftExercise {
-        vm.draftExercises[exerciseIndex]
+    private var exercise: ActiveWorkoutViewModel.DraftExercise? {
+        guard vm.draftExercises.indices.contains(exerciseIndex) else { return nil }
+        return vm.draftExercises[exerciseIndex]
     }
 
     var body: some View {
+        guard let exercise else { return AnyView(EmptyView()) }
+        return AnyView(cardBody(exercise: exercise))
+    }
+
+    @ViewBuilder
+    private func cardBody(exercise: ActiveWorkoutViewModel.DraftExercise) -> some View {
         VStack(alignment: .leading, spacing: 0) {
 
             // ── Header ────────────────────────────────────────────────
@@ -84,7 +91,7 @@ struct ActiveExerciseCard: View {
 
             // ── Previous session ──────────────────────────────────────
             if !exercise.previousSets.isEmpty {
-                Text("Last \(previousLabel)")
+                Text("Last \(previousLabel(for: exercise))")
                     .font(.caption)
                     .foregroundStyle(Color.textFaint)
                     .padding(.horizontal, Spacing.md)
@@ -155,7 +162,7 @@ struct ActiveExerciseCard: View {
         }
     }
 
-    private var previousLabel: String {
+    private func previousLabel(for exercise: ActiveWorkoutViewModel.DraftExercise) -> String {
         exercise.previousSets
             .map { "\(vm.formatWeight($0.weight)) × \($0.reps)" }
             .joined(separator: "   ")
