@@ -431,6 +431,14 @@ final class ActiveWorkoutViewModel {
         return s
     }
 
+    /// Discards the in-progress session and all logged sets without saving.
+    func cancelWorkout() {
+        if let s = session {
+            modelContext.delete(s)
+            try? modelContext.save()
+        }
+    }
+
     // MARK: - Helpers
 
     func elapsedLabel(at date: Date) -> String {

@@ -87,6 +87,10 @@ struct ActiveWorkoutView: View {
                         dismiss()
                     }
                 }
+                Button("Cancel Workout", role: .destructive) {
+                    vm.cancelWorkout()
+                    dismiss()
+                }
             } message: {
                 Text(vm.isSessionStarted
                      ? "\(vm.elapsedLabel(at: .now)) · \(vm.loggedSetCount) sets logged"
