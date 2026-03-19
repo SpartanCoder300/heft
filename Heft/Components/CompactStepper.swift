@@ -21,7 +21,7 @@ struct CompactStepper: View {
 
     /// Wheel always offers 1-unit increments for fine control.
     private var wheelValues: [Double] {
-        stride(from: minValue, through: maxValue, by: 1).map { $0 }
+        stride(from: minValue, through: maxValue, by: step).map { $0 }
     }
 
     private func snapped(_ v: Double) -> Double {

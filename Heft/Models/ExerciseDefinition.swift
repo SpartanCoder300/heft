@@ -14,6 +14,10 @@ final class ExerciseDefinition {
     var currentPR: Double
     var previousPR: Double
     var prDate: Date?
+    /// Explicitly overridden weight increment in lbs. Nil = use equipment-type default.
+    /// Optional so lightweight migration succeeds for existing rows (nil → resolvedWeightIncrement
+    /// returns the equipment default, preserving correct behaviour without data loss).
+    var weightIncrement: Double?
 
     init(
         id: UUID = UUID(),
@@ -24,7 +28,8 @@ final class ExerciseDefinition {
         createdAt: Date = .now,
         currentPR: Double = .zero,
         previousPR: Double = .zero,
-        prDate: Date? = nil
+        prDate: Date? = nil,
+        weightIncrement: Double? = nil
     ) {
         self.id = id
         self.name = name
@@ -35,6 +40,25 @@ final class ExerciseDefinition {
         self.currentPR = currentPR
         self.previousPR = previousPR
         self.prDate = prDate
+        self.weightIncrement = weightIncrement
+    }
+
+    /// Effective increment: explicit override if set, otherwise equipment-type default.
+    var resolvedWeightIncrement: Double {
+        weightIncrement ?? ExerciseDefinition.defaultIncrement(for: equipmentType)
+    }
+
+    /// Standard weight increment for a given equipment type.
+    static func defaultIncrement(for equipmentType: String) -> Double {
+        switch equipmentType {
+        case "Barbell":    return 2.5   // smallest standard plate pair
+        case "Dumbbell":   return 2.0   // typical dumbbell rack step
+        case "Cable":      return 2.5   // standard cable stack pin increment
+        case "Machine":    return 5.0   // typical plate-loaded / selectorised step
+        case "Kettlebell": return 4.0   // ~4kg jump between standard bells
+        case "Bodyweight": return 2.5   // added weight belt
+        default:           return 2.5
+        }
     }
 
     var iconName: String {

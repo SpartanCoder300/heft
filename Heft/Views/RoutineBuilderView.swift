@@ -216,8 +216,17 @@ private struct ExerciseConfigSheet: View {
     let onRemove: () -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
 
     private let restOptions = [30, 45, 60, 90, 120, 150, 180, 240, 300]
+    private let incrementOptions: [(value: Double, label: String)] = [
+        (1.0,  "1 lb"),
+        (1.25, "1.25 lbs"),
+        (2.0,  "2 lbs"),
+        (2.5,  "2.5 lbs"),
+        (5.0,  "5 lbs"),
+        (10.0, "10 lbs"),
+    ]
 
     var body: some View {
         NavigationStack {
@@ -249,6 +258,19 @@ private struct ExerciseConfigSheet: View {
                     }
                 }
 
+                Section("Weight Increment") {
+                    let incrementBinding = Binding<Double>(
+                        get: { entry.exercise.resolvedWeightIncrement },
+                        set: { entry.exercise.weightIncrement = $0 }
+                    )
+                    Picker("Increment", selection: incrementBinding) {
+                        ForEach(incrementOptions, id: \.value) { option in
+                            Text(option.label).tag(option.value)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                }
+
                 Section {
                     Button("Remove from Routine", role: .destructive) {
                         onRemove()
@@ -260,8 +282,11 @@ private struct ExerciseConfigSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                        .fontWeight(.semibold)
+                    Button("Done") {
+                        try? modelContext.save()
+                        dismiss()
+                    }
+                    .fontWeight(.semibold)
                 }
             }
         }

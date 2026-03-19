@@ -27,6 +27,7 @@ final class ActiveWorkoutViewModel {
         var id = UUID()
         var exerciseName: String
         var equipmentType: String = ""
+        var weightIncrement: Double = 2.5
         var sets: [DraftSet]
         var previousSets: [PreviousSet] = []
         var snapshot: ExerciseSnapshot? = nil
@@ -106,7 +107,6 @@ final class ActiveWorkoutViewModel {
     private let modelContext: ModelContext
     private let pendingRoutineID: UUID?
     private let pendingSessionID: UUID?
-    private let weightStep: Double = 2.5
     private var zeroTask: Task<Void, Never>? = nil
 
     // MARK: - Init
@@ -145,7 +145,7 @@ final class ActiveWorkoutViewModel {
                 let sets = (0 ..< entry.targetSets).map { _ in
                     DraftSet(repsText: "\(entry.targetRepsMin)")
                 }
-                return DraftExercise(exerciseName: def.name, equipmentType: def.equipmentType, sets: sets, restSeconds: entry.restSeconds)
+                return DraftExercise(exerciseName: def.name, equipmentType: def.equipmentType, weightIncrement: def.resolvedWeightIncrement, sets: sets, restSeconds: entry.restSeconds)
             }
     }
 
@@ -207,8 +207,10 @@ final class ActiveWorkoutViewModel {
 
     func addExercise(named name: String) {
         let descriptor = FetchDescriptor<ExerciseDefinition>(predicate: #Predicate { $0.name == name })
-        let equipmentType = (try? modelContext.fetch(descriptor))?.first?.equipmentType ?? ""
-        var draft = DraftExercise(exerciseName: name, equipmentType: equipmentType, sets: [DraftSet()])
+        let def = (try? modelContext.fetch(descriptor))?.first
+        let equipmentType = def?.equipmentType ?? ""
+        let weightIncrement = def?.weightIncrement ?? ExerciseDefinition.defaultIncrement(for: equipmentType)
+        var draft = DraftExercise(exerciseName: name, equipmentType: equipmentType, weightIncrement: weightIncrement, sets: [DraftSet()])
         applyPreviousPerformance(to: &draft)
         draftExercises.append(draft)
     }
@@ -366,14 +368,14 @@ final class ActiveWorkoutViewModel {
     func adjustWeight(exerciseIndex eIdx: Int, setIndex sIdx: Int, increment: Bool) {
         guard draftExercises.indices.contains(eIdx),
               draftExercises[eIdx].sets.indices.contains(sIdx) else { return }
+        let step = draftExercises[eIdx].weightIncrement
         let current = Double(draftExercises[eIdx].sets[sIdx].weightText) ?? 0
         if increment && current == 0 {
-            // First tap on an empty set: jump to a sensible starting weight
             let start = firstTapDefault(for: draftExercises[eIdx].equipmentType)
             draftExercises[eIdx].sets[sIdx].weightText = formatWeight(start)
             return
         }
-        let next = increment ? current + weightStep : max(0, current - weightStep)
+        let next = increment ? current + step : max(0, current - step)
         draftExercises[eIdx].sets[sIdx].weightText = formatWeight(next)
     }
 

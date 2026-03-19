@@ -47,7 +47,7 @@ struct ActiveSetCommandBar: View {
                             set: { vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].weightText = $0 }
                         ),
                         unit: "lbs",
-                        step: 2.5,
+                        step: exercise.weightIncrement,
                         minValue: 0,
                         maxValue: 999,
                         isInteger: false,
