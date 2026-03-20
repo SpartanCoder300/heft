@@ -94,7 +94,6 @@ struct CompactStepper: View {
             .buttonStyle(.plain)
             .disabled(isLogged)
         }
-        .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .opacity(isLogged ? 0.4 : 1.0)
         .sheet(isPresented: $showingWheel) {
             VStack(spacing: 0) {

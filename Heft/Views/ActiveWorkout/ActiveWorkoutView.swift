@@ -43,9 +43,6 @@ struct ActiveWorkoutView: View {
                         .padding(.vertical, Spacing.lg)
                         .animation(Motion.standardSpring, value: vm.restTimer.isActive)
                     }
-                    .safeAreaBar(edge: .bottom) {
-                        ActiveSetCommandBar(vm: vm)
-                    }
                     .onChange(of: vm.currentFocus) { _, newFocus in
                         guard let focus = newFocus,
                               vm.draftExercises.indices.contains(focus.exerciseIndex) else { return }
@@ -77,6 +74,41 @@ struct ActiveWorkoutView: View {
                             Image(systemName: "plus").fontWeight(.semibold)
                         }
                         .accessibilityLabel("Add exercise")
+                    }
+                    ToolbarItemGroup(placement: .bottomBar) {
+                        if let focus = vm.currentFocus {
+                            let exercise = vm.draftExercises[focus.exerciseIndex]
+                            CompactStepper(
+                                text: Binding(
+                                    get: { vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].weightText },
+                                    set: { vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].weightText = $0 }
+                                ),
+                                unit: "lbs",
+                                step: exercise.weightIncrement,
+                                minValue: 0,
+                                maxValue: 999,
+                                isInteger: false,
+                                firstTapDefault: weightDefault(for: exercise.equipmentType)
+                            )
+                            .frame(maxWidth: .infinity)
+                            CompactStepper(
+                                text: Binding(
+                                    get: { vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].repsText },
+                                    set: { vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].repsText = $0 }
+                                ),
+                                unit: "reps",
+                                step: 1,
+                                minValue: 0,
+                                maxValue: 50,
+                                isInteger: true,
+                                firstTapDefault: 5
+                            )
+                            Button { vm.logFocusedSet() } label: {
+                                Image(systemName: "checkmark")
+                                    .font(.body.weight(.semibold))
+                                    .foregroundStyle(theme.accentColor)
+                            }
+                        }
                     }
                 }
                 .alert("End Workout?", isPresented: $vm.isShowingEndConfirm) {
@@ -145,6 +177,20 @@ struct ActiveWorkoutView: View {
             }
         }
         .animation(Motion.standardSpring, value: vm.showingPRMoment != nil)
+    }
+}
+
+// MARK: - Helpers
+
+private func weightDefault(for equipmentType: String) -> Double? {
+    switch equipmentType {
+    case "Barbell":    return 45
+    case "Dumbbell":   return 10
+    case "Cable":      return 20
+    case "Machine":    return 45
+    case "Kettlebell": return 35
+    case "Bodyweight": return nil
+    default:           return 45
     }
 }
 
