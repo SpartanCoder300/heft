@@ -14,12 +14,24 @@ struct SetTypeChip: View {
             .foregroundStyle(chipColor)
             .frame(width: 24, height: 22)
             .background(chipColor.opacity(0.15), in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+            // Expand hit area to HIG minimum without changing visual size
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
             .onTapGesture {
                 guard let onTap else { return }
                 onTap()
             }
             .allowsHitTesting(onTap != nil)
             .sensoryFeedback(.selection, trigger: setType)
+            .accessibilityLabel(accessibilityLabel)
+    }
+
+    private var accessibilityLabel: String {
+        switch setType {
+        case .normal:  "Normal set"
+        case .warmup:  "Warmup set"
+        case .dropset: "Dropset"
+        }
     }
 
     private var label: String {

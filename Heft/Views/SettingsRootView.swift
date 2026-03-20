@@ -63,7 +63,7 @@ private struct ThemeRow: View {
                         .foregroundStyle(Color.textPrimary)
                     if theme.isPro {
                         Text("Pro")
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(.system(size: 11, weight: .semibold))
                             .foregroundStyle(Color.heftAmber)
                             .textCase(.uppercase)
                             .tracking(0.5)

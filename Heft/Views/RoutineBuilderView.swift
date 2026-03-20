@@ -101,6 +101,7 @@ struct RoutineBuilderView: View {
                             }
                         } label: {
                             Image(systemName: "ellipsis.circle")
+                            .accessibilityLabel("Routine options")
                         }
                     }
                     Button("Save") {

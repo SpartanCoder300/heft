@@ -205,7 +205,7 @@ private struct SetDetailRow: View {
             if record.isPersonalRecord {
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("PR")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(.system(size: 11, weight: .bold))
                         .foregroundStyle(Color.heftAmber)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 3)
@@ -213,7 +213,7 @@ private struct SetDetailRow: View {
                     let e1rm = ExerciseDefinition.estimatedOneRepMax(weight: record.weight, reps: record.reps)
                     if e1rm > 0 {
                         Text("~\(formattedE1RM(e1rm)) e1RM")
-                            .font(.system(size: 9))
+                            .font(.system(size: 11))
                             .foregroundStyle(Color.heftAmber.opacity(0.6))
                     }
                 }

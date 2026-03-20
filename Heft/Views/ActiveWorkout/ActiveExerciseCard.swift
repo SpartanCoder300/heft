@@ -84,6 +84,7 @@ struct ActiveExerciseCard: View {
                         .foregroundStyle(Color.textMuted)
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
+                        .accessibilityLabel("Exercise options")
                 }
             }
             .padding(.horizontal, Spacing.md)

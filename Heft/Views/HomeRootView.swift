@@ -133,6 +133,7 @@ struct HomeRootView: View {
                     Image(systemName: "plus")
                         .fontWeight(.semibold)
                 }
+                .accessibilityLabel("New routine")
             }
         }
         .sheet(item: $routineBuilderRequest) { request in
@@ -194,7 +195,7 @@ private struct StatChip: View {
                 .foregroundStyle(valueColor)
                 .monospacedDigit()
             Text(label)
-                .font(.system(size: 10, weight: .medium))
+                .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(Color.textFaint)
                 .textCase(.uppercase)
                 .tracking(0.5)

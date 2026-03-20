@@ -76,6 +76,7 @@ struct ActiveWorkoutView: View {
                         Button { vm.isShowingExercisePicker = true } label: {
                             Image(systemName: "plus").fontWeight(.semibold)
                         }
+                        .accessibilityLabel("Add exercise")
                     }
                 }
                 .alert("End Workout?", isPresented: $vm.isShowingEndConfirm) {

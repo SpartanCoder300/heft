@@ -45,7 +45,7 @@ struct CompactStepper: View {
                 Image(systemName: "minus")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(Color.textMuted)
-                    .frame(width: 38, height: 52)
+                    .frame(width: 44, height: 52)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -65,7 +65,7 @@ struct CompactStepper: View {
                         .contentTransition(.numericText())
                         .animation(Motion.standardSpring, value: text)
                     Text(unit)
-                        .font(.system(size: 9, weight: .medium))
+                        .font(.system(size: 11, weight: .medium))
                         .textCase(.uppercase)
                         .tracking(0.4)
                         .opacity(0.5)
@@ -88,7 +88,7 @@ struct CompactStepper: View {
                 Image(systemName: "plus")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(Color.textMuted)
-                    .frame(width: 38, height: 52)
+                    .frame(width: 44, height: 52)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)

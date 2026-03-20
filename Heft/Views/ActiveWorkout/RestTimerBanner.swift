@@ -54,7 +54,7 @@ struct RestTimerBanner: View {
                         Text("−30s")
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(Color.textMuted)
-                            .frame(width: 60, height: 40)
+                            .frame(width: 60, height: 44)
                             .background(Color.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
                     .buttonStyle(.plain)
@@ -66,7 +66,7 @@ struct RestTimerBanner: View {
                         Text("+30s")
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(Color.textMuted)
-                            .frame(width: 60, height: 40)
+                            .frame(width: 60, height: 44)
                             .background(Color.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
                     .buttonStyle(.plain)
