@@ -6,7 +6,7 @@ extension Color {
     // ── Theme accents ─────────────────────────────────────────────────────────
     static var heftAccent: Color          { Color("Accent") }
     static var heftAccentGraphite: Color  { Color("AccentGraphite") }
-    static var heftAccentObsidian: Color  { Color("AccentObsidian") }
+    static var heftAccentEmber: Color     { Color("AccentEmber") }
     static var heftAccentMesh: Color      { Color("AccentMesh") }
 
     // ── Theme backgrounds ─────────────────────────────────────────────────────

@@ -10,12 +10,13 @@ struct ThemedBackgroundModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .background(
-                ZStack(alignment: .top) {
+                ZStack {
                     theme.backgroundColor
-                    LinearGradient(
-                        colors: [theme.accentColor.opacity(0.15), Color.clear],
-                        startPoint: .top,
-                        endPoint: UnitPoint(x: 0.5, y: 0.4)
+                    EllipticalGradient(
+                        colors: [theme.accentColor.opacity(0.10), Color.clear],
+                        center: UnitPoint(x: 0.5, y: -0.1),
+                        startRadiusFraction: 0,
+                        endRadiusFraction: 0.7
                     )
                 }
                 .ignoresSafeArea()

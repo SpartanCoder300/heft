@@ -5,7 +5,7 @@ import SwiftUI
 enum AccentTheme: String, CaseIterable, Identifiable {
     case midnight
     case graphite
-    case obsidian
+    case ember
     case mesh           // Pro only — placeholder
 
     var id: String { rawValue }
@@ -14,7 +14,7 @@ enum AccentTheme: String, CaseIterable, Identifiable {
         switch self {
         case .midnight: "Midnight"
         case .graphite: "Graphite"
-        case .obsidian: "Obsidian"
+        case .ember:    "Ember"
         case .mesh:     "Dynamic Mesh"
         }
     }
@@ -23,7 +23,7 @@ enum AccentTheme: String, CaseIterable, Identifiable {
         switch self {
         case .midnight: Color("Accent")
         case .graphite: Color("AccentGraphite")
-        case .obsidian: Color("AccentObsidian")
+        case .ember:    Color("AccentEmber")
         case .mesh:     Color("AccentMesh")
         }
     }
@@ -32,7 +32,7 @@ enum AccentTheme: String, CaseIterable, Identifiable {
         switch self {
         case .midnight: Color("BackgroundMidnight")
         case .graphite: Color("BackgroundGraphite")
-        case .obsidian: Color("BackgroundObsidian")
+        case .ember:    Color("BackgroundEmber")
         case .mesh:     Color("BackgroundMidnight")
         }
     }
