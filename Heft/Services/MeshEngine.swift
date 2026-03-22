@@ -55,6 +55,10 @@ final class MeshEngine {
             transitionDuration = MeshTheme.transitionDuration(for: .base)
             colors = MeshTheme.base(intensity: sessionIntensity)
 
+        case .workoutStarted:
+            transitionDuration = MeshTheme.transitionDuration(for: .workoutStarted)
+            colors = MeshTheme.started
+
         case .setLogged:
             transitionDuration = MeshTheme.transitionDuration(for: .setLogged)
             colors = MeshTheme.pulse

@@ -112,6 +112,14 @@ enum MeshTheme {
 
     // MARK: - State Color Arrays (two-source lighting maintained)
 
+    /// Workout started — all lights come on simultaneously. Even illumination,
+    /// no directional bias. Settles back to two-source base over 1.5s.
+    static let started: [Color] = [
+        iron2, iron4, iron2,
+        iron3, iron5, iron3,
+        iron2, iron4, iron2,
+    ]
+
     /// Set logged — overhead lights blast, reflection surges, whole room wakes up.
     static let pulse: [Color] = [
         iron2, iron6, iron2,
@@ -145,7 +153,8 @@ enum MeshTheme {
     /// Duration for each state transition. Animation is applied at the view layer.
     static func transitionDuration(for state: MeshState) -> TimeInterval {
         switch state {
-        case .base:            return 1.0
+        case .base:            return 1.5
+        case .workoutStarted:  return 0.5   // deliberate build, not a snap
         case .setLogged:       return 0.15
         case .prBloom:         return 0.20   // stage 1 — prSettle handled separately
         case .workoutComplete: return 0.8
@@ -156,9 +165,10 @@ enum MeshTheme {
     static let prSettle: TimeInterval = 1.20
 }
 
-/// Three workout events + base. Nothing else.
+/// Four workout events + base. Nothing else.
 enum MeshState: Hashable {
     case base
+    case workoutStarted
     case setLogged
     case prBloom
     case workoutComplete

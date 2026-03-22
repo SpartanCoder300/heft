@@ -10,6 +10,7 @@ struct AppView: View {
 
     @State private var meshEngine = MeshEngine()
     @State private var setLoggedTask: Task<Void, Never>?
+    @State private var workoutStartTask: Task<Void, Never>?
 
     var body: some View {
         @Bindable var appState = appState
@@ -74,9 +75,22 @@ struct AppView: View {
                 }
             }
         }
-        // ── Reset intensity when workout ends ─────────────────────────────────
+        // ── Workout start/end: pulse + haptic ────────────────────────────────
         .onChange(of: appState.workout.hasActiveWorkout) { _, isActive in
-            if !isActive { meshEngine.updateIntensity(0, pulse: false) }
+            if isActive {
+                guard appState.accentTheme == .mesh else { return }
+                playWorkoutStartHaptic()
+                workoutStartTask?.cancel()
+                meshEngine.state = .workoutStarted
+                workoutStartTask = Task {
+                    try? await Task.sleep(for: .milliseconds(1000))
+                    guard !Task.isCancelled else { return }
+                    meshEngine.state = derivedMeshState
+                }
+            } else {
+                workoutStartTask?.cancel()
+                meshEngine.updateIntensity(0, pulse: false)
+            }
         }
         // ── PR & complete haptics ─────────────────────────────────────────────
         .onChange(of: meshEngine.state) { _, newState in
@@ -99,6 +113,15 @@ struct AppView: View {
         if vm.showingPRMoment != nil { return .prBloom }
         if vm.isAllSetsLogged { return .workoutComplete }
         return .base
+    }
+
+    /// Two beats — medium then heavy — like a starting signal.
+    private func playWorkoutStartHaptic() {
+        Task {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            try? await Task.sleep(for: .milliseconds(90))
+            UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+        }
     }
 
     /// Three ascending impacts timed to the amber flood-in.
