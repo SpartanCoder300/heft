@@ -214,7 +214,7 @@ private struct SetRow: View {
             Text(displayText)
                 .font(.system(size: 16, weight: .medium, design: .rounded))
                 .monospacedDigit()
-                .foregroundStyle(isLogged ? Color.heftGreen : Color.textPrimary)
+                .foregroundStyle(isLogged ? (isPR ? Color.heftAmber : Color.heftGreen) : Color.textPrimary)
                 .contentTransition(.numericText())
                 .animation(Motion.standardSpring, value: weightText)
                 .animation(Motion.standardSpring, value: repsText)
