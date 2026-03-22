@@ -107,12 +107,24 @@ struct ActiveWorkoutView: View {
                                     .fontWeight(.semibold)
                                     .foregroundStyle(Color.heftGreen)
                             }
-                        } else if let focus = vm.currentFocus {
+                        } else if let focus = vm.currentFocus,
+                                  vm.draftExercises.indices.contains(focus.exerciseIndex),
+                                  vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex) {
                             let exercise = vm.draftExercises[focus.exerciseIndex]
                             CompactStepper(
                                 text: Binding(
-                                    get: { vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].weightText },
-                                    set: { vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].weightText = $0 }
+                                    get: {
+                                        guard vm.draftExercises.indices.contains(focus.exerciseIndex),
+                                              vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex)
+                                        else { return "" }
+                                        return vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].weightText
+                                    },
+                                    set: {
+                                        guard vm.draftExercises.indices.contains(focus.exerciseIndex),
+                                              vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex)
+                                        else { return }
+                                        vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].weightText = $0
+                                    }
                                 ),
                                 unit: "lbs",
                                 step: exercise.weightIncrement,
@@ -124,8 +136,18 @@ struct ActiveWorkoutView: View {
                             .frame(maxWidth: .infinity)
                             CompactStepper(
                                 text: Binding(
-                                    get: { vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].repsText },
-                                    set: { vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].repsText = $0 }
+                                    get: {
+                                        guard vm.draftExercises.indices.contains(focus.exerciseIndex),
+                                              vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex)
+                                        else { return "" }
+                                        return vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].repsText
+                                    },
+                                    set: {
+                                        guard vm.draftExercises.indices.contains(focus.exerciseIndex),
+                                              vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex)
+                                        else { return }
+                                        vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].repsText = $0
+                                    }
                                 ),
                                 unit: "reps",
                                 step: 1,

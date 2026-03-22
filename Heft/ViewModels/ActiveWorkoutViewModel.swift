@@ -250,6 +250,11 @@ final class ActiveWorkoutViewModel {
               draftExercises[eIdx].sets.indices.contains(sIdx),
               !draftExercises[eIdx].sets[sIdx].isLogged else { return }
         draftExercises[eIdx].sets.remove(at: sIdx)
+        // If that was the last set, remove the exercise entirely to avoid a
+        // zombie card with zero rows that isAllSetsLogged treats as complete.
+        if draftExercises[eIdx].sets.isEmpty {
+            removeExercise(at: eIdx)
+        }
     }
 
     func unlogSet(exerciseIndex eIdx: Int, setIndex sIdx: Int) {
@@ -398,7 +403,7 @@ final class ActiveWorkoutViewModel {
     func startRestTimer(duration: TimeInterval) {
         zeroTask?.cancel()
         restTimer.start(duration: duration)
-        let deadline = restTimer.targetEndDate!
+        guard let deadline = restTimer.targetEndDate else { return }
         zeroTask = Task { @MainActor [weak self] in
             guard let self else { return }
             let delay = deadline.timeIntervalSinceNow
@@ -461,7 +466,10 @@ final class ActiveWorkoutViewModel {
     /// The next unlogged set for the rest timer card — same position as `autoFocus`
     /// so the command bar and rest timer always agree on what's coming next.
     var nextUnloggedFocus: (exerciseIndex: Int, setIndex: Int, weightText: String, repsText: String, exerciseName: String, totalSets: Int)? {
-        guard let f = autoFocus else { return nil }
+        guard let f = autoFocus,
+              draftExercises.indices.contains(f.exerciseIndex),
+              draftExercises[f.exerciseIndex].sets.indices.contains(f.setIndex)
+        else { return nil }
         let set = draftExercises[f.exerciseIndex].sets[f.setIndex]
         return (
             exerciseIndex: f.exerciseIndex,
@@ -474,9 +482,10 @@ final class ActiveWorkoutViewModel {
     }
 
     /// True when every set across all exercises is logged. Drives auto-complete.
+    /// Requires each exercise to have at least one set — empty exercises are never "done".
     var isAllSetsLogged: Bool {
         !draftExercises.isEmpty &&
-        draftExercises.allSatisfy { $0.sets.allSatisfy { $0.isLogged } }
+        draftExercises.allSatisfy { !$0.sets.isEmpty && $0.sets.allSatisfy { $0.isLogged } }
     }
 
     @discardableResult
