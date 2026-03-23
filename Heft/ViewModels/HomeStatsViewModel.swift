@@ -10,6 +10,7 @@ final class HomeStatsViewModel {
     private(set) var streakLabel: String = "—"
     private(set) var thisWeekLabel: String = "—"
     private(set) var prCountLabel: String = "—"
+    private(set) var featuredRoutine: FeaturedRoutineSuggestion? = nil
 
     private var refreshTask: Task<Void, Never>?
 
@@ -20,15 +21,17 @@ final class HomeStatsViewModel {
 
     private func refreshStats(container: ModelContainer) async {
         let actor = HomeStatsActor(modelContainer: container)
-        async let streak = actor.currentStreak()
+        async let streak   = actor.currentStreak()
         async let thisWeek = actor.sessionCountThisWeek()
-        async let prs = actor.prCountThisWeek()
+        async let prs      = actor.prCountThisWeek()
+        async let featured = actor.featuredRoutine()
 
-        let (s, w, p) = await (streak, thisWeek, prs)
+        let (s, w, p, f) = await (streak, thisWeek, prs, featured)
         guard !Task.isCancelled else { return }
 
-        streakLabel = s > 0 ? "\(s)" : "—"
-        thisWeekLabel = w > 0 ? "\(w)" : "—"
-        prCountLabel = p > 0 ? "\(p)" : "—"
+        streakLabel     = s > 0 ? "\(s)" : "—"
+        thisWeekLabel   = w > 0 ? "\(w)" : "—"
+        prCountLabel    = p > 0 ? "\(p)" : "—"
+        featuredRoutine = f
     }
 }

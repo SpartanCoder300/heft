@@ -52,6 +52,7 @@ struct HomeRootView: View {
                 HomeRoutinesSection(
                     routines: sortedRoutines,
                     avgMinutes: routineAvgMinutes,
+                    featured: stats.featuredRoutine,
                     onStart: { id in
                         appState.workout.startWorkout(routineID: id, modelContext: modelContext)
                     },

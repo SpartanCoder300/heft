@@ -6,6 +6,7 @@ import SwiftData
 struct HomeRoutinesSection: View {
     let routines: [RoutineTemplate]
     let avgMinutes: [UUID: Int]
+    let featured: FeaturedRoutineSuggestion?
     let onStart: (UUID) -> Void
     let onEdit: (RoutineTemplate) -> Void
     let onNew: () -> Void
@@ -18,7 +19,18 @@ struct HomeRoutinesSection: View {
             if routines.isEmpty {
                 EmptyRoutinesPrompt(onTap: onNew)
             } else {
-                ForEach(routines) { routine in
+                // Featured card appears above the full list when a suggestion exists
+                if let featured,
+                   let featuredRoutine = routines.first(where: { $0.id == featured.routineID }) {
+                    FeaturedRoutineCard(
+                        suggestion: featured,
+                        avgMinutes: avgMinutes[featured.routineID],
+                        onTap: { onStart(featured.routineID) },
+                        onEdit: { onEdit(featuredRoutine) }
+                    )
+                }
+
+                ForEach(routines.filter { $0.id != featured?.routineID }) { routine in
                     RoutineListRow(
                         routine: routine,
                         avgMinutes: avgMinutes[routine.id],
@@ -37,6 +49,93 @@ struct HomeRoutinesSection: View {
                     .padding(.vertical, Spacing.xs)
             }
             .buttonStyle(.plain)
+        }
+    }
+}
+
+// MARK: - Featured Routine Card
+
+private struct FeaturedRoutineCard: View {
+    let suggestion: FeaturedRoutineSuggestion
+    let avgMinutes: Int?
+    let onTap: () -> Void
+    let onEdit: () -> Void
+
+    @Environment(\.heftTheme) private var theme
+    @Environment(\.heftCardMaterial) private var cardMaterial
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+
+                // Header row: "UP NEXT" label + optional "Due" badge
+                HStack(spacing: Spacing.xs) {
+                    Text("Up Next")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(theme.accentColor)
+                        .textCase(.uppercase)
+                        .tracking(1.0)
+
+                    Spacer()
+
+                    if suggestion.daysSinceLast >= suggestion.avgIntervalDays {
+                        Text("Due")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(Color.heftGreen)
+                            .textCase(.uppercase)
+                            .tracking(0.8)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(Color.heftGreen.opacity(0.15), in: Capsule())
+                    }
+                }
+
+                // Routine name
+                Text(suggestion.routineName)
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(Color.textPrimary)
+
+                // Detail row
+                HStack(spacing: 0) {
+                    Label("\(suggestion.exerciseCount) exercises", systemImage: "list.bullet")
+                        .foregroundStyle(Color.textMuted)
+                    if let avg = avgMinutes {
+                        Text("  ·  \(avg) min avg")
+                            .foregroundStyle(Color.textMuted)
+                    }
+                    Spacer()
+                    Text(recencyLabel)
+                        .foregroundStyle(Color.textFaint)
+                }
+                .font(.system(size: 12))
+            }
+            .padding(Spacing.md)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(cardMaterial, in: RoundedRectangle(cornerRadius: Radius.medium, style: .continuous))
+            .background(
+                // Accent color wash layered on top of the card material
+                theme.accentColor.opacity(0.10),
+                in: RoundedRectangle(cornerRadius: Radius.medium, style: .continuous)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.medium, style: .continuous)
+                    .strokeBorder(theme.accentColor.opacity(0.35), lineWidth: 1)
+            )
+            .proGlass()
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button { onEdit() } label: {
+                Label("Edit Routine", systemImage: "pencil")
+            }
+        }
+    }
+
+    private var recencyLabel: String {
+        switch suggestion.daysSinceLast {
+        case 0:  return "Done today"
+        case 1:  return "Yesterday · every ~\(suggestion.avgIntervalDays)d"
+        default: return "\(suggestion.daysSinceLast)d ago · every ~\(suggestion.avgIntervalDays)d"
         }
     }
 }
@@ -166,6 +265,7 @@ private struct EmptyRoutinesPrompt: View {
     HomeRoutinesSection(
         routines: [],
         avgMinutes: [:],
+        featured: nil,
         onStart: { _ in },
         onEdit: { _ in },
         onNew: {},
@@ -180,6 +280,7 @@ private struct EmptyRoutinesPrompt: View {
         HomeRoutinesSection(
             routines: [],
             avgMinutes: [:],
+            featured: nil,
             onStart: { _ in },
             onEdit: { _ in },
             onNew: {},
