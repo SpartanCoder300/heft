@@ -16,7 +16,6 @@ struct ExercisePicker: View {
 
     @State private var vm = ExercisePickerViewModel()
 
-    private let recentsColumns = Array(repeating: GridItem(.flexible(), spacing: Spacing.sm), count: 4)
     private let filterChips = ["All"] + allMuscleGroups
 
     var body: some View {
@@ -45,17 +44,20 @@ struct ExercisePicker: View {
                         }
                     }
 
-                    // ── Recents Grid (hidden during search, shown for All + per muscle group) ──
+                    // ── Recents (hidden during search) ──────────────────────────────────────
                     let recents = vm.recentExercises(from: allExercises, muscleGroup: vm.selectedMuscleGroup)
                     if vm.searchText.isEmpty && !recents.isEmpty {
                         VStack(alignment: .leading, spacing: Spacing.sm) {
                             pickerSectionLabel("Recent")
-                            LazyVGrid(columns: recentsColumns, spacing: Spacing.sm) {
-                                ForEach(recents) { exercise in
-                                    RecentTile(exercise: exercise, accentColor: theme.accentColor) {
-                                        select(exercise)
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: Spacing.xs) {
+                                    ForEach(recents) { exercise in
+                                        RecentTile(exercise: exercise) {
+                                            select(exercise)
+                                        }
                                     }
                                 }
+                                .padding(.horizontal, 1) // prevent clipping on glass effect
                             }
                         }
                     }
@@ -129,20 +131,17 @@ struct ExercisePicker: View {
 
 private struct RecentTile: View {
     let exercise: ExerciseDefinition
-    let accentColor: Color
     let onTap: () -> Void
 
     var body: some View {
         Button(action: onTap) {
             Text(exercise.name)
-                .font(.system(size: 11, weight: .medium))
+                .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(Color.textPrimary)
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, minHeight: 80, alignment: .bottomLeading)
-                .padding(Spacing.sm)
-                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: Radius.small, style: .continuous))
+                .lineLimit(1)
+                .padding(.horizontal, Spacing.sm)
+                .padding(.vertical, 9)
+                .background(.thinMaterial, in: Capsule())
         }
         .buttonStyle(.plain)
     }

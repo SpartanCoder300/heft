@@ -200,57 +200,86 @@ struct ActiveWorkoutView: View {
             let exercise = vm.draftExercises[focus.exerciseIndex]
 
             VStack(spacing: 0) {
-                // Row 1: Weight | Reps — fixed height so the card stays compact
+                // Row 1: Weight | Reps (or Duration for timed exercises)
                 HStack(spacing: 0) {
-                    CompactStepper(
-                        text: Binding(
-                            get: {
-                                guard vm.draftExercises.indices.contains(focus.exerciseIndex),
-                                      vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex)
-                                else { return "" }
-                                return vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].weightText
-                            },
-                            set: {
-                                guard vm.draftExercises.indices.contains(focus.exerciseIndex),
-                                      vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex)
-                                else { return }
-                                vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].weightText = $0
-                            }
-                        ),
-                        unit: "lbs",
-                        step: exercise.weightIncrement,
-                        minValue: 0,
-                        maxValue: 999,
-                        isInteger: false,
-                        firstTapDefault: weightDefault(for: exercise.equipmentType)
-                    )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    if !exercise.isTimed {
+                        CompactStepper(
+                            text: Binding(
+                                get: {
+                                    guard vm.draftExercises.indices.contains(focus.exerciseIndex),
+                                          vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex)
+                                    else { return "" }
+                                    return vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].weightText
+                                },
+                                set: {
+                                    guard vm.draftExercises.indices.contains(focus.exerciseIndex),
+                                          vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex)
+                                    else { return }
+                                    vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].weightText = $0
+                                }
+                            ),
+                            unit: "lbs",
+                            step: exercise.weightIncrement,
+                            minValue: 0,
+                            maxValue: 999,
+                            isInteger: false,
+                            firstTapDefault: weightDefault(for: exercise.equipmentType)
+                        )
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                    Divider()
+                        Divider()
+                    }
 
-                    CompactStepper(
-                        text: Binding(
-                            get: {
-                                guard vm.draftExercises.indices.contains(focus.exerciseIndex),
-                                      vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex)
-                                else { return "" }
-                                return vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].repsText
-                            },
-                            set: {
-                                guard vm.draftExercises.indices.contains(focus.exerciseIndex),
-                                      vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex)
-                                else { return }
-                                vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].repsText = $0
-                            }
-                        ),
-                        unit: "reps",
-                        step: 1,
-                        minValue: 0,
-                        maxValue: 50,
-                        isInteger: true,
-                        firstTapDefault: 5
-                    )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    if exercise.isTimed {
+                        // Duration stepper — full width for timed exercises
+                        CompactStepper(
+                            text: Binding(
+                                get: {
+                                    guard vm.draftExercises.indices.contains(focus.exerciseIndex),
+                                          vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex)
+                                    else { return "" }
+                                    return vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].durationText
+                                },
+                                set: {
+                                    guard vm.draftExercises.indices.contains(focus.exerciseIndex),
+                                          vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex)
+                                    else { return }
+                                    vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].durationText = $0
+                                }
+                            ),
+                            unit: "sec",
+                            step: 5,
+                            minValue: 5,
+                            maxValue: 600,
+                            isInteger: true,
+                            firstTapDefault: 30
+                        )
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else {
+                        CompactStepper(
+                            text: Binding(
+                                get: {
+                                    guard vm.draftExercises.indices.contains(focus.exerciseIndex),
+                                          vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex)
+                                    else { return "" }
+                                    return vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].repsText
+                                },
+                                set: {
+                                    guard vm.draftExercises.indices.contains(focus.exerciseIndex),
+                                          vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex)
+                                    else { return }
+                                    vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].repsText = $0
+                                }
+                            ),
+                            unit: "reps",
+                            step: 1,
+                            minValue: 0,
+                            maxValue: 50,
+                            isInteger: true,
+                            firstTapDefault: 5
+                        )
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
                 }
                 .frame(height: 72)
 

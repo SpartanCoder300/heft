@@ -18,6 +18,9 @@ final class ExerciseDefinition {
     /// Optional so lightweight migration succeeds for existing rows (nil → resolvedWeightIncrement
     /// returns the equipment default, preserving correct behaviour without data loss).
     var weightIncrement: Double?
+    /// True for exercises measured by duration (planks, holds) rather than reps.
+    /// Defaults to false — safe lightweight migration for existing records.
+    var isTimed: Bool = false
 
     init(
         id: UUID = UUID(),
@@ -29,7 +32,8 @@ final class ExerciseDefinition {
         currentPR: Double = .zero,
         previousPR: Double = .zero,
         prDate: Date? = nil,
-        weightIncrement: Double? = nil
+        weightIncrement: Double? = nil,
+        isTimed: Bool = false
     ) {
         self.id = id
         self.name = name
@@ -41,6 +45,7 @@ final class ExerciseDefinition {
         self.previousPR = previousPR
         self.prDate = prDate
         self.weightIncrement = weightIncrement
+        self.isTimed = isTimed
     }
 
     /// Effective increment: explicit override if set, otherwise equipment-type default.

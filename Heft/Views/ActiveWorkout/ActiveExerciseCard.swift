@@ -3,6 +3,17 @@
 import SwiftUI
 import SwiftData
 
+// MARK: - Helpers
+
+/// Formats a duration in seconds as "30s" (< 60s) or "1:30" (≥ 60s).
+private func formatDuration(_ seconds: Int) -> String {
+    guard seconds > 0 else { return "—" }
+    if seconds < 60 { return "\(seconds)s" }
+    let m = seconds / 60
+    let s = seconds % 60
+    return s == 0 ? "\(m)m" : "\(m):\(String(format: "%02d", s))"
+}
+
 // MARK: - Active Exercise Card
 
 struct ActiveExerciseCard: View {
@@ -116,6 +127,8 @@ struct ActiveExerciseCard: View {
                     setNumber: sIdx + 1,
                     weightText: set.weightText,
                     repsText: set.repsText,
+                    durationText: set.durationText,
+                    isTimed: exercise.isTimed,
                     setType: set.setType,
                     isLogged: set.isLogged,
                     isFocused: vm.currentFocus == ActiveWorkoutViewModel.SetFocus(
@@ -153,7 +166,12 @@ struct ActiveExerciseCard: View {
     }
 
     private func previousLabel(for exercise: ActiveWorkoutViewModel.DraftExercise) -> String {
-        exercise.previousSets
+        if exercise.isTimed {
+            return exercise.previousSets
+                .map { formatDuration(Int($0.duration ?? 0)) }
+                .joined(separator: "   ")
+        }
+        return exercise.previousSets
             .map { "\(vm.formatWeight($0.weight)) × \($0.reps)" }
             .joined(separator: "   ")
     }
@@ -168,6 +186,8 @@ private struct SetRow: View {
     let setNumber: Int
     let weightText: String
     let repsText: String
+    let durationText: String
+    let isTimed: Bool
     let setType: SetType
     let isLogged: Bool
     let isFocused: Bool
@@ -295,14 +315,18 @@ private struct SetRow: View {
     }
 
     private var displayText: String {
+        if isTimed {
+            let secs = Int(durationText) ?? 0
+            return durationText.isEmpty ? "—" : formatDuration(secs)
+        }
         let w = weightText.isEmpty ? "—" : weightText
         let r = repsText.isEmpty ? "—" : repsText
         return "\(w) × \(r)"
     }
 
-    /// Estimated 1RM label for PR rows. Nil if values can't be parsed or reps is 0.
+    /// Estimated 1RM label for PR rows. Nil for timed exercises or unparseable values.
     private var e1rmLabel: String? {
-        guard isPR,
+        guard isPR, !isTimed,
               let w = Double(weightText), w > 0,
               let r = Int(repsText), r > 0 else { return nil }
         let e1rm = ExerciseDefinition.estimatedOneRepMax(weight: w, reps: r)

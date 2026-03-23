@@ -7,21 +7,30 @@ import SwiftData
 enum ExerciseSeeder {
     static func seedIfNeeded(in context: ModelContext) {
         let fetchDescriptor = FetchDescriptor<ExerciseDefinition>()
-        let existingNames: Set<String>
+        let existing: [ExerciseDefinition]
         if let all = try? context.fetch(fetchDescriptor) {
-            existingNames = Set(all.map { $0.name })
+            existing = all
         } else {
-            existingNames = []
+            existing = []
         }
+        let existingNames = Set(existing.map { $0.name })
 
-        var inserted = false
+        var changed = false
+
         for definition in commonExercises {
-            guard !existingNames.contains(definition.name) else { continue }
-            context.insert(definition)
-            inserted = true
+            if !existingNames.contains(definition.name) {
+                context.insert(definition)
+                changed = true
+            } else if definition.isTimed,
+                      let match = existing.first(where: { $0.name == definition.name }),
+                      !match.isTimed {
+                // Migrate existing record to timed
+                match.isTimed = true
+                changed = true
+            }
         }
 
-        guard inserted else { return }
+        guard changed else { return }
         do {
             try context.save()
         } catch {
@@ -138,11 +147,11 @@ enum ExerciseSeeder {
         ExerciseDefinition(name: "Step-Up",                     muscleGroups: ["Legs"],                        equipmentType: "Dumbbell"),
 
         // MARK: Core
-        ExerciseDefinition(name: "Plank",                       muscleGroups: ["Core"],                        equipmentType: "Bodyweight"),
-        ExerciseDefinition(name: "Side Plank",                  muscleGroups: ["Core"],                        equipmentType: "Bodyweight"),
+        ExerciseDefinition(name: "Plank",                       muscleGroups: ["Core"],                        equipmentType: "Bodyweight", isTimed: true),
+        ExerciseDefinition(name: "Side Plank",                  muscleGroups: ["Core"],                        equipmentType: "Bodyweight", isTimed: true),
         ExerciseDefinition(name: "Hanging Leg Raise",           muscleGroups: ["Core"],                        equipmentType: "Bodyweight"),
         ExerciseDefinition(name: "Ab Wheel Rollout",            muscleGroups: ["Core"],                        equipmentType: "Bodyweight"),
-        ExerciseDefinition(name: "Dead Bug",                    muscleGroups: ["Core"],                        equipmentType: "Bodyweight"),
+        ExerciseDefinition(name: "Dead Bug",                    muscleGroups: ["Core"],                        equipmentType: "Bodyweight", isTimed: true),
         ExerciseDefinition(name: "Dragon Flag",                 muscleGroups: ["Core"],                        equipmentType: "Bodyweight"),
         ExerciseDefinition(name: "Decline Crunch",              muscleGroups: ["Core"],                        equipmentType: "Bodyweight"),
         ExerciseDefinition(name: "Russian Twist",               muscleGroups: ["Core"],                        equipmentType: "Bodyweight"),

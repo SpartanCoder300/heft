@@ -14,6 +14,8 @@ final class ActiveWorkoutViewModel {
         var id = UUID()
         var weightText: String = ""
         var repsText: String = ""
+        /// Seconds as a string, e.g. "30". Non-empty only when the parent exercise `isTimed`.
+        var durationText: String = ""
         var setType: SetType = .normal
         var isLogged: Bool = false
         var loggedRecord: SetRecord? = nil
@@ -23,6 +25,7 @@ final class ActiveWorkoutViewModel {
     struct PreviousSet {
         var weight: Double
         var reps: Int
+        var duration: Double? = nil
     }
 
     struct DraftExercise: Identifiable {
@@ -30,6 +33,8 @@ final class ActiveWorkoutViewModel {
         var exerciseName: String
         var equipmentType: String = ""
         var weightIncrement: Double = 2.5
+        /// True when sets are measured by duration rather than reps (e.g. planks).
+        var isTimed: Bool = false
         var sets: [DraftSet]
         var previousSets: [PreviousSet] = []
         var snapshot: ExerciseSnapshot? = nil
@@ -172,10 +177,17 @@ final class ActiveWorkoutViewModel {
             .sorted { $0.order < $1.order }
             .compactMap { entry in
                 guard let def = entry.exerciseDefinition else { return nil }
-                let sets = (0 ..< entry.targetSets).map { _ in
-                    DraftSet(repsText: "\(entry.targetRepsMin)")
+                let isTimed = def.isTimed
+                let sets = (0 ..< entry.targetSets).map { _ -> DraftSet in
+                    var s = DraftSet()
+                    if isTimed {
+                        s.durationText = "30"
+                    } else {
+                        s.repsText = "\(entry.targetRepsMin)"
+                    }
+                    return s
                 }
-                return DraftExercise(exerciseName: def.name, equipmentType: def.equipmentType, weightIncrement: def.resolvedWeightIncrement, sets: sets, restSeconds: entry.restSeconds)
+                return DraftExercise(exerciseName: def.name, equipmentType: def.equipmentType, weightIncrement: def.resolvedWeightIncrement, isTimed: isTimed, sets: sets, restSeconds: entry.restSeconds)
             }
     }
 
@@ -190,8 +202,13 @@ final class ActiveWorkoutViewModel {
         draftExercises = session.exercises
             .sorted { $0.order < $1.order }
             .map { snap in
+                let name = snap.exerciseName
+                let defDescriptor = FetchDescriptor<ExerciseDefinition>(
+                    predicate: #Predicate { $0.name == name }
+                )
+                let isTimed = (try? modelContext.fetch(defDescriptor))?.first?.isTimed ?? false
                 // Start with one blank set; applyPreviousPerformance will expand and fill it.
-                DraftExercise(exerciseName: snap.exerciseName, sets: [DraftSet()], restSeconds: 90)
+                return DraftExercise(exerciseName: name, isTimed: isTimed, sets: [DraftSet()], restSeconds: 90)
             }
     }
 
@@ -214,7 +231,7 @@ final class ActiveWorkoutViewModel {
         let sortedSets = latest.sets.sorted { $0.loggedAt < $1.loggedAt }
         guard !sortedSets.isEmpty else { return }
 
-        exercise.previousSets = sortedSets.map { PreviousSet(weight: $0.weight, reps: $0.reps) }
+        exercise.previousSets = sortedSets.map { PreviousSet(weight: $0.weight, reps: $0.reps, duration: $0.duration) }
 
         // If this exercise was added ad-hoc (starts with 1 blank set), expand to match
         // last session's set count so the user doesn't have to tap "Add Set" repeatedly.
@@ -224,11 +241,15 @@ final class ActiveWorkoutViewModel {
         }
 
         // Auto-fill: seed each draft set from the matching position, else last set.
-        // Last session's actual reps always win — they're more accurate than the routine target.
+        // Last session's actual reps/duration always win — more accurate than the routine target.
         for i in exercise.sets.indices {
             let source = i < sortedSets.count ? sortedSets[i] : sortedSets[sortedSets.count - 1]
             exercise.sets[i].weightText = formatWeight(source.weight)
-            exercise.sets[i].repsText = "\(source.reps)"
+            if exercise.isTimed {
+                exercise.sets[i].durationText = source.duration.map { "\(Int($0))" } ?? "30"
+            } else {
+                exercise.sets[i].repsText = "\(source.reps)"
+            }
             exercise.sets[i].setType = source.setType
         }
     }
@@ -240,7 +261,8 @@ final class ActiveWorkoutViewModel {
         let def = (try? modelContext.fetch(descriptor))?.first
         let equipmentType = def?.equipmentType ?? ""
         let weightIncrement = def?.weightIncrement ?? ExerciseDefinition.defaultIncrement(for: equipmentType)
-        var draft = DraftExercise(exerciseName: name, equipmentType: equipmentType, weightIncrement: weightIncrement, sets: [DraftSet()])
+        let isTimed = def?.isTimed ?? false
+        var draft = DraftExercise(exerciseName: name, equipmentType: equipmentType, weightIncrement: weightIncrement, isTimed: isTimed, sets: [DraftSet()])
         applyPreviousPerformance(to: &draft)
         draftExercises.append(draft)
     }
@@ -254,6 +276,7 @@ final class ActiveWorkoutViewModel {
         let above = draftExercises[eIdx].sets[sIdx - 1]
         draftExercises[eIdx].sets[sIdx].weightText = above.weightText
         draftExercises[eIdx].sets[sIdx].repsText = above.repsText
+        draftExercises[eIdx].sets[sIdx].durationText = above.durationText
         UISelectionFeedbackGenerator().selectionChanged()
     }
 
@@ -292,6 +315,7 @@ final class ActiveWorkoutViewModel {
         if let last = draftExercises[index].sets.last {
             new.weightText = last.weightText
             new.repsText = last.repsText
+            new.durationText = last.durationText
             new.setType = last.setType
         }
         draftExercises[index].sets.append(new)
@@ -327,6 +351,7 @@ final class ActiveWorkoutViewModel {
         if let last = draftExercises[index].sets.last {
             dropset.weightText = last.weightText
             dropset.repsText = last.repsText
+            dropset.durationText = last.durationText
         }
         draftExercises[index].sets.append(dropset)
     }
@@ -337,8 +362,10 @@ final class ActiveWorkoutViewModel {
               !draftExercises[eIdx].sets[sIdx].isLogged else { return }
 
         let draft = draftExercises[eIdx].sets[sIdx]
+        let isTimed = draftExercises[eIdx].isTimed
         let weight = Double(draft.weightText) ?? 0
-        let reps = Int(draft.repsText) ?? 0
+        let reps = isTimed ? 0 : (Int(draft.repsText) ?? 0)
+        let duration: Double? = isTimed ? Double(draft.durationText) : nil
 
         let currentSession = ensureSession()
         let snapshot = ensureSnapshot(exerciseIndex: eIdx, session: currentSession)
@@ -347,14 +374,15 @@ final class ActiveWorkoutViewModel {
             weight: weight,
             reps: reps,
             setType: draft.setType,
+            duration: duration,
             exerciseSnapshot: snapshot
         )
         modelContext.insert(record)
         snapshot.sets.append(record)
 
-        // PR check must run before set is marked logged (synchronous, main actor)
+        // PR check skipped for timed exercises — duration-based PRs aren't tracked here
         let isNewPR: Bool
-        if draft.setType != .warmup {
+        if draft.setType != .warmup && !isTimed {
             isNewPR = checkPR(exerciseName: draftExercises[eIdx].exerciseName, weight: weight, reps: reps, record: record)
         } else {
             isNewPR = false
@@ -379,14 +407,21 @@ final class ActiveWorkoutViewModel {
             firePRCelebration()
         }
 
-        // Propagate weight + reps forward to subsequent blank sets in the same exercise
+        // Propagate weight + reps/duration forward to subsequent blank sets in the same exercise
         for i in draftExercises[eIdx].sets.indices where i > sIdx {
             guard !draftExercises[eIdx].sets[i].isLogged else { continue }
-            let isBlank = draftExercises[eIdx].sets[i].weightText.isEmpty ||
-                          draftExercises[eIdx].sets[i].weightText == "0"
-            guard isBlank else { continue }
-            draftExercises[eIdx].sets[i].weightText = draft.weightText
-            draftExercises[eIdx].sets[i].repsText = draft.repsText
+            if isTimed {
+                let isBlank = draftExercises[eIdx].sets[i].durationText.isEmpty ||
+                              draftExercises[eIdx].sets[i].durationText == "0"
+                guard isBlank else { continue }
+                draftExercises[eIdx].sets[i].durationText = draft.durationText
+            } else {
+                let isBlank = draftExercises[eIdx].sets[i].weightText.isEmpty ||
+                              draftExercises[eIdx].sets[i].weightText == "0"
+                guard isBlank else { continue }
+                draftExercises[eIdx].sets[i].weightText = draft.weightText
+                draftExercises[eIdx].sets[i].repsText = draft.repsText
+            }
         }
 
         // Clear manual focus — auto-advance takes over
@@ -477,19 +512,22 @@ final class ActiveWorkoutViewModel {
 
     /// The next unlogged set for the rest timer card — same position as `autoFocus`
     /// so the command bar and rest timer always agree on what's coming next.
-    var nextUnloggedFocus: (exerciseIndex: Int, setIndex: Int, weightText: String, repsText: String, exerciseName: String, totalSets: Int)? {
+    var nextUnloggedFocus: (exerciseIndex: Int, setIndex: Int, weightText: String, repsText: String, durationText: String, isTimed: Bool, exerciseName: String, totalSets: Int)? {
         guard let f = autoFocus,
               draftExercises.indices.contains(f.exerciseIndex),
               draftExercises[f.exerciseIndex].sets.indices.contains(f.setIndex)
         else { return nil }
         let set = draftExercises[f.exerciseIndex].sets[f.setIndex]
+        let exercise = draftExercises[f.exerciseIndex]
         return (
             exerciseIndex: f.exerciseIndex,
             setIndex: f.setIndex,
             weightText: set.weightText,
             repsText: set.repsText,
-            exerciseName: draftExercises[f.exerciseIndex].exerciseName,
-            totalSets: draftExercises[f.exerciseIndex].sets.count
+            durationText: set.durationText,
+            isTimed: exercise.isTimed,
+            exerciseName: exercise.exerciseName,
+            totalSets: exercise.sets.count
         )
     }
 
