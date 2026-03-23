@@ -47,6 +47,12 @@ struct ActiveExerciseCard: View {
                     }
 
                     Button {
+                        vm.addSet(toExerciseAt: exerciseIndex)
+                    } label: {
+                        Label("Add Set", systemImage: "plus")
+                    }
+
+                    Button {
                         vm.addDropset(toExerciseAt: exerciseIndex)
                     } label: {
                         Label("Add Dropset", systemImage: "arrow.turn.down.right")
@@ -104,14 +110,6 @@ struct ActiveExerciseCard: View {
 
             Divider().overlay(Color.white.opacity(0.07))
 
-            // ── Set type legend ───────────────────────────────────────
-            Text("W warmup  ·  N normal  ·  D dropset")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(Color.textFaint)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, Spacing.md)
-                .padding(.top, Spacing.xs)
-
             // ── Set rows ──────────────────────────────────────────────
             ForEach(Array(exercise.sets.enumerated()), id: \.element.id) { sIdx, set in
                 SetRow(
@@ -141,17 +139,6 @@ struct ActiveExerciseCard: View {
                 }
             }
 
-            Divider().overlay(Color.white.opacity(0.07))
-
-            // ── Add Set ───────────────────────────────────────────────
-            Button { vm.addSet(toExerciseAt: exerciseIndex) } label: {
-                Label("Add Set", systemImage: "plus")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(theme.accentColor)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, Spacing.sm)
-            }
-            .buttonStyle(.plain)
         }
         .background(cardMaterial, in: RoundedRectangle(cornerRadius: Radius.medium, style: .continuous))
         .proGlass(exerciseIndex: exerciseIndex)
@@ -233,7 +220,9 @@ private struct SetRow: View {
             Spacer()
 
             // Log / status button
-            Button(action: onLog) {
+            // Unlogged: tap to log immediately (values pre-filled from last session).
+            // Logged: tap to undo — the checkmark is the natural undo target.
+            Button(action: isLogged ? onUndo : onLog) {
                 Image(systemName: isLogged ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 20))
                     .foregroundStyle(isLogged ? Color.heftGreen : Color.textFaint.opacity(0.4))
@@ -241,7 +230,6 @@ private struct SetRow: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .disabled(isLogged)
         }
         .scaleEffect(rowScale)
         .padding(.vertical, 4)

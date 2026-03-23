@@ -94,75 +94,9 @@ struct ActiveWorkoutView: View {
                             .accessibilityLabel("Add exercise")
                         }
                     }
-                    ToolbarItemGroup(placement: .bottomBar) {
-                        if vm.isAllSetsLogged {
-                            Button {
-                                if let session = vm.endWorkout() {
-                                    completedSession = session
-                                } else {
-                                    onDismiss()
-                                }
-                            } label: {
-                                Label("Complete Workout", systemImage: "checkmark.circle.fill")
-                                    .fontWeight(.semibold)
-                                    .foregroundStyle(Color.heftGreen)
-                            }
-                        } else if let focus = vm.currentFocus,
-                                  vm.draftExercises.indices.contains(focus.exerciseIndex),
-                                  vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex) {
-                            let exercise = vm.draftExercises[focus.exerciseIndex]
-                            CompactStepper(
-                                text: Binding(
-                                    get: {
-                                        guard vm.draftExercises.indices.contains(focus.exerciseIndex),
-                                              vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex)
-                                        else { return "" }
-                                        return vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].weightText
-                                    },
-                                    set: {
-                                        guard vm.draftExercises.indices.contains(focus.exerciseIndex),
-                                              vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex)
-                                        else { return }
-                                        vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].weightText = $0
-                                    }
-                                ),
-                                unit: "lbs",
-                                step: exercise.weightIncrement,
-                                minValue: 0,
-                                maxValue: 999,
-                                isInteger: false,
-                                firstTapDefault: weightDefault(for: exercise.equipmentType)
-                            )
-                            .frame(maxWidth: .infinity)
-                            CompactStepper(
-                                text: Binding(
-                                    get: {
-                                        guard vm.draftExercises.indices.contains(focus.exerciseIndex),
-                                              vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex)
-                                        else { return "" }
-                                        return vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].repsText
-                                    },
-                                    set: {
-                                        guard vm.draftExercises.indices.contains(focus.exerciseIndex),
-                                              vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex)
-                                        else { return }
-                                        vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].repsText = $0
-                                    }
-                                ),
-                                unit: "reps",
-                                step: 1,
-                                minValue: 0,
-                                maxValue: 50,
-                                isInteger: true,
-                                firstTapDefault: 5
-                            )
-                            Button { vm.logFocusedSet() } label: {
-                                Image(systemName: "checkmark")
-                                    .font(.body.weight(.semibold))
-                                    .foregroundStyle(theme.accentColor)
-                            }
-                        }
-                    }
+                }
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    commandPanel(vm: vm)
                 }
                 .alert("End Workout?", isPresented: $vm.isShowingEndConfirm) {
                     Button("Finish") {
@@ -223,6 +157,135 @@ struct ActiveWorkoutView: View {
         }
         .animation(Motion.standardSpring, value: vm.showingPRMoment != nil)
     }
+
+    // MARK: - Command Panel
+
+    @ViewBuilder
+    private func commandPanel(vm: ActiveWorkoutViewModel) -> some View {
+        if vm.isAllSetsLogged {
+            // ── Complete Workout ───────────────────────────────────────────────
+            Button {
+                if let session = vm.endWorkout() {
+                    completedSession = session
+                } else {
+                    onDismiss()
+                }
+            } label: {
+                Label("Complete Workout", systemImage: "checkmark.circle.fill")
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Color.heftGreen)
+                    .padding(.vertical, Spacing.md)
+                    .padding(.horizontal, Spacing.xl)
+            }
+            .buttonStyle(.plain)
+            .glassEffect(in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
+            .padding(.bottom, Spacing.md)
+
+        } else if let focus = vm.currentFocus,
+                  vm.draftExercises.indices.contains(focus.exerciseIndex),
+                  vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex) {
+            // ── Set editing card ───────────────────────────────────────────────
+            let exercise = vm.draftExercises[focus.exerciseIndex]
+
+            VStack(spacing: 0) {
+                // Row 1: Weight | Reps — fixed height so the card stays compact
+                HStack(spacing: 0) {
+                    CompactStepper(
+                        text: Binding(
+                            get: {
+                                guard vm.draftExercises.indices.contains(focus.exerciseIndex),
+                                      vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex)
+                                else { return "" }
+                                return vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].weightText
+                            },
+                            set: {
+                                guard vm.draftExercises.indices.contains(focus.exerciseIndex),
+                                      vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex)
+                                else { return }
+                                vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].weightText = $0
+                            }
+                        ),
+                        unit: "lbs",
+                        step: exercise.weightIncrement,
+                        minValue: 0,
+                        maxValue: 999,
+                        isInteger: false,
+                        firstTapDefault: weightDefault(for: exercise.equipmentType)
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                    Divider()
+
+                    CompactStepper(
+                        text: Binding(
+                            get: {
+                                guard vm.draftExercises.indices.contains(focus.exerciseIndex),
+                                      vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex)
+                                else { return "" }
+                                return vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].repsText
+                            },
+                            set: {
+                                guard vm.draftExercises.indices.contains(focus.exerciseIndex),
+                                      vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex)
+                                else { return }
+                                vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].repsText = $0
+                            }
+                        ),
+                        unit: "reps",
+                        step: 1,
+                        minValue: 0,
+                        maxValue: 50,
+                        isInteger: true,
+                        firstTapDefault: 5
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                .frame(height: 72)
+
+                Divider()
+
+                // Row 2: Set type (left) | Log Set (centered) | mirror spacer (right)
+                HStack(spacing: 0) {
+                    // Left: set type chip — 44pt to match the mirror spacer
+                    SetTypeChip(
+                        setType: vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].setType,
+                        onTap: { vm.cycleSetType(exerciseIndex: focus.exerciseIndex, setIndex: focus.setIndex) }
+                    )
+                    .frame(width: 44)
+
+                    // Centre: Log Set fills remaining space, text naturally centred
+                    Button { vm.logFocusedSet() } label: {
+                        HStack(spacing: Spacing.xs) {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 15, weight: .bold))
+                            Text("Log Set")
+                                .font(.system(size: 16, weight: .semibold))
+                        }
+                        .foregroundStyle(theme.accentColor)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+
+                    // Right mirror: same width as chip so the label stays centred
+                    Color.clear.frame(width: 44)
+                }
+                .frame(height: 52)
+            }
+            .glassEffect(in: RoundedRectangle(cornerRadius: Radius.large, style: .continuous))
+            .padding(.horizontal, Spacing.md)
+            .padding(.bottom, Spacing.md)
+
+        } else if !vm.draftExercises.isEmpty {
+            // ── No focus — prompt user ─────────────────────────────────────────
+            Text("Tap a set to edit")
+                .font(.subheadline)
+                .foregroundStyle(Color.textFaint)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, Spacing.sm)
+                .padding(.bottom, Spacing.md)
+        }
+    }
 }
 
 // MARK: - Helpers
@@ -273,12 +336,65 @@ struct EmptyWorkoutPrompt: View {
     }
 }
 
-#Preview("Empty workout") {
+// MARK: - Previews
+
+private func previewVM(allLogged: Bool = false) -> ActiveWorkoutViewModel {
+    let vm = ActiveWorkoutViewModel(
+        modelContext: PersistenceController.previewContainer.mainContext,
+        pendingRoutineID: nil
+    )
+    let sets: (String, String) -> [ActiveWorkoutViewModel.DraftSet] = { weight, reps in
+        (0..<3).map { _ in
+            var s = ActiveWorkoutViewModel.DraftSet()
+            s.weightText = weight
+            s.repsText = reps
+            s.isLogged = allLogged
+            return s
+        }
+    }
+    vm.draftExercises = [
+        ActiveWorkoutViewModel.DraftExercise(
+            exerciseName: "Bench Press",
+            equipmentType: "Barbell",
+            weightIncrement: 5,
+            sets: sets("135", "8")
+        ),
+        ActiveWorkoutViewModel.DraftExercise(
+            exerciseName: "Squat",
+            equipmentType: "Barbell",
+            weightIncrement: 5,
+            sets: sets("225", "5")
+        ),
+    ]
+    return vm
+}
+
+#Preview("Editing panel") {
+    ActiveWorkoutView(vm: previewVM(), onDismiss: {})
+        .previewEnvironments()
+}
+
+#Preview("Complete Workout panel") {
+    ActiveWorkoutView(vm: previewVM(allLogged: true), onDismiss: {})
+        .previewEnvironments()
+}
+
+#Preview("Empty") {
     let vm = ActiveWorkoutViewModel(
         modelContext: PersistenceController.previewContainer.mainContext,
         pendingRoutineID: nil
     )
     ActiveWorkoutView(vm: vm, onDismiss: {})
-        .environment(AppState())
-        .modelContainer(PersistenceController.previewContainer)
+        .previewEnvironments()
+}
+
+private extension View {
+    func previewEnvironments() -> some View {
+        self
+            .environment(AppState())
+            .environment(MeshEngine())
+            .environment(\.heftTheme, .midnight)
+            .environment(\.heftCardMaterial, .regularMaterial)
+            .modelContainer(PersistenceController.previewContainer)
+    }
 }
