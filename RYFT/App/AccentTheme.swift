@@ -15,7 +15,7 @@ enum AccentTheme: String, CaseIterable, Identifiable {
         case .midnight: "Midnight"
         case .graphite: "Graphite"
         case .ember:    "Ember"
-        case .mesh:     "Dynamic Mesh"
+        case .mesh:     "Lux"
         }
     }
 
