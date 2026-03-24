@@ -2,6 +2,7 @@
 
 import SwiftUI
 import SwiftData
+import AudioToolbox
 
 struct ActiveWorkoutView: View {
     let vm: ActiveWorkoutViewModel
@@ -66,45 +67,32 @@ struct ActiveWorkoutView: View {
                             .foregroundStyle(Color.ryftRed)
                     }
                     ToolbarItem(placement: .principal) {
-                        TimelineView(.periodic(from: .now, by: 0.25)) { ctx in
-                            HStack(spacing: 0) {
-                                // Elapsed workout time — always visible
-                                Text(vm.elapsedLabel(at: ctx.date))
-                                    .foregroundStyle(Color.textPrimary)
-
-                                // Rest countdown — only when active
-                                if vm.restTimer.isActive {
-                                    let phase = vm.restTimer.tintColor(at: ctx.date)
-                                    let restLabel = vm.restTimer.remainingLabel(at: ctx.date) ?? "0:00"
-                                    Text("  ·  ")
-                                        .foregroundStyle(Color.textFaint)
-                                    Text(restLabel)
-                                        .foregroundStyle(restPhaseColor(phase))
-                                        .contentTransition(.numericText(countsDown: true))
-                                }
-                            }
-                            .font(.system(size: 15, weight: .semibold, design: .monospaced))
-                            .monospacedDigit()
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .glassEffect(in: Capsule())
-                            .sensoryFeedback(.impact(weight: .heavy, intensity: 1.0), trigger: vm.restTimer.pulseCount)
-                            .animation(Motion.standardSpring, value: vm.restTimer.isActive)
+                        TimelineView(.periodic(from: .now, by: 1.0)) { ctx in
+                            Text(vm.elapsedLabel(at: ctx.date))
+                                .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                                .monospacedDigit()
+                                .foregroundStyle(Color.textPrimary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .glassEffect(in: Capsule())
                         }
                     }
                     ToolbarItem(placement: .topBarTrailing) {
-                        if vm.restTimer.isActive {
-                            Button("Skip") { vm.restTimer.skip() }
-                                .fontWeight(.semibold)
-                                .foregroundStyle(Color.ryftGreen)
-                        } else {
-                            Button { vm.isShowingExercisePicker = true } label: {
-                                Image(systemName: "plus").fontWeight(.semibold)
-                            }
-                            .accessibilityLabel("Add exercise")
+                        Button { vm.isShowingExercisePicker = true } label: {
+                            Image(systemName: "plus").fontWeight(.semibold)
                         }
+                        .accessibilityLabel("Add exercise")
                     }
                 }
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    if vm.restTimer.isActive {
+                        RestTimerBar(timer: vm.restTimer)
+                            .padding(.horizontal, Spacing.md)
+                            .padding(.vertical, Spacing.sm)
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                    }
+                }
+                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: vm.restTimer.isActive)
                 .safeAreaInset(edge: .bottom, spacing: 0) {
                     commandPanel(vm: vm)
                         .frame(maxWidth: .infinity)
@@ -348,7 +336,115 @@ struct ActiveWorkoutView: View {
     }
 }
 
+// MARK: - Rest Timer Bar
+
+private struct RestTimerBar: View {
+    let timer: RestTimerState
+
+    @State private var adjustTrigger = 0
+    @State private var skipTrigger   = 0
+
+    private let sideWidth:  CGFloat = 56
+    private let skipWidth:  CGFloat = 56
+    private let barHeight:  CGFloat = 64
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 0.25)) { context in
+            let now   = context.date
+            let color = restPhaseColor(timer.tintColor(at: now))
+
+            HStack(spacing: 0) {
+                // Mirror of separator + skip on the right — keeps timer centred
+                Color.clear.frame(width: skipWidth + 1)
+
+                adjustButton(label: "−30s", seconds: -30)
+
+                timerContent(at: now, color: color)
+                    .frame(maxWidth: .infinity)
+
+                adjustButton(label: "+30s", seconds: 30)
+
+                Rectangle()
+                    .fill(.white.opacity(0.10))
+                    .frame(width: 1, height: 20)
+
+                skipButton()
+            }
+            .frame(height: barHeight)
+            .glassEffect(in: RoundedRectangle(cornerRadius: Radius.large,
+                                               style: .continuous))
+            .sensoryFeedback(.selection, trigger: adjustTrigger)
+            .sensoryFeedback(.impact(weight: .medium), trigger: skipTrigger)
+            .sensoryFeedback(.impact(weight: .heavy, intensity: 1.0),
+                             trigger: timer.pulseCount)
+            .onChange(of: timer.pulseCount) { _, _ in
+                playRestCompleteSound()
+            }
+        }
+    }
+
+    private func timerContent(at now: Date, color: Color) -> some View {
+        VStack(spacing: 4) {
+            Text(timer.remainingLabel(at: now) ?? "0:00")
+                .font(.system(size: 24, weight: .semibold, design: .monospaced))
+                .monospacedDigit()
+                .foregroundStyle(color)
+                .contentTransition(.numericText(countsDown: true))
+
+            Capsule()
+                .fill(color.opacity(0.15))
+                .overlay(alignment: .leading) {
+                    Capsule()
+                        .fill(color)
+                        .frame(width: 80 * CGFloat(timer.progress(at: now) ?? 0))
+                }
+                .frame(width: 80, height: 3)
+        }
+    }
+
+    private func adjustButton(label: String, seconds: Double) -> some View {
+        Button {
+            timer.adjust(seconds: seconds)
+            adjustTrigger += 1
+        } label: {
+            Text(label)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(.secondary)
+                .frame(width: sideWidth, height: barHeight)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func skipButton() -> some View {
+        Button {
+            timer.skip()
+            skipTrigger += 1
+        } label: {
+            Image(systemName: "forward.end.fill")
+                .font(.system(size: 14, weight: .bold))
+                .foregroundStyle(Color.ryftGreen)
+                .frame(width: skipWidth, height: barHeight)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 // MARK: - Helpers
+
+/// Plays the rest-complete sound. Prefers a bundled "rest-complete.caf" asset —
+/// drop the file into the project and it picks up automatically.
+/// Falls back to system sound 1057 until a branded asset is ready.
+private func playRestCompleteSound() {
+    if let url = Bundle.main.url(forResource: "rest-complete", withExtension: "caf") {
+        var soundID: SystemSoundID = 0
+        AudioServicesCreateSystemSoundID(url as CFURL, &soundID)
+        AudioServicesPlayAlertSound(soundID)
+    } else {
+        AudioServicesPlayAlertSound(SystemSoundID(1057))
+    }
+}
 
 private func restPhaseColor(_ phase: TimerTintPhase) -> Color {
     switch phase {
