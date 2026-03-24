@@ -2,6 +2,7 @@
 
 import Foundation
 import SwiftData
+import SwiftUI
 
 @Observable @MainActor
 final class WorkoutSummaryViewModel {
@@ -32,6 +33,15 @@ final class WorkoutSummaryViewModel {
     }
 
     // MARK: - Computed stats
+
+    var dateLabel: String {
+        let date = session.completedAt ?? .now
+        let cal = Calendar.current
+        let time = date.formatted(date: .omitted, time: .shortened)
+        if cal.isDateInToday(date)     { return "Today · \(time)" }
+        if cal.isDateInYesterday(date) { return "Yesterday · \(time)" }
+        return date.formatted(date: .complete, time: .omitted)
+    }
 
     var durationLabel: String {
         guard let start = session.startedAt, let end = session.completedAt else { return "—" }

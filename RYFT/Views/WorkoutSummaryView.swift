@@ -7,6 +7,7 @@ struct WorkoutSummaryView: View {
     let onDone: () -> Void
 
     @State private var vm: WorkoutSummaryViewModel
+    @Environment(\.ryftCardMaterial) private var cardMaterial
 
     init(session: WorkoutSession, onDone: @escaping () -> Void) {
         _vm = State(initialValue: WorkoutSummaryViewModel(session: session))
@@ -14,99 +15,175 @@ struct WorkoutSummaryView: View {
     }
 
     var body: some View {
-        List {
-            Section {
-                LabeledContent("Duration", value: vm.durationLabel)
-                LabeledContent("Volume", value: vm.totalVolumeLabel)
-                LabeledContent("Sets", value: "\(vm.totalSets)")
-            }
+        ScrollView {
+            VStack(alignment: .leading, spacing: Spacing.xl) {
 
-            if !vm.exerciseRows.isEmpty {
-                Section("Exercises") {
-                    ForEach(vm.exerciseRows) { row in
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(row.name)
-                                Text(subtitleFor(row))
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
+                // ── Hero header ────────────────────────────────────────
+                VStack(alignment: .leading, spacing: Spacing.xs) {
+                    Text("Done.")
+                        .font(.system(size: 52, weight: .bold))
+                        .foregroundStyle(.primary)
+                    Text(vm.dateLabel)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.top, Spacing.lg)
 
-                            Spacer()
+                // ── Stat chips ─────────────────────────────────────────
+                HStack(spacing: Spacing.sm) {
+                    SummaryStatChip(value: vm.durationLabel, label: "Duration")
+                    SummaryStatChip(value: "\(vm.totalSets)", label: "Sets")
+                    SummaryStatChip(value: vm.totalVolumeLabel, label: "Volume")
+                }
 
-                            if let prWeight = row.prWeight, let prReps = row.prReps {
-                                VStack(alignment: .trailing, spacing: 2) {
-                                    Text("PR")
-                                        .font(.caption2.weight(.bold))
-                                        .foregroundStyle(Color.ryftAmber)
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 2)
-                                        .background(Color.ryftAmber.opacity(0.15), in: Capsule())
-                                    Text("\(vm.formatWeight(prWeight)) × \(prReps)")
-                                        .font(.caption2)
-                                        .foregroundStyle(Color.ryftAmber.opacity(0.8))
-                                    if let e1rm = row.prOneRepMax {
-                                        Text("~\(vm.formatWeight(e1rm)) e1RM")
-                                            .font(.caption2)
-                                            .foregroundStyle(Color.ryftAmber.opacity(0.5))
-                                    }
-                                }
-                            }
+                // ── Exercise cards ─────────────────────────────────────
+                if !vm.exerciseRows.isEmpty {
+                    VStack(spacing: Spacing.sm) {
+                        ForEach(vm.exerciseRows) { row in
+                            SummaryExerciseCard(row: row, formatWeight: vm.formatWeight)
                         }
-                        .padding(.vertical, 2)
                     }
                 }
             }
+            .padding(.horizontal, Spacing.md)
+            .padding(.bottom, Spacing.xl)
         }
-        .scrollContentBackground(.hidden)
+        .safeAreaInset(edge: .bottom) {
+            Button(action: onDone) {
+                Text("Done")
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: Radius.large, style: .continuous))
+            }
+            .padding(.horizontal, Spacing.md)
+            .padding(.bottom, Spacing.md)
+        }
         .themedBackground()
-        .navigationTitle("Summary")
-        .navigationBarTitleDisplayMode(.large)
         .navigationBarBackButtonHidden(true)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button("Done", action: onDone)
-                    .fontWeight(.semibold)
+        .toolbar(.hidden, for: .navigationBar)
+    }
+}
+
+// MARK: - Stat Chip
+
+private struct SummaryStatChip: View {
+    let value: String
+    let label: String
+    @Environment(\.ryftCardMaterial) private var cardMaterial
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.primary)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+            Text(label)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+                .tracking(0.5)
+        }
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, Spacing.sm)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(cardMaterial, in: RoundedRectangle(cornerRadius: Radius.medium, style: .continuous))
+        .proGlass()
+    }
+}
+
+// MARK: - Exercise Card
+
+private struct SummaryExerciseCard: View {
+    let row: WorkoutSummaryViewModel.ExerciseRow
+    let formatWeight: (Double) -> String
+    @Environment(\.ryftCardMaterial) private var cardMaterial
+
+    var body: some View {
+        HStack(alignment: .center, spacing: Spacing.sm) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(row.name)
+                    .font(.body.weight(.medium))
+                    .foregroundStyle(.primary)
+                Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: Spacing.sm)
+            if row.hasPR {
+                SummaryPRBadge(weight: row.prWeight!, reps: row.prReps!, formatWeight: formatWeight)
             }
         }
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, 14)
+        .background(cardMaterial, in: RoundedRectangle(cornerRadius: Radius.medium, style: .continuous))
+        .proGlass()
     }
 
-    private func subtitleFor(_ row: WorkoutSummaryViewModel.ExerciseRow) -> String {
+    private var subtitle: String {
         let sets = "\(row.setCount) \(row.setCount == 1 ? "set" : "sets")"
         guard row.maxWeight > 0 else { return sets }
-        return "\(sets) · \(vm.formatWeight(row.maxWeight)) lbs max"
+        return "\(sets) · \(formatWeight(row.maxWeight)) lbs max"
+    }
+}
+
+// MARK: - PR Badge
+
+private struct SummaryPRBadge: View {
+    let weight: Double
+    let reps: Int
+    let formatWeight: (Double) -> String
+
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 3) {
+            Text("PR")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(Color.ryftAmber)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(Color.ryftAmber.opacity(0.15), in: Capsule())
+            Text("\(formatWeight(weight)) × \(reps)")
+                .font(.caption2)
+                .foregroundStyle(Color.ryftAmber.opacity(0.7))
+        }
     }
 }
 
 // MARK: - Preview
 
 #Preview {
-    // Build a mock session with data for preview
     let container = PersistenceController.previewContainer
     let context = container.mainContext
 
     let session = WorkoutSession(startedAt: Date().addingTimeInterval(-2700), completedAt: .now)
     context.insert(session)
 
-    let snap1 = ExerciseSnapshot(exerciseName: "Bench Press", order: 0, workoutSession: session)
+    let snap1 = ExerciseSnapshot(exerciseName: "Barbell Bench Press", order: 0, workoutSession: session)
     context.insert(snap1)
     session.exercises.append(snap1)
-    let s1 = SetRecord(weight: 135, reps: 8, setType: .normal, isPersonalRecord: true, exerciseSnapshot: snap1)
-    let s2 = SetRecord(weight: 135, reps: 8, setType: .normal, exerciseSnapshot: snap1)
-    let s3 = SetRecord(weight: 135, reps: 7, setType: .normal, exerciseSnapshot: snap1)
-    context.insert(s1); context.insert(s2); context.insert(s3)
-    snap1.sets = [s1, s2, s3]
+    let s1 = SetRecord(weight: 135, reps: 8, setType: .warmup, exerciseSnapshot: snap1)
+    let s2 = SetRecord(weight: 185, reps: 5, setType: .normal, isPersonalRecord: true, exerciseSnapshot: snap1)
+    let s3 = SetRecord(weight: 185, reps: 5, setType: .normal, exerciseSnapshot: snap1)
+    let s4 = SetRecord(weight: 185, reps: 4, setType: .normal, exerciseSnapshot: snap1)
+    context.insert(s1); context.insert(s2); context.insert(s3); context.insert(s4)
+    snap1.sets = [s1, s2, s3, s4]
 
-    let snap2 = ExerciseSnapshot(exerciseName: "Squat", order: 1, workoutSession: session)
+    let snap2 = ExerciseSnapshot(exerciseName: "Arnold Press", order: 1, workoutSession: session)
     context.insert(snap2)
     session.exercises.append(snap2)
-    let s4 = SetRecord(weight: 225, reps: 5, setType: .normal, exerciseSnapshot: snap2)
-    let s5 = SetRecord(weight: 225, reps: 5, setType: .normal, exerciseSnapshot: snap2)
-    context.insert(s4); context.insert(s5)
-    snap2.sets = [s4, s5]
+    let s5 = SetRecord(weight: 65, reps: 10, setType: .normal, exerciseSnapshot: snap2)
+    let s6 = SetRecord(weight: 65, reps: 10, setType: .normal, exerciseSnapshot: snap2)
+    let s7 = SetRecord(weight: 65, reps: 9,  setType: .normal, exerciseSnapshot: snap2)
+    context.insert(s5); context.insert(s6); context.insert(s7)
+    snap2.sets = [s5, s6, s7]
 
     return NavigationStack {
         WorkoutSummaryView(session: session, onDone: {})
     }
+    .environment(AppState())
+    .environment(MeshEngine())
     .modelContainer(container)
 }
