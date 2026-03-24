@@ -86,10 +86,14 @@ struct ActiveWorkoutView: View {
                 }
                 .safeAreaInset(edge: .top, spacing: 0) {
                     if vm.restTimer.isActive {
-                        RestTimerBar(timer: vm.restTimer)
-                            .padding(.horizontal, Spacing.md)
-                            .padding(.vertical, Spacing.sm)
-                            .transition(.move(edge: .top).combined(with: .opacity))
+                        RestTimerBar(
+                            timer: vm.restTimer,
+                            onAdjust: { vm.adjustRest(by: $0) },
+                            onSkip: { vm.skipRest() }
+                        )
+                        .padding(.horizontal, Spacing.md)
+                        .padding(.vertical, Spacing.sm)
+                        .transition(.move(edge: .top).combined(with: .opacity))
                     }
                 }
                 .animation(.spring(response: 0.4, dampingFraction: 0.8), value: vm.restTimer.isActive)
@@ -340,6 +344,8 @@ struct ActiveWorkoutView: View {
 
 private struct RestTimerBar: View {
     let timer: RestTimerState
+    let onAdjust: (TimeInterval) -> Void
+    let onSkip: () -> Void
 
     @State private var adjustTrigger = 0
     @State private var skipTrigger   = 0
@@ -404,7 +410,7 @@ private struct RestTimerBar: View {
 
     private func adjustButton(label: String, seconds: Double) -> some View {
         Button {
-            timer.adjust(seconds: seconds)
+            onAdjust(seconds)
             adjustTrigger += 1
         } label: {
             Text(label)
@@ -418,7 +424,7 @@ private struct RestTimerBar: View {
 
     private func skipButton() -> some View {
         Button {
-            timer.skip()
+            onSkip()
             skipTrigger += 1
         } label: {
             Image(systemName: "forward.end.fill")

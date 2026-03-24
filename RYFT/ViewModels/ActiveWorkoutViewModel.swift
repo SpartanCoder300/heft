@@ -64,6 +64,7 @@ final class ActiveWorkoutViewModel {
 
     var draftExercises: [DraftExercise] = []
     var openedAt: Date = .now
+    private(set) var routineName: String = "Workout"
     var isShowingEndConfirm: Bool = false
     var isShowingExercisePicker: Bool = false
     var isShowingRestTimer: Bool = false
@@ -143,13 +144,15 @@ final class ActiveWorkoutViewModel {
     private let pendingSessionID: UUID?
     private var zeroTask: Task<Void, Never>? = nil
     private var hasSetup = false
+    private let activityManager: WorkoutActivityManager
 
     // MARK: - Init
 
-    init(modelContext: ModelContext, pendingRoutineID: UUID?, pendingSessionID: UUID? = nil) {
+    init(modelContext: ModelContext, pendingRoutineID: UUID?, pendingSessionID: UUID? = nil, activityManager: WorkoutActivityManager = WorkoutActivityManager()) {
         self.modelContext = modelContext
         self.pendingRoutineID = pendingRoutineID
         self.pendingSessionID = pendingSessionID
+        self.activityManager = activityManager
     }
 
     // MARK: - Setup
@@ -165,6 +168,7 @@ final class ActiveWorkoutViewModel {
         for i in draftExercises.indices {
             applyPreviousPerformance(to: &draftExercises[i])
         }
+        activityManager.start(routineName: routineName, state: currentActivityState)
     }
 
     private func loadRoutine(id: UUID) {
@@ -173,6 +177,7 @@ final class ActiveWorkoutViewModel {
         )
         guard let routine = (try? modelContext.fetch(descriptor))?.first else { return }
 
+        routineName = routine.name
         routine.lastUsedAt = .now
 
         draftExercises = routine.entries
@@ -463,6 +468,7 @@ final class ActiveWorkoutViewModel {
         manualFocus = nil
 
         try? modelContext.save()
+        activityManager.update(currentActivityState)
 
         if !isNewPR {
             // Haptic is handled in AppView (onChange loggedSetCount) so it can
@@ -485,6 +491,7 @@ final class ActiveWorkoutViewModel {
     func startRestTimer(duration: TimeInterval) {
         zeroTask?.cancel()
         restTimer.start(duration: duration)
+        activityManager.update(currentActivityState)
         guard let deadline = restTimer.targetEndDate else { return }
         zeroTask = Task { @MainActor [weak self] in
             guard let self else { return }
@@ -494,7 +501,18 @@ final class ActiveWorkoutViewModel {
             }
             guard !Task.isCancelled else { return }
             self.restTimer.tick(at: .now)
+            self.activityManager.update(self.currentActivityState)
         }
+    }
+
+    func skipRest() {
+        restTimer.skip()
+        activityManager.update(currentActivityState)
+    }
+
+    func adjustRest(by seconds: TimeInterval) {
+        restTimer.adjust(seconds: seconds)
+        activityManager.update(currentActivityState)
     }
 
     func cycleSetType(exerciseIndex eIdx: Int, setIndex sIdx: Int) {
@@ -579,6 +597,7 @@ final class ActiveWorkoutViewModel {
         s.completedAt = .now
         applyPendingPRs()
         try? modelContext.save()
+        activityManager.end(currentActivityState)
         return s
     }
 
@@ -624,6 +643,22 @@ final class ActiveWorkoutViewModel {
     }
 
     // MARK: - Private helpers
+
+    private var currentActivityState: WorkoutActivityAttributes.ContentState {
+        let exercise: String
+        if let focus = currentFocus, draftExercises.indices.contains(focus.exerciseIndex) {
+            exercise = draftExercises[focus.exerciseIndex].exerciseName
+        } else {
+            exercise = draftExercises.first?.exerciseName ?? routineName
+        }
+        return WorkoutActivityAttributes.ContentState(
+            startedAt: session?.startedAt ?? openedAt,
+            currentExercise: exercise,
+            setsLogged: loggedSetCount,
+            restEndsAt: restTimer.targetEndDate,
+            totalRestDuration: restTimer.isActive ? restTimer.totalDuration : nil
+        )
+    }
 
     private func ensureSession() -> WorkoutSession {
         if let s = session { return s }

@@ -5,7 +5,7 @@ import SwiftData
 
 /// Single source of truth for the active workout across the entire app.
 /// Owns the ActiveWorkoutViewModel so state persists across tab switches.
-/// Designed to feed a Live Activity / Dynamic Island in the future.
+/// Owns the Live Activity lifecycle — starts when a workout opens, ends when it closes.
 @Observable @MainActor
 final class ActiveWorkoutService {
 
@@ -13,6 +13,7 @@ final class ActiveWorkoutService {
 
     private(set) var viewModel: ActiveWorkoutViewModel? = nil
     var isShowingFullWorkout: Bool = false
+    let activityManager = WorkoutActivityManager()
 
     // MARK: - Derived
 
@@ -41,11 +42,13 @@ final class ActiveWorkoutService {
             isShowingFullWorkout = true
             return
         }
-        viewModel = ActiveWorkoutViewModel(
+        let vm = ActiveWorkoutViewModel(
             modelContext: modelContext,
             pendingRoutineID: routineID,
-            pendingSessionID: sessionID
+            pendingSessionID: sessionID,
+            activityManager: activityManager
         )
+        viewModel = vm
         isShowingFullWorkout = true
     }
 

@@ -6,6 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		20C236842F732C8A00D5763E /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20C236832F732C8A00D5763E /* WidgetKit.framework */; };
+		20C236862F732C8A00D5763E /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20C236852F732C8A00D5763E /* SwiftUI.framework */; };
+		20C236952F732C8C00D5763E /* RYFTWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 20C236812F732C8A00D5763E /* RYFTWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		205CFF712F69D7E400FFF88C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -21,12 +27,36 @@
 			remoteGlobalIDString = 205CFF5E2F69D7E200FFF88C;
 			remoteInfo = Heft;
 		};
+		20C236932F732C8C00D5763E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 205CFF572F69D7E200FFF88C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 20C236802F732C8A00D5763E;
+			remoteInfo = RYFTWidgetsExtension;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		20C2369A2F732C8C00D5763E /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				20C236952F732C8C00D5763E /* RYFTWidgetsExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		205CFF5F2F69D7E200FFF88C /* RYFT.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RYFT.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		205CFF702F69D7E400FFF88C /* RYFTTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RYFTTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		205CFF7A2F69D7E400FFF88C /* RYFTUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RYFTUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		20C236812F732C8A00D5763E /* RYFTWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RYFTWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		20C236832F732C8A00D5763E /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		20C236852F732C8A00D5763E /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -37,6 +67,20 @@
 			);
 			target = 205CFF5E2F69D7E200FFF88C /* RYFT */;
 		};
+		20C236992F732C8C00D5763E /* Exceptions for "RYFTWidgets" folder in "RYFTWidgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 20C236802F732C8A00D5763E /* RYFTWidgetsExtension */;
+		};
+		20C236A02F732ECA00D5763E /* Exceptions for "RYFT" folder in "RYFTWidgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Models/WorkoutActivityAttributes.swift,
+			);
+			target = 20C236802F732C8A00D5763E /* RYFTWidgetsExtension */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -44,6 +88,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				205CFF822F69D7E400FFF88C /* Exceptions for "RYFT" folder in "RYFT" target */,
+				20C236A02F732ECA00D5763E /* Exceptions for "RYFT" folder in "RYFTWidgetsExtension" target */,
 			);
 			path = RYFT;
 			sourceTree = "<group>";
@@ -56,6 +101,14 @@
 		205CFF7D2F69D7E400FFF88C /* RYFTUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = RYFTUITests;
+			sourceTree = "<group>";
+		};
+		20C236872F732C8A00D5763E /* RYFTWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				20C236992F732C8C00D5763E /* Exceptions for "RYFTWidgets" folder in "RYFTWidgetsExtension" target */,
+			);
+			path = RYFTWidgets;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -82,6 +135,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		20C2367E2F732C8A00D5763E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				20C236862F732C8A00D5763E /* SwiftUI.framework in Frameworks */,
+				20C236842F732C8A00D5763E /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -91,6 +153,8 @@
 				205CFF612F69D7E200FFF88C /* RYFT */,
 				205CFF732F69D7E400FFF88C /* RYFTTests */,
 				205CFF7D2F69D7E400FFF88C /* RYFTUITests */,
+				20C236872F732C8A00D5763E /* RYFTWidgets */,
+				20C236822F732C8A00D5763E /* Frameworks */,
 				205CFF602F69D7E200FFF88C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -101,8 +165,18 @@
 				205CFF5F2F69D7E200FFF88C /* RYFT.app */,
 				205CFF702F69D7E400FFF88C /* RYFTTests.xctest */,
 				205CFF7A2F69D7E400FFF88C /* RYFTUITests.xctest */,
+				20C236812F732C8A00D5763E /* RYFTWidgetsExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		20C236822F732C8A00D5763E /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				20C236832F732C8A00D5763E /* WidgetKit.framework */,
+				20C236852F732C8A00D5763E /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -115,10 +189,12 @@
 				205CFF5B2F69D7E200FFF88C /* Sources */,
 				205CFF5C2F69D7E200FFF88C /* Frameworks */,
 				205CFF5D2F69D7E200FFF88C /* Resources */,
+				20C2369A2F732C8C00D5763E /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				20C236942F732C8C00D5763E /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				205CFF612F69D7E200FFF88C /* RYFT */,
@@ -176,6 +252,28 @@
 			productReference = 205CFF7A2F69D7E400FFF88C /* RYFTUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		20C236802F732C8A00D5763E /* RYFTWidgetsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 20C236962F732C8C00D5763E /* Build configuration list for PBXNativeTarget "RYFTWidgetsExtension" */;
+			buildPhases = (
+				20C2367D2F732C8A00D5763E /* Sources */,
+				20C2367E2F732C8A00D5763E /* Frameworks */,
+				20C2367F2F732C8A00D5763E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				20C236872F732C8A00D5763E /* RYFTWidgets */,
+			);
+			name = RYFTWidgetsExtension;
+			packageProductDependencies = (
+			);
+			productName = RYFTWidgetsExtension;
+			productReference = 20C236812F732C8A00D5763E /* RYFTWidgetsExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -197,6 +295,9 @@
 						CreatedOnToolsVersion = 26.3;
 						TestTargetID = 205CFF5E2F69D7E200FFF88C;
 					};
+					20C236802F732C8A00D5763E = {
+						CreatedOnToolsVersion = 26.3;
+					};
 				};
 			};
 			buildConfigurationList = 205CFF5A2F69D7E200FFF88C /* Build configuration list for PBXProject "RYFT" */;
@@ -216,6 +317,7 @@
 				205CFF5E2F69D7E200FFF88C /* RYFT */,
 				205CFF6F2F69D7E400FFF88C /* RYFTTests */,
 				205CFF792F69D7E400FFF88C /* RYFTUITests */,
+				20C236802F732C8A00D5763E /* RYFTWidgetsExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -236,6 +338,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		205CFF782F69D7E400FFF88C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20C2367F2F732C8A00D5763E /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -266,6 +375,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		20C2367D2F732C8A00D5763E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -278,6 +394,11 @@
 			isa = PBXTargetDependency;
 			target = 205CFF5E2F69D7E200FFF88C /* RYFT */;
 			targetProxy = 205CFF7B2F69D7E400FFF88C /* PBXContainerItemProxy */;
+		};
+		20C236942F732C8C00D5763E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 20C236802F732C8A00D5763E /* RYFTWidgetsExtension */;
+			targetProxy = 20C236932F732C8C00D5763E /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -571,6 +692,70 @@
 			};
 			name = Release;
 		};
+		20C236972F732C8C00D5763E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = S6KMR5L99B;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RYFTWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = RYFTWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = MysticByte.RYFT.RYFTWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		20C236982F732C8C00D5763E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = S6KMR5L99B;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RYFTWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = RYFTWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = MysticByte.RYFT.RYFTWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -606,6 +791,15 @@
 			buildConfigurations = (
 				205CFF8C2F69D7E400FFF88C /* Debug */,
 				205CFF8D2F69D7E400FFF88C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		20C236962F732C8C00D5763E /* Build configuration list for PBXNativeTarget "RYFTWidgetsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				20C236972F732C8C00D5763E /* Debug */,
+				20C236982F732C8C00D5763E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
