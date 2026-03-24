@@ -113,6 +113,7 @@ struct ActiveWorkoutView: View {
                 .alert("End Workout?", isPresented: $vm.isShowingEndConfirm) {
                     Button("Finish") {
                         if let session = vm.endWorkout() {
+                            playWorkoutCompleteHaptic()
                             completedSession = session
                         } else {
                             onDismiss()
@@ -176,6 +177,17 @@ struct ActiveWorkoutView: View {
         .animation(Motion.standardSpring, value: vm.showingPRMoment != nil)
     }
 
+    // MARK: - Haptics
+
+    /// Bar drops, then the achievement lands. Two beats, 300ms apart.
+    private func playWorkoutCompleteHaptic() {
+        Task {
+            UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+            try? await Task.sleep(for: .milliseconds(300))
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+        }
+    }
+
     // MARK: - Command Panel
 
     @ViewBuilder
@@ -184,6 +196,7 @@ struct ActiveWorkoutView: View {
             // ── Complete Workout ───────────────────────────────────────────────
             Button {
                 if let session = vm.endWorkout() {
+                    playWorkoutCompleteHaptic()
                     completedSession = session
                 } else {
                     onDismiss()

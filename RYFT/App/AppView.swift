@@ -134,7 +134,7 @@ struct AppView: View {
                 guard appState.accentTheme == .mesh else { break }
                 playPRHaptics()
             case .workoutComplete:
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                break
             default:
                 break
             }

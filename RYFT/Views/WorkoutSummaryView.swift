@@ -7,6 +7,7 @@ struct WorkoutSummaryView: View {
     let onDone: () -> Void
 
     @State private var vm: WorkoutSummaryViewModel
+    @State private var appeared = false
     @Environment(\.ryftCardMaterial) private var cardMaterial
 
     init(session: WorkoutSession, onDone: @escaping () -> Void) {
@@ -28,6 +29,9 @@ struct WorkoutSummaryView: View {
                         .foregroundStyle(.secondary)
                 }
                 .padding(.top, Spacing.lg)
+                .scaleEffect(appeared ? 1.0 : 0.85, anchor: .leading)
+                .opacity(appeared ? 1.0 : 0.0)
+                .animation(.spring(response: 0.35, dampingFraction: 0.7), value: appeared)
 
                 // ── Stat chips ─────────────────────────────────────────
                 HStack(spacing: Spacing.sm) {
@@ -35,12 +39,22 @@ struct WorkoutSummaryView: View {
                     SummaryStatChip(value: "\(vm.totalSets)", label: "Sets")
                     SummaryStatChip(value: vm.totalVolumeLabel, label: "Volume")
                 }
+                .offset(y: appeared ? 0 : 18)
+                .opacity(appeared ? 1.0 : 0.0)
+                .animation(.spring(response: 0.4, dampingFraction: 0.75).delay(0.08), value: appeared)
 
                 // ── Exercise cards ─────────────────────────────────────
                 if !vm.exerciseRows.isEmpty {
                     VStack(spacing: Spacing.sm) {
-                        ForEach(vm.exerciseRows) { row in
+                        ForEach(Array(vm.exerciseRows.enumerated()), id: \.element.id) { index, row in
                             SummaryExerciseCard(row: row, formatWeight: vm.formatWeight)
+                                .offset(y: appeared ? 0 : 18)
+                                .opacity(appeared ? 1.0 : 0.0)
+                                .animation(
+                                    .spring(response: 0.4, dampingFraction: 0.75)
+                                    .delay(0.16 + Double(index) * 0.06),
+                                    value: appeared
+                                )
                         }
                     }
                 }
@@ -63,6 +77,7 @@ struct WorkoutSummaryView: View {
         .themedBackground()
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
+        .onAppear { appeared = true }
     }
 }
 
