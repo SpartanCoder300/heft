@@ -10,8 +10,6 @@ private extension Color {
     static let ryftGreen = Color(red: 0.204, green: 0.827, blue: 0.600)
     static let ryftAmber = Color(red: 0.961, green: 0.620, blue: 0.043)
     static let ryftRed   = Color(red: 1.000, green: 0.271, blue: 0.227)
-
-    static let ryftWidgetBackground = Color.black
 }
 
 private func restPhaseColor(endsAt: Date, totalDuration: TimeInterval) -> Color {
@@ -49,13 +47,28 @@ private func compactSetLabel(from focusedSetLabel: String?, fallbackSetsLogged: 
     return "\(fallbackSetsLogged)"
 }
 
+private func lockScreenBackgroundTint(for state: WorkoutActivityAttributes.ContentState) -> Color {
+    // Deep charcoal base with a subtle accent tint for a premium, restrained look.
+    let baseR = 0.07
+    let baseG = 0.07
+    let baseB = 0.065
+    let accentR = state.accentR ?? 0.204
+    let accentG = state.accentG ?? 0.827
+    let accentB = state.accentB ?? 0.600
+    let mix = 0.08
+    let r = baseR * (1 - mix) + accentR * mix
+    let g = baseG * (1 - mix) + accentG * mix
+    let b = baseB * (1 - mix) + accentB * mix
+    return Color(red: r, green: g, blue: b)
+}
+
 // MARK: - Widget
 
 struct RYFTWidgetsLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: WorkoutActivityAttributes.self) { context in
             LockScreenBanner(context: context)
-                .activityBackgroundTint(.ryftWidgetBackground)
+                .activityBackgroundTint(lockScreenBackgroundTint(for: context.state))
                 .activitySystemActionForegroundColor(.white)
         } dynamicIsland: { context in
             DynamicIsland {
@@ -101,7 +114,6 @@ private struct LockScreenBanner: View {
                               routineName: context.attributes.routineName)
             }
         }
-        .background(Color.ryftWidgetBackground)
     }
 }
 
@@ -121,22 +133,27 @@ private struct WorkingBanner: View {
                     .foregroundStyle(.white)
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
-                Text("\(state.setsLogged) sets")
+                let setLabel = state.focusedSetLabel ?? "\(state.setsLogged) sets"
+                let setDetail = state.focusedSetDetail
+                Text(setDetail.map { "\(setLabel) · \($0)" } ?? setLabel)
                     .font(.system(size: 14))
                     .foregroundStyle(.white.opacity(0.6))
                     .contentTransition(.numericText(countsDown: false))
+                    .widgetAccentable()
             }
             // Expands to fill all available space — pushes timer to far right edge
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            Text(state.startedAt, style: .timer)
+            Text(timerInterval: state.startedAt...workoutTimerEndDate(from: state.startedAt),
+                 countsDown: false, showsHours: false)
                 .font(.system(size: 17, weight: .semibold, design: .monospaced))
                 .monospacedDigit()
                 .foregroundStyle(.white.opacity(0.8))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
                 .frame(width: 56, alignment: .trailing)
         }
         .padding(20)
-        .background(Color.ryftWidgetBackground)
     }
 }
 
@@ -176,7 +193,6 @@ private struct RestingBanner: View {
                 .lineLimit(1)
         }
         .padding(20)
-        .background(Color.ryftWidgetBackground)
     }
 }
 
@@ -204,8 +220,7 @@ private struct ExpandedLeading: View {
             .padding(.leading, 12)
             .padding(.vertical, 8)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-            .background(.black)
-        } else {
+                    } else {
             VStack(alignment: .leading, spacing: 3) {
                 Text(context.state.currentExercise)
                     .font(.system(size: 14, weight: .semibold))
@@ -213,16 +228,18 @@ private struct ExpandedLeading: View {
                     .lineLimit(2)
                     .minimumScaleFactor(0.85)
                     .dynamicIsland(verticalPlacement: .belowIfTooWide)
-                Text(context.state.focusedSetLabel ?? "\(context.state.setsLogged) sets")
+                let setLabel = context.state.focusedSetLabel ?? "\(context.state.setsLogged) sets"
+                let setDetail = context.state.focusedSetDetail
+                Text(setDetail.map { "\(setLabel) · \($0)" } ?? setLabel)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(context.state.accentColor)
                     .contentTransition(.numericText(countsDown: false))
+                    .widgetAccentable()
             }
             .padding(.leading, 12)
             .padding(.vertical, 8)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-            .background(.black)
-        }
+                    }
     }
 }
 
@@ -247,8 +264,7 @@ private struct ExpandedTrailing: View {
             .padding(.trailing, 12)
             .padding(.vertical, 8)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
-            .background(.black)
-        } else {
+                    } else {
             Text(context.state.startedAt, style: .timer)
                 .font(.system(size: 24, weight: .semibold, design: .monospaced))
                 .monospacedDigit()
@@ -256,8 +272,7 @@ private struct ExpandedTrailing: View {
                 .padding(.trailing, 12)
                 .padding(.vertical, 8)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
-                .background(.black)
-        }
+                        }
     }
 }
 
@@ -278,17 +293,23 @@ private struct ExpandedBottom: View {
             .tint(restPhaseColor(endsAt: clampedEndDate, totalDuration: total))
             .padding(.horizontal, 12)
             .padding(.bottom, 8)
-            .background(.black)
-        } else {
-            Text(context.attributes.routineName)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.white.opacity(0.45))
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 12)
-                .padding(.bottom, 8)
-                .background(.black)
-        }
+                    } else {
+            VStack(alignment: .leading, spacing: 6) {
+                if context.state.totalSetCount > 0 {
+                    ProgressView(value: Double(context.state.setsLogged), total: Double(context.state.totalSetCount))
+                        .progressViewStyle(.linear)
+                        .tint(context.state.accentColor)
+                        .widgetAccentable()
+                }
+                Text(context.attributes.routineName)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.45))
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 8)
+                    }
     }
 }
 
@@ -390,7 +411,9 @@ extension WorkoutActivityAttributes.ContentState {
         .init(startedAt: .now.addingTimeInterval(-720),
               currentExercise: "Barbell Bench Press",
               setsLogged: 4,
+              totalSetCount: 20,
               focusedSetLabel: "Set 3 of 5",
+              focusedSetDetail: "135 × 8",
               restEndsAt: nil,
               totalRestDuration: nil,
               accentR: 0.831, accentG: 0.659, accentB: 0.325) // Champagne (Lux)
@@ -400,7 +423,9 @@ extension WorkoutActivityAttributes.ContentState {
         .init(startedAt: .now.addingTimeInterval(-780),
               currentExercise: "Barbell Bench Press",
               setsLogged: 5,
+              totalSetCount: 20,
               focusedSetLabel: "Set 4 of 5",
+              focusedSetDetail: "135 × 8",
               restEndsAt: .now.addingTimeInterval(75),
               totalRestDuration: 90,
               accentR: 0.831, accentG: 0.659, accentB: 0.325) // Champagne (Lux)

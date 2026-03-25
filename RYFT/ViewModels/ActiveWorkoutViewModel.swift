@@ -868,20 +868,41 @@ final class ActiveWorkoutViewModel {
     private var currentActivityState: WorkoutActivityAttributes.ContentState {
         let exercise: String
         let focusedSetLabel: String?
+        let focusedSetDetail: String?
         if let focus = currentFocus, draftExercises.indices.contains(focus.exerciseIndex) {
             let draftExercise = draftExercises[focus.exerciseIndex]
+            let draftSet = draftExercise.sets[focus.setIndex]
             exercise = draftExercise.exerciseName
             focusedSetLabel = "Set \(focus.setIndex + 1) of \(draftExercise.sets.count)"
+            if draftExercise.isTimed, !draftSet.durationText.isEmpty {
+                focusedSetDetail = "\(draftSet.durationText)s"
+            } else {
+                let weight = draftSet.weightText
+                let reps = draftSet.repsText
+                if !weight.isEmpty && !reps.isEmpty {
+                    focusedSetDetail = "\(weight) × \(reps)"
+                } else if !reps.isEmpty {
+                    focusedSetDetail = "\(reps) reps"
+                } else if !weight.isEmpty {
+                    focusedSetDetail = "\(weight)"
+                } else {
+                    focusedSetDetail = nil
+                }
+            }
         } else {
             exercise = draftExercises.first?.exerciseName ?? routineName
             focusedSetLabel = nil
+            focusedSetDetail = nil
         }
         let accent = AccentTheme.currentAccentRGB
+        let totalSetCount = draftExercises.reduce(0) { $0 + $1.sets.count }
         return WorkoutActivityAttributes.ContentState(
             startedAt: session?.startedAt ?? openedAt,
             currentExercise: exercise,
             setsLogged: loggedSetCount,
+            totalSetCount: totalSetCount,
             focusedSetLabel: focusedSetLabel,
+            focusedSetDetail: focusedSetDetail,
             restEndsAt: restTimer.targetEndDate,
             totalRestDuration: restTimer.isActive ? restTimer.totalDuration : nil,
             accentR: accent.r,

@@ -14,7 +14,9 @@ struct WorkoutActivityAttributes: ActivityAttributes {
         let startedAt: Date
         let currentExercise: String
         let setsLogged: Int
+        let totalSetCount: Int
         let focusedSetLabel: String?
+        let focusedSetDetail: String?
 
         /// Non-nil only while rest is active.
         let restEndsAt: Date?
