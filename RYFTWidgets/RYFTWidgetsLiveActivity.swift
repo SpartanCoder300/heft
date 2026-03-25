@@ -38,14 +38,6 @@ private func workoutTimerEndDate(from startedAt: Date) -> Date {
     startedAt.addingTimeInterval(8 * 60 * 60)
 }
 
-private func compactSetLabel(from focusedSetLabel: String?, fallbackSetsLogged: Int) -> String {
-    guard let label = focusedSetLabel else { return "\(fallbackSetsLogged)" }
-    let parts = label.split(separator: " ")
-    if parts.count >= 4, parts[0] == "Set", parts[2] == "of" {
-        return "\(parts[1])" + "/" + "\(parts[3])"
-    }
-    return "\(fallbackSetsLogged)"
-}
 
 private func lockScreenBackgroundTint(for state: WorkoutActivityAttributes.ContentState) -> Color {
     // Deep charcoal base with a subtle accent tint for a premium, restrained look.
@@ -88,8 +80,10 @@ struct RYFTWidgetsLiveActivity: Widget {
             } minimal: {
                 MinimalView(context: context)
             }
-            // Nudge compact content inward so it sits snug against the pill
-            .contentMargins(.leading, 6, for: .compactLeading)
+            // Nudge compact content toward the camera pill — inset from the adjacent edge.
+            // compactLeading sits left of the pill, so nudge from trailing (right/camera) side.
+            // compactTrailing sits right of the pill, so nudge from leading (left/camera) side.
+            .contentMargins(.trailing, 6, for: .compactLeading)
             .contentMargins(.leading, 6, for: .compactTrailing)
             // Keyline tracks rest phase — pill border goes green → amber → red
             .keylineTint(keylineTint(for: context.state))
@@ -187,10 +181,17 @@ private struct RestingBanner: View {
                 .progressViewStyle(.linear)
                 .tint(phaseColor)
 
-            Text(exercise)
-                .font(.system(size: 12))
-                .foregroundStyle(.white.opacity(0.5))
-                .lineLimit(1)
+            HStack(spacing: 4) {
+                Text("Up next")
+                    .foregroundStyle(.white.opacity(0.3))
+                Text("·")
+                    .foregroundStyle(.white.opacity(0.2))
+                Text(exercise)
+                    .foregroundStyle(.white.opacity(0.5))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+            .font(.system(size: 12))
         }
         .padding(20)
     }
@@ -220,7 +221,7 @@ private struct ExpandedLeading: View {
             .padding(.leading, 12)
             .padding(.vertical, 8)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-                    } else {
+        } else {
             VStack(alignment: .leading, spacing: 3) {
                 Text(context.state.currentExercise)
                     .font(.system(size: 14, weight: .semibold))
@@ -239,7 +240,7 @@ private struct ExpandedLeading: View {
             .padding(.leading, 12)
             .padding(.vertical, 8)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-                    }
+        }
     }
 }
 
@@ -248,31 +249,42 @@ private struct ExpandedTrailing: View {
 
     var body: some View {
         if context.state.isResting {
-            VStack(alignment: .trailing, spacing: 3) {
+            VStack(alignment: .trailing, spacing: 2) {
                 Text("Next")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(.white.opacity(0.55))
                     .textCase(.uppercase)
                     .tracking(0.8)
                 Text(context.state.currentExercise)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.white)
-                    .lineLimit(2)
+                    .lineLimit(1)
                     .minimumScaleFactor(0.8)
                     .multilineTextAlignment(.trailing)
+                // Set label disambiguates same-exercise rest ("Set 3 of 4" vs "Bench Press" again)
+                if let setLabel = context.state.focusedSetLabel {
+                    Text(setLabel)
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundStyle(.white.opacity(0.5))
+                        .lineLimit(1)
+                }
             }
             .padding(.trailing, 12)
             .padding(.vertical, 8)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
-                    } else {
-            Text(context.state.startedAt, style: .timer)
+        } else {
+            // Use timerInterval so showsHours: false keeps M:SS format past 60 min.
+            Text(timerInterval: context.state.startedAt...workoutTimerEndDate(from: context.state.startedAt),
+                 countsDown: false, showsHours: false)
                 .font(.system(size: 24, weight: .semibold, design: .monospaced))
                 .monospacedDigit()
                 .foregroundStyle(.white)
+                .minimumScaleFactor(0.8)
+                .lineLimit(1)
                 .padding(.trailing, 12)
                 .padding(.vertical, 8)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
-                        }
+        }
     }
 }
 
@@ -293,13 +305,14 @@ private struct ExpandedBottom: View {
             .tint(restPhaseColor(endsAt: clampedEndDate, totalDuration: total))
             .padding(.horizontal, 12)
             .padding(.bottom, 8)
-                    } else {
+        } else {
             VStack(alignment: .leading, spacing: 6) {
                 if context.state.totalSetCount > 0 {
                     ProgressView(value: Double(context.state.setsLogged), total: Double(context.state.totalSetCount))
                         .progressViewStyle(.linear)
                         .tint(context.state.accentColor)
                         .widgetAccentable()
+                        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: context.state.setsLogged)
                 }
                 Text(context.attributes.routineName)
                     .font(.system(size: 12, weight: .medium))
@@ -309,7 +322,7 @@ private struct ExpandedBottom: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 12)
             .padding(.bottom, 8)
-                    }
+        }
     }
 }
 
@@ -328,12 +341,13 @@ private struct CompactLeading: View {
         if context.state.isResting, let endsAt = context.state.restEndsAt,
            let total = context.state.totalRestDuration {
             // Rest: countdown is the dominant, urgent signal
+            let clamped = clampedRestEndDate(endsAt)
             HStack(spacing: 0) {
                 Spacer().frame(width: CompactMetrics.leadingInset)
-                Text(timerInterval: Date.now...clampedRestEndDate(endsAt), countsDown: true, showsHours: false)
+                Text(timerInterval: Date.now...clamped, countsDown: true, showsHours: false)
                     .font(.system(size: 12, weight: .semibold, design: .monospaced))
                     .monospacedDigit()
-                    .foregroundStyle(restPhaseColor(endsAt: endsAt, totalDuration: total))
+                    .foregroundStyle(restPhaseColor(endsAt: clamped, totalDuration: total))
                     .minimumScaleFactor(0.8)
                     .lineLimit(1)
             }
@@ -353,8 +367,14 @@ private struct CompactTrailing: View {
 
     var body: some View {
         if context.state.isResting {
-            // Rest trailing: focused set (short form) so it matches the current exercise.
-            Text(compactSetLabel(from: context.state.focusedSetLabel, fallbackSetsLogged: context.state.setsLogged))
+            // Rest trailing: "X/Y" from typed Int fields — no string parsing needed.
+            let setLabel: String = {
+                if let n = context.state.focusedSetNumber, let total = context.state.exerciseSetCount {
+                    return "\(n)/\(total)"
+                }
+                return "\(context.state.setsLogged)"
+            }()
+            Text(setLabel)
                 .font(.system(size: 13, weight: .semibold, design: .monospaced))
                 .foregroundStyle(.white.opacity(0.75))
                 .contentTransition(.numericText(countsDown: false))
@@ -407,6 +427,7 @@ extension WorkoutActivityAttributes {
 }
 
 extension WorkoutActivityAttributes.ContentState {
+    // Lux / champagne theme
     fileprivate static var working: WorkoutActivityAttributes.ContentState {
         .init(startedAt: .now.addingTimeInterval(-720),
               currentExercise: "Barbell Bench Press",
@@ -414,9 +435,11 @@ extension WorkoutActivityAttributes.ContentState {
               totalSetCount: 20,
               focusedSetLabel: "Set 3 of 5",
               focusedSetDetail: "135 × 8",
+              focusedSetNumber: 3,
+              exerciseSetCount: 5,
               restEndsAt: nil,
               totalRestDuration: nil,
-              accentR: 0.831, accentG: 0.659, accentB: 0.325) // Champagne (Lux)
+              accentR: 0.831, accentG: 0.659, accentB: 0.325)
     }
 
     fileprivate static var resting: WorkoutActivityAttributes.ContentState {
@@ -426,22 +449,65 @@ extension WorkoutActivityAttributes.ContentState {
               totalSetCount: 20,
               focusedSetLabel: "Set 4 of 5",
               focusedSetDetail: "135 × 8",
+              focusedSetNumber: 4,
+              exerciseSetCount: 5,
               restEndsAt: .now.addingTimeInterval(75),
               totalRestDuration: 90,
-              accentR: 0.831, accentG: 0.659, accentB: 0.325) // Champagne (Lux)
+              accentR: 0.831, accentG: 0.659, accentB: 0.325)
+    }
+
+    // Midnight (default) theme — verifies accent-aware rendering with the default colour
+    fileprivate static var workingMidnight: WorkoutActivityAttributes.ContentState {
+        .init(startedAt: .now.addingTimeInterval(-720),
+              currentExercise: "Barbell Bench Press",
+              setsLogged: 4,
+              totalSetCount: 20,
+              focusedSetLabel: "Set 3 of 5",
+              focusedSetDetail: "135 × 8",
+              focusedSetNumber: 3,
+              exerciseSetCount: 5,
+              restEndsAt: nil,
+              totalRestDuration: nil,
+              accentR: 0.486, accentG: 0.498, accentB: 0.961)
+    }
+
+    fileprivate static var restingMidnight: WorkoutActivityAttributes.ContentState {
+        .init(startedAt: .now.addingTimeInterval(-780),
+              currentExercise: "Barbell Bench Press",
+              setsLogged: 5,
+              totalSetCount: 20,
+              focusedSetLabel: "Set 4 of 5",
+              focusedSetDetail: "135 × 8",
+              focusedSetNumber: 4,
+              exerciseSetCount: 5,
+              restEndsAt: .now.addingTimeInterval(75),
+              totalRestDuration: 90,
+              accentR: 0.486, accentG: 0.498, accentB: 0.961)
     }
 }
 
-#Preview("Lock Screen - Working", as: .content, using: WorkoutActivityAttributes.preview) {
+#Preview("Lock Screen - Working (Lux)", as: .content, using: WorkoutActivityAttributes.preview) {
     RYFTWidgetsLiveActivity()
 } contentStates: {
     WorkoutActivityAttributes.ContentState.working
 }
 
-#Preview("Lock Screen - Resting", as: .content, using: WorkoutActivityAttributes.preview) {
+#Preview("Lock Screen - Resting (Lux)", as: .content, using: WorkoutActivityAttributes.preview) {
     RYFTWidgetsLiveActivity()
 } contentStates: {
     WorkoutActivityAttributes.ContentState.resting
+}
+
+#Preview("Lock Screen - Working (Midnight)", as: .content, using: WorkoutActivityAttributes.preview) {
+    RYFTWidgetsLiveActivity()
+} contentStates: {
+    WorkoutActivityAttributes.ContentState.workingMidnight
+}
+
+#Preview("Lock Screen - Resting (Midnight)", as: .content, using: WorkoutActivityAttributes.preview) {
+    RYFTWidgetsLiveActivity()
+} contentStates: {
+    WorkoutActivityAttributes.ContentState.restingMidnight
 }
 
 #Preview("Dynamic Island Expanded - Working", as: .dynamicIsland(.expanded), using: WorkoutActivityAttributes.preview) {

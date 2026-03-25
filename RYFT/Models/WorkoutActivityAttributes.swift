@@ -17,6 +17,10 @@ struct WorkoutActivityAttributes: ActivityAttributes {
         let totalSetCount: Int
         let focusedSetLabel: String?
         let focusedSetDetail: String?
+        /// 1-based index of the focused set (e.g. 3 for "Set 3 of 5").
+        let focusedSetNumber: Int?
+        /// Total sets in the focused exercise (e.g. 5 for "Set 3 of 5").
+        let exerciseSetCount: Int?
 
         /// Non-nil only while rest is active.
         let restEndsAt: Date?

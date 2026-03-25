@@ -4,6 +4,7 @@ import Foundation
 import SwiftData
 import UIKit
 import AudioToolbox
+import UserNotifications
 
 @Observable @MainActor
 final class ActiveWorkoutViewModel {
@@ -145,6 +146,7 @@ final class ActiveWorkoutViewModel {
     private let resumeSessionID: UUID?
     private var zeroTask: Task<Void, Never>? = nil
     private var phaseUpdateTasks: [Task<Void, Never>] = []
+    private var notificationTask: Task<Void, Never>? = nil
     private var hasSetup = false
     private let activityManager: WorkoutActivityManager
 
@@ -191,6 +193,7 @@ final class ActiveWorkoutViewModel {
             eagerlyPersistWorkout()
         }
         activityManager.start(routineName: routineName, state: currentActivityState)
+        requestNotificationPermissionIfNeeded()
     }
 
     /// Creates the WorkoutSession and an ExerciseSnapshot for every exercise immediately
@@ -687,16 +690,77 @@ final class ActiveWorkoutViewModel {
         return true
     }
 
-    func startRestTimer(duration: TimeInterval) {
+    private var restNotificationID: String { "restTimerComplete" }
+
+    /// Requests notification permission once at workout start, before any rest timer fires.
+    /// Keeps the permission prompt away from the moment the user logs a set.
+    private func requestNotificationPermissionIfNeeded() {
+        Task {
+            let center = UNUserNotificationCenter.current()
+            let settings = await center.notificationSettings()
+            guard settings.authorizationStatus == .notDetermined else { return }
+            try? await center.requestAuthorization(options: [.alert, .sound])
+        }
+    }
+
+    private func scheduleRestNotification(endsAt: Date) {
+        // Capture main-actor state synchronously before spawning the task,
+        // avoiding access to isolated properties across an await boundary.
+        let capturedExerciseName: String? = {
+            guard let focus = currentFocus,
+                  draftExercises.indices.contains(focus.exerciseIndex) else { return nil }
+            return draftExercises[focus.exerciseIndex].exerciseName
+        }()
+
+        // Cancel any in-flight scheduling task so only one notification is ever pending.
+        notificationTask?.cancel()
+        notificationTask = Task {
+            let center = UNUserNotificationCenter.current()
+            let settings = await center.notificationSettings()
+            let isAuthorized: Bool
+            switch settings.authorizationStatus {
+            case .authorized, .provisional, .ephemeral: isAuthorized = true
+            default: isAuthorized = false
+            }
+            guard isAuthorized, !Task.isCancelled else { return }
+
+            // If the deadline already passed during the async permission check, bail.
+            let interval = endsAt.timeIntervalSinceNow
+            guard interval > 0 else { return }
+
+            let content = UNMutableNotificationContent()
+            content.title = "Rest complete"
+            content.body = capturedExerciseName.map { "\($0) — next set." } ?? "Time for your next set."
+            content.sound = .default
+
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
+            let request = UNNotificationRequest(identifier: restNotificationID, content: content, trigger: trigger)
+            center.removePendingNotificationRequests(withIdentifiers: [restNotificationID])
+            try? await center.add(request)
+        }
+    }
+
+    private func cancelRestNotification() {
+        notificationTask?.cancel()
+        notificationTask = nil
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [restNotificationID])
+    }
+
+    /// Cancels the zero-task and all phase-update tasks without rescheduling.
+    /// Use when stopping the rest timer (skip, clamp-to-zero, workout end).
+    private func cancelTimerTasks() {
         zeroTask?.cancel()
+        zeroTask = nil
         phaseUpdateTasks.forEach { $0.cancel() }
         phaseUpdateTasks.removeAll()
+    }
 
-        restTimer.start(duration: duration)
-        activityManager.update(currentActivityState)
-        guard let deadline = restTimer.targetEndDate else { return }
+    /// Cancels then reschedules the zero-task and phase-update tasks for the given deadline.
+    /// Called from both startRestTimer and adjustRest so adjust never leaves stale tasks running.
+    private func scheduleTimerTasks(deadline: Date, duration: TimeInterval) {
+        cancelTimerTasks()
 
-        // Fire the zero task to clear the timer when it expires.
+        // Clear the timer when it expires.
         zeroTask = Task { @MainActor [weak self] in
             guard let self else { return }
             let delay = deadline.timeIntervalSinceNow
@@ -706,11 +770,12 @@ final class ActiveWorkoutViewModel {
             self.activityManager.update(self.currentActivityState)
         }
 
-        // Schedule Live Activity updates at the 50% and 20% thresholds so the
-        // phase colour (green → amber → red) transitions in the widget without
-        // requiring any user interaction.
+        // Push Live Activity updates at the 50% and 20% remaining-time thresholds so the
+        // phase colour (green → amber → red) transitions without requiring user interaction.
+        // Delays are computed from now so they remain correct after adjustRest is called.
+        let currentRemaining = max(0, deadline.timeIntervalSinceNow)
         for threshold in [0.5, 0.2] {
-            let delay = duration * (1.0 - threshold)
+            let delay = currentRemaining - threshold * duration
             guard delay > 0 else { continue }
             let t = Task { @MainActor [weak self] in
                 guard let self else { return }
@@ -722,16 +787,32 @@ final class ActiveWorkoutViewModel {
         }
     }
 
+    func startRestTimer(duration: TimeInterval) {
+        restTimer.start(duration: duration)
+        activityManager.update(currentActivityState)
+        guard let deadline = restTimer.targetEndDate else { return }
+        scheduleTimerTasks(deadline: deadline, duration: duration)
+        scheduleRestNotification(endsAt: deadline)
+    }
+
     func skipRest() {
-        zeroTask?.cancel()
-        phaseUpdateTasks.forEach { $0.cancel() }
-        phaseUpdateTasks.removeAll()
+        cancelTimerTasks()
         restTimer.skip()
+        cancelRestNotification()
         activityManager.update(currentActivityState)
     }
 
     func adjustRest(by seconds: TimeInterval) {
         restTimer.adjust(seconds: seconds)
+        guard restTimer.isActive, let deadline = restTimer.targetEndDate else {
+            // Adjustment clamped the timer to zero — treat as a skip.
+            cancelTimerTasks()
+            cancelRestNotification()
+            activityManager.update(currentActivityState)
+            return
+        }
+        scheduleTimerTasks(deadline: deadline, duration: restTimer.totalDuration)
+        scheduleRestNotification(endsAt: deadline)
         activityManager.update(currentActivityState)
     }
 
@@ -817,6 +898,7 @@ final class ActiveWorkoutViewModel {
         s.completedAt = .now
         applyPendingPRs()
         try? modelContext.save()
+        cancelRestNotification()
         activityManager.end(currentActivityState)
         return s
     }
@@ -836,6 +918,7 @@ final class ActiveWorkoutViewModel {
 
     /// Discards the in-progress session and all logged sets without saving.
     func cancelWorkout() {
+        cancelRestNotification()
         activityManager.end(currentActivityState)
         if let s = session {
             modelContext.delete(s)
@@ -869,11 +952,15 @@ final class ActiveWorkoutViewModel {
         let exercise: String
         let focusedSetLabel: String?
         let focusedSetDetail: String?
+        let focusedSetNumber: Int?
+        let exerciseSetCount: Int?
         if let focus = currentFocus, draftExercises.indices.contains(focus.exerciseIndex) {
             let draftExercise = draftExercises[focus.exerciseIndex]
             let draftSet = draftExercise.sets[focus.setIndex]
             exercise = draftExercise.exerciseName
-            focusedSetLabel = "Set \(focus.setIndex + 1) of \(draftExercise.sets.count)"
+            focusedSetNumber = focus.setIndex + 1
+            exerciseSetCount = draftExercise.sets.count
+            focusedSetLabel = "Set \(focusedSetNumber!) of \(exerciseSetCount!)"
             if draftExercise.isTimed, !draftSet.durationText.isEmpty {
                 focusedSetDetail = "\(draftSet.durationText)s"
             } else {
@@ -893,6 +980,8 @@ final class ActiveWorkoutViewModel {
             exercise = draftExercises.first?.exerciseName ?? routineName
             focusedSetLabel = nil
             focusedSetDetail = nil
+            focusedSetNumber = nil
+            exerciseSetCount = nil
         }
         let accent = AccentTheme.currentAccentRGB
         let totalSetCount = draftExercises.reduce(0) { $0 + $1.sets.count }
@@ -903,6 +992,8 @@ final class ActiveWorkoutViewModel {
             totalSetCount: totalSetCount,
             focusedSetLabel: focusedSetLabel,
             focusedSetDetail: focusedSetDetail,
+            focusedSetNumber: focusedSetNumber,
+            exerciseSetCount: exerciseSetCount,
             restEndsAt: restTimer.targetEndDate,
             totalRestDuration: restTimer.isActive ? restTimer.totalDuration : nil,
             accentR: accent.r,
