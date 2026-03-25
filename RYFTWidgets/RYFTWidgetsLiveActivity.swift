@@ -261,19 +261,11 @@ private struct CompactTrailing: View {
     let context: ActivityViewContext<WorkoutActivityAttributes>
 
     var body: some View {
-        if context.state.isResting, let endsAt = context.state.restEndsAt,
-           let total = context.state.totalRestDuration {
-            Text(timerInterval: Date.now...endsAt, countsDown: true)
-                .font(.system(size: 14, weight: .semibold, design: .monospaced))
-                .monospacedDigit()
-                .foregroundStyle(restPhaseColor(endsAt: endsAt, totalDuration: total))
-                .padding(.trailing, 4)
-        } else {
-            Text("\(context.state.setsLogged)")
-                .font(.system(size: 14, weight: .semibold, design: .monospaced))
-                .foregroundStyle(Color.ryftGreen)
-                .padding(.trailing, 4)
-        }
+        // Leading already shows the countdown during rest — show set count here for context.
+        Text("\(context.state.setsLogged)")
+            .font(.system(size: 14, weight: .semibold, design: .monospaced))
+            .foregroundStyle(context.state.isResting ? Color.ryftAmber : Color.ryftGreen)
+            .padding(.trailing, 4)
     }
 }
 

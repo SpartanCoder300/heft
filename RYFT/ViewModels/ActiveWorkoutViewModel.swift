@@ -142,16 +142,31 @@ final class ActiveWorkoutViewModel {
     private let modelContext: ModelContext
     private let pendingRoutineID: UUID?
     private let pendingSessionID: UUID?
+    private let resumeSessionID: UUID?
     private var zeroTask: Task<Void, Never>? = nil
+    private var phaseUpdateTasks: [Task<Void, Never>] = []
     private var hasSetup = false
     private let activityManager: WorkoutActivityManager
 
+    /// Called once when the SwiftData session is first created (on first set logged).
+    /// Set by ActiveWorkoutService to persist the session ID to UserDefaults directly —
+    /// bypassing SwiftUI observation chains which are unreliable for cross-object chains.
+    /// @ObservationIgnored — the callback itself doesn't need to be tracked.
+    @ObservationIgnored var onSessionCreated: ((UUID) -> Void)?
+
     // MARK: - Init
 
-    init(modelContext: ModelContext, pendingRoutineID: UUID?, pendingSessionID: UUID? = nil, activityManager: WorkoutActivityManager = WorkoutActivityManager()) {
+    init(
+        modelContext: ModelContext,
+        pendingRoutineID: UUID?,
+        pendingSessionID: UUID? = nil,
+        resumeSessionID: UUID? = nil,
+        activityManager: WorkoutActivityManager = WorkoutActivityManager()
+    ) {
         self.modelContext = modelContext
         self.pendingRoutineID = pendingRoutineID
         self.pendingSessionID = pendingSessionID
+        self.resumeSessionID = resumeSessionID
         self.activityManager = activityManager
     }
 
@@ -160,15 +175,33 @@ final class ActiveWorkoutViewModel {
     func setup() {
         guard !hasSetup else { return }
         hasSetup = true
-        if let routineID = pendingRoutineID {
+        if let sessionID = resumeSessionID {
+            resumeSession(id: sessionID)
+        } else if let routineID = pendingRoutineID {
             loadRoutine(id: routineID)
+            for i in draftExercises.indices {
+                applyPreviousPerformance(to: &draftExercises[i])
+            }
+            eagerlyPersistWorkout()
         } else if let sessionID = pendingSessionID {
             loadSession(id: sessionID)
-        }
-        for i in draftExercises.indices {
-            applyPreviousPerformance(to: &draftExercises[i])
+            for i in draftExercises.indices {
+                applyPreviousPerformance(to: &draftExercises[i])
+            }
+            eagerlyPersistWorkout()
         }
         activityManager.start(routineName: routineName, state: currentActivityState)
+    }
+
+    /// Creates the WorkoutSession and an ExerciseSnapshot for every exercise immediately
+    /// at workout start — before any set is logged. This ensures the full exercise list
+    /// survives a force-quit or crash and can be restored on next launch.
+    private func eagerlyPersistWorkout() {
+        let s = ensureSession()
+        for eIdx in draftExercises.indices {
+            _ = ensureSnapshot(exerciseIndex: eIdx, session: s)
+        }
+        try? modelContext.save()
     }
 
     private func loadRoutine(id: UUID) {
@@ -217,6 +250,141 @@ final class ActiveWorkoutViewModel {
                 // Start with one blank set; applyPreviousPerformance will expand and fill it.
                 return DraftExercise(exerciseName: name, isTimed: isTimed, sets: [DraftSet()], restSeconds: 90)
             }
+    }
+
+    /// Reconstructs in-memory workout state from a persisted incomplete WorkoutSession.
+    /// Already-logged sets are marked isLogged, existing snapshots are attached,
+    /// and a blank next set is appended to each exercise so logging can continue immediately.
+    /// Exercises with no logged sets are restored using the routine template's target set
+    /// count (if available), falling back to previous performance, then 1 blank set.
+    private func resumeSession(id: UUID) {
+        let descriptor = FetchDescriptor<WorkoutSession>(
+            predicate: #Predicate { $0.id == id }
+        )
+        guard let s = (try? modelContext.fetch(descriptor))?.first else { return }
+
+        // Attach the existing session so ensureSession() returns it without creating a new one.
+        session = s
+        openedAt = s.startedAt ?? .now
+
+        // Pre-fetch the source routine (if any) so we can restore target set counts
+        // for exercises that have no logged sets yet.
+        var routineEntriesByName: [String: RoutineEntry] = [:]
+        if let routineID = s.routineTemplateId {
+            let rd = FetchDescriptor<RoutineTemplate>(predicate: #Predicate { $0.id == routineID })
+            if let routine = (try? modelContext.fetch(rd))?.first {
+                routineName = routine.name
+                for entry in routine.entries {
+                    if let name = entry.exerciseDefinition?.name {
+                        routineEntriesByName[name] = entry
+                    }
+                }
+            }
+        }
+
+        let sortedSnapshots = s.exercises.sorted { $0.order < $1.order }
+
+        draftExercises = sortedSnapshots.map { snapshot in
+            let name = snapshot.exerciseName
+            let defDescriptor = FetchDescriptor<ExerciseDefinition>(
+                predicate: #Predicate { $0.name == name }
+            )
+            let def = (try? modelContext.fetch(defDescriptor))?.first
+            let isTimed         = def?.isTimed ?? false
+            let weightIncrement = def?.resolvedWeightIncrement ?? 2.5
+            let equipmentType   = def?.equipmentType ?? ""
+
+            // Reconstruct each persisted set as a logged DraftSet.
+            let sortedRecords = snapshot.sets.sorted { $0.loggedAt < $1.loggedAt }
+            var draftSets: [DraftSet] = sortedRecords.map { record in
+                var draft = DraftSet()
+                draft.weightText = formatWeight(record.weight)
+                if isTimed {
+                    draft.durationText = record.duration.map { "\(Int($0))" } ?? "0"
+                } else {
+                    draft.repsText = "\(record.reps)"
+                }
+                draft.setType     = record.setType
+                draft.isLogged    = true
+                draft.loggedRecord = record
+                draft.isPR        = record.isPersonalRecord
+                return draft
+            }
+
+            if sortedRecords.isEmpty {
+                // No sets logged for this exercise — restore from the routine template
+                // so the user sees the correct number of blank sets, not just one.
+                let routineEntry = routineEntriesByName[name]
+                let targetSets = routineEntry?.targetSets ?? 1
+                let targetReps = routineEntry?.targetRepsMin ?? 0
+                let restSecs   = routineEntry?.restSeconds ?? 90
+                let sets = (0 ..< targetSets).map { _ -> DraftSet in
+                    var set = DraftSet()
+                    if !isTimed { set.repsText = targetReps > 0 ? "\(targetReps)" : "" }
+                    return set
+                }
+                var exercise = DraftExercise(
+                    exerciseName:    name,
+                    equipmentType:   equipmentType,
+                    weightIncrement: weightIncrement,
+                    isTimed:         isTimed,
+                    sets:            sets,
+                    snapshot:        snapshot,
+                    restSeconds:     restSecs
+                )
+                applyPreviousPerformance(to: &exercise)
+                return exercise
+            }
+
+            // Build a blank set seeded from the last logged set (weight/reps carry forward).
+            var blankNext = DraftSet()
+            if let last = sortedRecords.last {
+                blankNext.weightText = formatWeight(last.weight)
+                if isTimed {
+                    blankNext.durationText = last.duration.map { "\(Int($0))" } ?? "30"
+                } else {
+                    blankNext.repsText = "\(last.reps)"
+                }
+                // Warmup sets don't propagate forward.
+                blankNext.setType = last.setType == .warmup ? .normal : last.setType
+            }
+
+            // Append enough blank sets to fill the routine's target count.
+            // If the user already logged all (or more) planned sets, still leave 1 blank.
+            let routineEntry = routineEntriesByName[name]
+            let targetSets   = routineEntry?.targetSets ?? 0
+            let blanksNeeded = targetSets > sortedRecords.count
+                ? targetSets - sortedRecords.count
+                : 1
+            for _ in 0 ..< blanksNeeded {
+                var s = blankNext
+                s.id = UUID()
+                draftSets.append(s)
+            }
+
+            let routineRestSecs = routineEntriesByName[name]?.restSeconds ?? 90
+            return DraftExercise(
+                exerciseName:    name,
+                equipmentType:   equipmentType,
+                weightIncrement: weightIncrement,
+                isTimed:         isTimed,
+                sets:            draftSets,
+                snapshot:        snapshot,
+                restSeconds:     routineRestSecs
+            )
+        }
+
+        // Restore focus to the last logged set so autoFocus advances to the correct next set.
+        outer: for eIdx in stride(from: draftExercises.count - 1, through: 0, by: -1) {
+            let sets = draftExercises[eIdx].sets
+            for sIdx in stride(from: sets.count - 1, through: 0, by: -1) {
+                if sets[sIdx].isLogged {
+                    lastLoggedFocus = SetFocus(exerciseIndex: eIdx, setIndex: sIdx)
+                    lastLoggedExerciseIndex = eIdx
+                    break outer
+                }
+            }
+        }
     }
 
     private func applyPreviousPerformance(to exercise: inout DraftExercise) {
@@ -277,6 +445,14 @@ final class ActiveWorkoutViewModel {
     func swapExercise(at index: Int, named name: String) {
         swappingExerciseIndex = nil
         guard draftExercises.indices.contains(index) else { return }
+
+        // If the outgoing exercise has an eagerly-created snapshot with no logged sets,
+        // delete it — it's a placeholder that no longer represents any real data.
+        if let oldSnapshot = draftExercises[index].snapshot, oldSnapshot.sets.isEmpty {
+            modelContext.delete(oldSnapshot)
+            try? modelContext.save()
+        }
+
         let descriptor = FetchDescriptor<ExerciseDefinition>(predicate: #Predicate { $0.name == name })
         let def = (try? modelContext.fetch(descriptor))?.first
         let equipmentType = def?.equipmentType ?? ""
@@ -294,6 +470,7 @@ final class ActiveWorkoutViewModel {
         )
         applyPreviousPerformance(to: &replacement)
         draftExercises[index] = replacement
+        activityManager.update(currentActivityState)
     }
 
     func addExercise(named name: String) {
@@ -363,6 +540,14 @@ final class ActiveWorkoutViewModel {
 
     func removeExercise(at index: Int) {
         guard draftExercises.indices.contains(index) else { return }
+
+        // Delete the eagerly-created snapshot if it has no logged sets — it's a placeholder
+        // with no real data. Snapshots with logged sets are left intact (preserve history).
+        if let snapshot = draftExercises[index].snapshot, snapshot.sets.isEmpty {
+            modelContext.delete(snapshot)
+            try? modelContext.save()
+        }
+
         draftExercises.remove(at: index)
         // Invalidate focus state that pointed into the removed (or now-shifted) exercise.
         if let lf = lastLoggedFocus {
@@ -373,6 +558,7 @@ final class ActiveWorkoutViewModel {
             if mf.exerciseIndex == index { manualFocus = nil }
             else if mf.exerciseIndex > index { manualFocus = SetFocus(exerciseIndex: mf.exerciseIndex - 1, setIndex: mf.setIndex) }
         }
+        activityManager.update(currentActivityState)
     }
 
     func moveExercise(at index: Int, direction: MoveDirection) {
@@ -380,6 +566,7 @@ final class ActiveWorkoutViewModel {
         guard draftExercises.indices.contains(index),
               draftExercises.indices.contains(target) else { return }
         draftExercises.swapAt(index, target)
+        activityManager.update(currentActivityState)
     }
 
     enum MoveDirection { case up, down }
@@ -490,22 +677,43 @@ final class ActiveWorkoutViewModel {
 
     func startRestTimer(duration: TimeInterval) {
         zeroTask?.cancel()
+        phaseUpdateTasks.forEach { $0.cancel() }
+        phaseUpdateTasks.removeAll()
+
         restTimer.start(duration: duration)
         activityManager.update(currentActivityState)
         guard let deadline = restTimer.targetEndDate else { return }
+
+        // Fire the zero task to clear the timer when it expires.
         zeroTask = Task { @MainActor [weak self] in
             guard let self else { return }
             let delay = deadline.timeIntervalSinceNow
-            if delay > 0 {
-                try? await Task.sleep(for: .seconds(delay))
-            }
+            if delay > 0 { try? await Task.sleep(for: .seconds(delay)) }
             guard !Task.isCancelled else { return }
             self.restTimer.tick(at: .now)
             self.activityManager.update(self.currentActivityState)
         }
+
+        // Schedule Live Activity updates at the 50% and 20% thresholds so the
+        // phase colour (green → amber → red) transitions in the widget without
+        // requiring any user interaction.
+        for threshold in [0.5, 0.2] {
+            let delay = duration * (1.0 - threshold)
+            guard delay > 0 else { continue }
+            let t = Task { @MainActor [weak self] in
+                guard let self else { return }
+                try? await Task.sleep(for: .seconds(delay))
+                guard !Task.isCancelled, self.restTimer.isActive else { return }
+                self.activityManager.update(self.currentActivityState)
+            }
+            phaseUpdateTasks.append(t)
+        }
     }
 
     func skipRest() {
+        zeroTask?.cancel()
+        phaseUpdateTasks.forEach { $0.cancel() }
+        phaseUpdateTasks.removeAll()
         restTimer.skip()
         activityManager.update(currentActivityState)
     }
@@ -616,6 +824,7 @@ final class ActiveWorkoutViewModel {
 
     /// Discards the in-progress session and all logged sets without saving.
     func cancelWorkout() {
+        activityManager.end(currentActivityState)
         if let s = session {
             modelContext.delete(s)
             try? modelContext.save()
@@ -662,9 +871,10 @@ final class ActiveWorkoutViewModel {
 
     private func ensureSession() -> WorkoutSession {
         if let s = session { return s }
-        let s = WorkoutSession(startedAt: .now, routineTemplateId: pendingRoutineID)
+        let s = WorkoutSession(startedAt: openedAt, routineTemplateId: pendingRoutineID)
         modelContext.insert(s)
         session = s
+        onSessionCreated?(s.id)
         return s
     }
 

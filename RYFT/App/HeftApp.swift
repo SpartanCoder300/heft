@@ -12,9 +12,6 @@ struct RYFTApp: App {
         WindowGroup {
             AppView()
                 .environment(appState)
-                .task {
-                    ExerciseSeeder.seedIfNeeded(in: sharedModelContainer.mainContext)
-                }
         }
         .modelContainer(sharedModelContainer)
     }

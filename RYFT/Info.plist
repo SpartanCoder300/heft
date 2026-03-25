@@ -10,5 +10,14 @@
 	<string>Dark</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>ryft</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

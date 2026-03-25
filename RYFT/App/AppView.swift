@@ -13,6 +13,7 @@ struct AppView: View {
     @State private var workoutStartTask: Task<Void, Never>?
     @State private var meshIntroTask: Task<Void, Never>?
 
+
     var body: some View {
         @Bindable var appState = appState
         @Bindable var workout = appState.workout
@@ -139,8 +140,14 @@ struct AppView: View {
                 break
             }
         }
+        .onOpenURL { url in
+            guard url.scheme == "ryft", url.host == "workout" else { return }
+            guard appState.workout.hasActiveWorkout else { return }
+            appState.workout.isShowingFullWorkout = true
+        }
         .task {
             ExerciseSeeder.seedIfNeeded(in: modelContext)
+            appState.workout.onLaunch(modelContext: modelContext)
         }
     }
 
