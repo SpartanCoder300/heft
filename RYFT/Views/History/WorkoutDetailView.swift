@@ -166,16 +166,36 @@ private struct SetDetailRow: View {
 
     var body: some View {
         HStack(spacing: Spacing.sm) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Text("\(setNumber)")
+                        .font(.subheadline.monospacedDigit())
+                        .foregroundStyle(.tertiary)
+                        .frame(width: 24, alignment: .leading)
 
-            // Set number
-            Text("\(setNumber)")
-                .font(.subheadline.monospacedDigit())
-                .foregroundStyle(.tertiary)
-                .frame(width: 24, alignment: .center)
+                    if record.setType != .normal {
+                        SetTypeLabel(setType: record.setType)
+                    }
 
-            // Non-normal type badge
-            if record.setType != .normal {
-                SetTypeLabel(setType: record.setType)
+                    if record.isPersonalRecord {
+                        Text("PR")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(Color.ryftAmber)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.ryftAmber.opacity(0.14), in: Capsule())
+                    }
+                }
+
+                if record.isPersonalRecord {
+                    let e1rm = ExerciseDefinition.estimatedOneRepMax(weight: record.weight, reps: record.reps)
+                    if e1rm > 0 {
+                        Text("e1RM \(formattedE1RM(e1rm))")
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(.tertiary)
+                            .padding(.leading, 30)
+                    }
+                }
             }
 
             Spacer()
@@ -185,7 +205,7 @@ private struct SetDetailRow: View {
                 if record.weight > 0 {
                     HStack(spacing: 2) {
                         Text(formattedWeight)
-                            .foregroundStyle(record.isPersonalRecord ? Color.ryftAmber : Color.primary)
+                            .foregroundStyle(.primary)
                         Text("lbs")
                             .foregroundStyle(.secondary)
                     }
@@ -204,32 +224,9 @@ private struct SetDetailRow: View {
                     .font(.body.monospacedDigit().weight(.semibold))
                     .foregroundStyle(.primary)
             }
-
-            // PR badge + e1RM
-            if record.isPersonalRecord {
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("PR")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(Color.ryftAmber)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(Color.ryftAmber.opacity(0.15), in: RoundedRectangle(cornerRadius: 4, style: .continuous))
-                    let e1rm = ExerciseDefinition.estimatedOneRepMax(weight: record.weight, reps: record.reps)
-                    if e1rm > 0 {
-                        Text("~\(formattedE1RM(e1rm)) e1RM")
-                            .font(.caption)
-                            .foregroundStyle(Color.ryftAmber.opacity(0.6))
-                    }
-                }
-            }
         }
         .padding(.horizontal, Spacing.md)
         .padding(.vertical, 11)
-        .background(
-            record.isPersonalRecord
-                ? Rectangle().fill(Color.ryftAmber.opacity(0.05)) // Forces 90-degree corners
-                : Rectangle().fill(.clear)
-        )
     }
 
     private var formattedWeight: String {
@@ -278,34 +275,10 @@ private struct SetTypeLabel: View {
 // MARK: - Preview
 
 #Preview {
-    let container = PersistenceController.previewContainer
-    let context = container.mainContext
-
-    let session = WorkoutSession(startedAt: Date().addingTimeInterval(-2700), completedAt: .now)
-    context.insert(session)
-
-    let snap1 = ExerciseSnapshot(exerciseName: "Barbell Bench Press", order: 0, workoutSession: session)
-    context.insert(snap1)
-    session.exercises.append(snap1)
-    let s1 = SetRecord(weight: 135, reps: 8, setType: .warmup, exerciseSnapshot: snap1)
-    let s2 = SetRecord(weight: 185, reps: 5, setType: .normal, isPersonalRecord: true, exerciseSnapshot: snap1)
-    let s3 = SetRecord(weight: 185, reps: 5, setType: .normal, exerciseSnapshot: snap1)
-    let s4 = SetRecord(weight: 185, reps: 4, setType: .normal, exerciseSnapshot: snap1)
-    context.insert(s1); context.insert(s2); context.insert(s3); context.insert(s4)
-    snap1.sets = [s1, s2, s3, s4]
-
-    let snap2 = ExerciseSnapshot(exerciseName: "Barbell Back Squat", order: 1, workoutSession: session)
-    context.insert(snap2)
-    session.exercises.append(snap2)
-    let s5 = SetRecord(weight: 225, reps: 5, setType: .normal, exerciseSnapshot: snap2)
-    let s6 = SetRecord(weight: 225, reps: 5, setType: .normal, exerciseSnapshot: snap2)
-    let s7 = SetRecord(weight: 225, reps: 4, setType: .normal, exerciseSnapshot: snap2)
-    context.insert(s5); context.insert(s6); context.insert(s7)
-    snap2.sets = [s5, s6, s7]
-
     return NavigationStack {
-        WorkoutDetailView(session: session)
+        WorkoutDetailView(session: HistoryRootPreviewData.detailPreviewSession)
     }
     .environment(AppState())
-    .modelContainer(container)
+    .environment(MeshEngine())
+    .modelContainer(HistoryRootPreviewData.populatedContainer)
 }

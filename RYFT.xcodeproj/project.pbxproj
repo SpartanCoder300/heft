@@ -10,6 +10,64 @@
 		20C236842F732C8A00D5763E /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20C236832F732C8A00D5763E /* WidgetKit.framework */; };
 		20C236862F732C8A00D5763E /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20C236852F732C8A00D5763E /* SwiftUI.framework */; };
 		20C236952F732C8C00D5763E /* RYFTWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 20C236812F732C8A00D5763E /* RYFTWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		20C236EF2F746D2300D5763E /* AccentTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236A82F746D2300D5763E /* AccentTheme.swift */; };
+		20C236F02F746D2300D5763E /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236A92F746D2300D5763E /* AppState.swift */; };
+		20C236F12F746D2300D5763E /* AppView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236AA2F746D2300D5763E /* AppView.swift */; };
+		20C236F22F746D2300D5763E /* HeftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236AB2F746D2300D5763E /* HeftApp.swift */; };
+		20C236F32F746D2300D5763E /* MeshTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236AC2F746D2300D5763E /* MeshTheme.swift */; };
+		20C236F42F746D2300D5763E /* Color+Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236AE2F746D2300D5763E /* Color+Tokens.swift */; };
+		20C236F52F746D2300D5763E /* CompactStepper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236AF2F746D2300D5763E /* CompactStepper.swift */; };
+		20C236F62F746D2300D5763E /* GlassPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236B02F746D2300D5763E /* GlassPanel.swift */; };
+		20C236F72F746D2300D5763E /* MeshBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236B12F746D2300D5763E /* MeshBackgroundView.swift */; };
+		20C236F82F746D2300D5763E /* PlaceholderScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236B22F746D2300D5763E /* PlaceholderScreen.swift */; };
+		20C236F92F746D2300D5763E /* ProGlassModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236B32F746D2300D5763E /* ProGlassModifier.swift */; };
+		20C236FA2F746D2300D5763E /* SetTypeChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236B42F746D2300D5763E /* SetTypeChip.swift */; };
+		20C236FB2F746D2300D5763E /* ThemedBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236B52F746D2300D5763E /* ThemedBackground.swift */; };
+		20C236FC2F746D2300D5763E /* WheelPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236B62F746D2300D5763E /* WheelPickerSheet.swift */; };
+		20C236FD2F746D2300D5763E /* BodyWeightEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236B82F746D2300D5763E /* BodyWeightEntry.swift */; };
+		20C236FE2F746D2300D5763E /* ExerciseDefinition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236B92F746D2300D5763E /* ExerciseDefinition.swift */; };
+		20C236FF2F746D2300D5763E /* ExerciseSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236BA2F746D2300D5763E /* ExerciseSnapshot.swift */; };
+		20C237002F746D2300D5763E /* RoutineEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236BB2F746D2300D5763E /* RoutineEntry.swift */; };
+		20C237012F746D2300D5763E /* RoutineTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236BC2F746D2300D5763E /* RoutineTemplate.swift */; };
+		20C237022F746D2300D5763E /* SetRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236BD2F746D2300D5763E /* SetRecord.swift */; };
+		20C237032F746D2300D5763E /* SetType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236BE2F746D2300D5763E /* SetType.swift */; };
+		20C237042F746D2300D5763E /* WorkoutActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236BF2F746D2300D5763E /* WorkoutActivityAttributes.swift */; };
+		20C237052F746D2300D5763E /* WorkoutSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236C02F746D2300D5763E /* WorkoutSession.swift */; };
+		20C237062F746D2300D5763E /* HistoryRootPreviewData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236C22F746D2300D5763E /* HistoryRootPreviewData.swift */; };
+		20C237072F746D2300D5763E /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236C42F746D2300D5763E /* DesignTokens.swift */; };
+		20C237082F746D2300D5763E /* ActiveWorkoutService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236C62F746D2300D5763E /* ActiveWorkoutService.swift */; };
+		20C237092F746D2300D5763E /* ExerciseFrecencyActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236C72F746D2300D5763E /* ExerciseFrecencyActor.swift */; };
+		20C2370A2F746D2300D5763E /* ExerciseSeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236C82F746D2300D5763E /* ExerciseSeeder.swift */; };
+		20C2370B2F746D2300D5763E /* HomeStatsActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236C92F746D2300D5763E /* HomeStatsActor.swift */; };
+		20C2370C2F746D2300D5763E /* MeshEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236CA2F746D2300D5763E /* MeshEngine.swift */; };
+		20C2370D2F746D2300D5763E /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236CB2F746D2300D5763E /* PersistenceController.swift */; };
+		20C2370E2F746D2300D5763E /* RestTimerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236CC2F746D2300D5763E /* RestTimerState.swift */; };
+		20C2370F2F746D2300D5763E /* WorkoutActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236CD2F746D2300D5763E /* WorkoutActivityManager.swift */; };
+		20C237102F746D2300D5763E /* ActiveWorkoutViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236CF2F746D2300D5763E /* ActiveWorkoutViewModel.swift */; };
+		20C237112F746D2300D5763E /* ExercisePickerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236D02F746D2300D5763E /* ExercisePickerViewModel.swift */; };
+		20C237122F746D2300D5763E /* HomeStatsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236D12F746D2300D5763E /* HomeStatsViewModel.swift */; };
+		20C237132F746D2300D5763E /* RoutineBuilderViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236D22F746D2300D5763E /* RoutineBuilderViewModel.swift */; };
+		20C237142F746D2300D5763E /* ViewModelNamespace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236D32F746D2300D5763E /* ViewModelNamespace.swift */; };
+		20C237152F746D2300D5763E /* WorkoutSummaryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236D42F746D2300D5763E /* WorkoutSummaryViewModel.swift */; };
+		20C237162F746D2300D5763E /* ActiveExerciseCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236D62F746D2300D5763E /* ActiveExerciseCard.swift */; };
+		20C237172F746D2300D5763E /* ActiveWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236D72F746D2300D5763E /* ActiveWorkoutView.swift */; };
+		20C237182F746D2300D5763E /* MiniWorkoutBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236D82F746D2300D5763E /* MiniWorkoutBar.swift */; };
+		20C237192F746D2300D5763E /* PRMomentOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236D92F746D2300D5763E /* PRMomentOverlay.swift */; };
+		20C2371A2F746D2300D5763E /* HistoryRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236DB2F746D2300D5763E /* HistoryRootView.swift */; };
+		20C2371B2F746D2300D5763E /* WorkoutDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236DC2F746D2300D5763E /* WorkoutDetailView.swift */; };
+		20C2371C2F746D2300D5763E /* HomeGreetingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236DE2F746D2300D5763E /* HomeGreetingView.swift */; };
+		20C2371D2F746D2300D5763E /* HomeRecentSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236DF2F746D2300D5763E /* HomeRecentSection.swift */; };
+		20C2371E2F746D2300D5763E /* HomeRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236E02F746D2300D5763E /* HomeRootView.swift */; };
+		20C2371F2F746D2300D5763E /* HomeRoutinesSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236E12F746D2300D5763E /* HomeRoutinesSection.swift */; };
+		20C237202F746D2300D5763E /* HomeStatChipsRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236E22F746D2300D5763E /* HomeStatChipsRow.swift */; };
+		20C237212F746D2300D5763E /* SectionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236E32F746D2300D5763E /* SectionHeader.swift */; };
+		20C237222F746D2300D5763E /* ExerciseEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236E52F746D2300D5763E /* ExerciseEditorView.swift */; };
+		20C237232F746D2300D5763E /* ExercisePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236E62F746D2300D5763E /* ExercisePicker.swift */; };
+		20C237242F746D2300D5763E /* RoutineBuilderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236E72F746D2300D5763E /* RoutineBuilderView.swift */; };
+		20C237252F746D2300D5763E /* SettingsRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236E82F746D2300D5763E /* SettingsRootView.swift */; };
+		20C237262F746D2300D5763E /* WorkoutSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236E92F746D2300D5763E /* WorkoutSummaryView.swift */; };
+		20C237272F746D2300D5763E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 20C236EB2F746D2300D5763E /* Assets.xcassets */; };
+		20C237292F746D2300D5763E /* WorkoutActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236BF2F746D2300D5763E /* WorkoutActivityAttributes.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,16 +115,68 @@
 		20C236812F732C8A00D5763E /* RYFTWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RYFTWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		20C236832F732C8A00D5763E /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		20C236852F732C8A00D5763E /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		20C236A82F746D2300D5763E /* AccentTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccentTheme.swift; sourceTree = "<group>"; };
+		20C236A92F746D2300D5763E /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		20C236AA2F746D2300D5763E /* AppView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppView.swift; sourceTree = "<group>"; };
+		20C236AB2F746D2300D5763E /* HeftApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeftApp.swift; sourceTree = "<group>"; };
+		20C236AC2F746D2300D5763E /* MeshTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshTheme.swift; sourceTree = "<group>"; };
+		20C236AE2F746D2300D5763E /* Color+Tokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Tokens.swift"; sourceTree = "<group>"; };
+		20C236AF2F746D2300D5763E /* CompactStepper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompactStepper.swift; sourceTree = "<group>"; };
+		20C236B02F746D2300D5763E /* GlassPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassPanel.swift; sourceTree = "<group>"; };
+		20C236B12F746D2300D5763E /* MeshBackgroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshBackgroundView.swift; sourceTree = "<group>"; };
+		20C236B22F746D2300D5763E /* PlaceholderScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceholderScreen.swift; sourceTree = "<group>"; };
+		20C236B32F746D2300D5763E /* ProGlassModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProGlassModifier.swift; sourceTree = "<group>"; };
+		20C236B42F746D2300D5763E /* SetTypeChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetTypeChip.swift; sourceTree = "<group>"; };
+		20C236B52F746D2300D5763E /* ThemedBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemedBackground.swift; sourceTree = "<group>"; };
+		20C236B62F746D2300D5763E /* WheelPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WheelPickerSheet.swift; sourceTree = "<group>"; };
+		20C236B82F746D2300D5763E /* BodyWeightEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyWeightEntry.swift; sourceTree = "<group>"; };
+		20C236B92F746D2300D5763E /* ExerciseDefinition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseDefinition.swift; sourceTree = "<group>"; };
+		20C236BA2F746D2300D5763E /* ExerciseSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseSnapshot.swift; sourceTree = "<group>"; };
+		20C236BB2F746D2300D5763E /* RoutineEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutineEntry.swift; sourceTree = "<group>"; };
+		20C236BC2F746D2300D5763E /* RoutineTemplate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutineTemplate.swift; sourceTree = "<group>"; };
+		20C236BD2F746D2300D5763E /* SetRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetRecord.swift; sourceTree = "<group>"; };
+		20C236BE2F746D2300D5763E /* SetType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetType.swift; sourceTree = "<group>"; };
+		20C236BF2F746D2300D5763E /* WorkoutActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutActivityAttributes.swift; sourceTree = "<group>"; };
+		20C236C02F746D2300D5763E /* WorkoutSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutSession.swift; sourceTree = "<group>"; };
+		20C236C22F746D2300D5763E /* HistoryRootPreviewData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryRootPreviewData.swift; sourceTree = "<group>"; };
+		20C236C42F746D2300D5763E /* DesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
+		20C236C62F746D2300D5763E /* ActiveWorkoutService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveWorkoutService.swift; sourceTree = "<group>"; };
+		20C236C72F746D2300D5763E /* ExerciseFrecencyActor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseFrecencyActor.swift; sourceTree = "<group>"; };
+		20C236C82F746D2300D5763E /* ExerciseSeeder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseSeeder.swift; sourceTree = "<group>"; };
+		20C236C92F746D2300D5763E /* HomeStatsActor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeStatsActor.swift; sourceTree = "<group>"; };
+		20C236CA2F746D2300D5763E /* MeshEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshEngine.swift; sourceTree = "<group>"; };
+		20C236CB2F746D2300D5763E /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
+		20C236CC2F746D2300D5763E /* RestTimerState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestTimerState.swift; sourceTree = "<group>"; };
+		20C236CD2F746D2300D5763E /* WorkoutActivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutActivityManager.swift; sourceTree = "<group>"; };
+		20C236CF2F746D2300D5763E /* ActiveWorkoutViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveWorkoutViewModel.swift; sourceTree = "<group>"; };
+		20C236D02F746D2300D5763E /* ExercisePickerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExercisePickerViewModel.swift; sourceTree = "<group>"; };
+		20C236D12F746D2300D5763E /* HomeStatsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeStatsViewModel.swift; sourceTree = "<group>"; };
+		20C236D22F746D2300D5763E /* RoutineBuilderViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutineBuilderViewModel.swift; sourceTree = "<group>"; };
+		20C236D32F746D2300D5763E /* ViewModelNamespace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewModelNamespace.swift; sourceTree = "<group>"; };
+		20C236D42F746D2300D5763E /* WorkoutSummaryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutSummaryViewModel.swift; sourceTree = "<group>"; };
+		20C236D62F746D2300D5763E /* ActiveExerciseCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveExerciseCard.swift; sourceTree = "<group>"; };
+		20C236D72F746D2300D5763E /* ActiveWorkoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveWorkoutView.swift; sourceTree = "<group>"; };
+		20C236D82F746D2300D5763E /* MiniWorkoutBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiniWorkoutBar.swift; sourceTree = "<group>"; };
+		20C236D92F746D2300D5763E /* PRMomentOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PRMomentOverlay.swift; sourceTree = "<group>"; };
+		20C236DB2F746D2300D5763E /* HistoryRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryRootView.swift; sourceTree = "<group>"; };
+		20C236DC2F746D2300D5763E /* WorkoutDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutDetailView.swift; sourceTree = "<group>"; };
+		20C236DE2F746D2300D5763E /* HomeGreetingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeGreetingView.swift; sourceTree = "<group>"; };
+		20C236DF2F746D2300D5763E /* HomeRecentSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeRecentSection.swift; sourceTree = "<group>"; };
+		20C236E02F746D2300D5763E /* HomeRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeRootView.swift; sourceTree = "<group>"; };
+		20C236E12F746D2300D5763E /* HomeRoutinesSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeRoutinesSection.swift; sourceTree = "<group>"; };
+		20C236E22F746D2300D5763E /* HomeStatChipsRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeStatChipsRow.swift; sourceTree = "<group>"; };
+		20C236E32F746D2300D5763E /* SectionHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionHeader.swift; sourceTree = "<group>"; };
+		20C236E52F746D2300D5763E /* ExerciseEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseEditorView.swift; sourceTree = "<group>"; };
+		20C236E62F746D2300D5763E /* ExercisePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExercisePicker.swift; sourceTree = "<group>"; };
+		20C236E72F746D2300D5763E /* RoutineBuilderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutineBuilderView.swift; sourceTree = "<group>"; };
+		20C236E82F746D2300D5763E /* SettingsRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsRootView.swift; sourceTree = "<group>"; };
+		20C236E92F746D2300D5763E /* WorkoutSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutSummaryView.swift; sourceTree = "<group>"; };
+		20C236EB2F746D2300D5763E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		20C236EC2F746D2300D5763E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		20C236ED2F746D2300D5763E /* RYFT.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RYFT.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		205CFF822F69D7E400FFF88C /* Exceptions for "RYFT" folder in "RYFT" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 205CFF5E2F69D7E200FFF88C /* RYFT */;
-		};
 		20C236992F732C8C00D5763E /* Exceptions for "RYFTWidgets" folder in "RYFTWidgetsExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -74,25 +184,9 @@
 			);
 			target = 20C236802F732C8A00D5763E /* RYFTWidgetsExtension */;
 		};
-		20C236A02F732ECA00D5763E /* Exceptions for "RYFT" folder in "RYFTWidgetsExtension" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Models/WorkoutActivityAttributes.swift,
-			);
-			target = 20C236802F732C8A00D5763E /* RYFTWidgetsExtension */;
-		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		205CFF612F69D7E200FFF88C /* RYFT */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				205CFF822F69D7E400FFF88C /* Exceptions for "RYFT" folder in "RYFT" target */,
-				20C236A02F732ECA00D5763E /* Exceptions for "RYFT" folder in "RYFTWidgetsExtension" target */,
-			);
-			path = RYFT;
-			sourceTree = "<group>";
-		};
 		205CFF732F69D7E400FFF88C /* RYFTTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = RYFTTests;
@@ -150,7 +244,7 @@
 		205CFF562F69D7E200FFF88C = {
 			isa = PBXGroup;
 			children = (
-				205CFF612F69D7E200FFF88C /* RYFT */,
+				20C236EE2F746D2300D5763E /* RYFT */,
 				205CFF732F69D7E400FFF88C /* RYFTTests */,
 				205CFF7D2F69D7E400FFF88C /* RYFTUITests */,
 				20C236872F732C8A00D5763E /* RYFTWidgets */,
@@ -179,6 +273,160 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		20C236AD2F746D2300D5763E /* App */ = {
+			isa = PBXGroup;
+			children = (
+				20C236A82F746D2300D5763E /* AccentTheme.swift */,
+				20C236A92F746D2300D5763E /* AppState.swift */,
+				20C236AA2F746D2300D5763E /* AppView.swift */,
+				20C236AB2F746D2300D5763E /* HeftApp.swift */,
+				20C236AC2F746D2300D5763E /* MeshTheme.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		20C236B72F746D2300D5763E /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				20C236AE2F746D2300D5763E /* Color+Tokens.swift */,
+				20C236AF2F746D2300D5763E /* CompactStepper.swift */,
+				20C236B02F746D2300D5763E /* GlassPanel.swift */,
+				20C236B12F746D2300D5763E /* MeshBackgroundView.swift */,
+				20C236B22F746D2300D5763E /* PlaceholderScreen.swift */,
+				20C236B32F746D2300D5763E /* ProGlassModifier.swift */,
+				20C236B42F746D2300D5763E /* SetTypeChip.swift */,
+				20C236B52F746D2300D5763E /* ThemedBackground.swift */,
+				20C236B62F746D2300D5763E /* WheelPickerSheet.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		20C236C12F746D2300D5763E /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				20C236B82F746D2300D5763E /* BodyWeightEntry.swift */,
+				20C236B92F746D2300D5763E /* ExerciseDefinition.swift */,
+				20C236BA2F746D2300D5763E /* ExerciseSnapshot.swift */,
+				20C236BB2F746D2300D5763E /* RoutineEntry.swift */,
+				20C236BC2F746D2300D5763E /* RoutineTemplate.swift */,
+				20C236BD2F746D2300D5763E /* SetRecord.swift */,
+				20C236BE2F746D2300D5763E /* SetType.swift */,
+				20C236BF2F746D2300D5763E /* WorkoutActivityAttributes.swift */,
+				20C236C02F746D2300D5763E /* WorkoutSession.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		20C236C32F746D2300D5763E /* Preview */ = {
+			isa = PBXGroup;
+			children = (
+				20C236C22F746D2300D5763E /* HistoryRootPreviewData.swift */,
+			);
+			path = Preview;
+			sourceTree = "<group>";
+		};
+		20C236C52F746D2300D5763E /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				20C236C42F746D2300D5763E /* DesignTokens.swift */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		20C236CE2F746D2300D5763E /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				20C236C62F746D2300D5763E /* ActiveWorkoutService.swift */,
+				20C236C72F746D2300D5763E /* ExerciseFrecencyActor.swift */,
+				20C236C82F746D2300D5763E /* ExerciseSeeder.swift */,
+				20C236C92F746D2300D5763E /* HomeStatsActor.swift */,
+				20C236CA2F746D2300D5763E /* MeshEngine.swift */,
+				20C236CB2F746D2300D5763E /* PersistenceController.swift */,
+				20C236CC2F746D2300D5763E /* RestTimerState.swift */,
+				20C236CD2F746D2300D5763E /* WorkoutActivityManager.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		20C236D52F746D2300D5763E /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				20C236CF2F746D2300D5763E /* ActiveWorkoutViewModel.swift */,
+				20C236D02F746D2300D5763E /* ExercisePickerViewModel.swift */,
+				20C236D12F746D2300D5763E /* HomeStatsViewModel.swift */,
+				20C236D22F746D2300D5763E /* RoutineBuilderViewModel.swift */,
+				20C236D32F746D2300D5763E /* ViewModelNamespace.swift */,
+				20C236D42F746D2300D5763E /* WorkoutSummaryViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		20C236DA2F746D2300D5763E /* ActiveWorkout */ = {
+			isa = PBXGroup;
+			children = (
+				20C236D62F746D2300D5763E /* ActiveExerciseCard.swift */,
+				20C236D72F746D2300D5763E /* ActiveWorkoutView.swift */,
+				20C236D82F746D2300D5763E /* MiniWorkoutBar.swift */,
+				20C236D92F746D2300D5763E /* PRMomentOverlay.swift */,
+			);
+			path = ActiveWorkout;
+			sourceTree = "<group>";
+		};
+		20C236DD2F746D2300D5763E /* History */ = {
+			isa = PBXGroup;
+			children = (
+				20C236DB2F746D2300D5763E /* HistoryRootView.swift */,
+				20C236DC2F746D2300D5763E /* WorkoutDetailView.swift */,
+			);
+			path = History;
+			sourceTree = "<group>";
+		};
+		20C236E42F746D2300D5763E /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				20C236DE2F746D2300D5763E /* HomeGreetingView.swift */,
+				20C236DF2F746D2300D5763E /* HomeRecentSection.swift */,
+				20C236E02F746D2300D5763E /* HomeRootView.swift */,
+				20C236E12F746D2300D5763E /* HomeRoutinesSection.swift */,
+				20C236E22F746D2300D5763E /* HomeStatChipsRow.swift */,
+				20C236E32F746D2300D5763E /* SectionHeader.swift */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
+		20C236EA2F746D2300D5763E /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				20C236DA2F746D2300D5763E /* ActiveWorkout */,
+				20C236DD2F746D2300D5763E /* History */,
+				20C236E42F746D2300D5763E /* Home */,
+				20C236E52F746D2300D5763E /* ExerciseEditorView.swift */,
+				20C236E62F746D2300D5763E /* ExercisePicker.swift */,
+				20C236E72F746D2300D5763E /* RoutineBuilderView.swift */,
+				20C236E82F746D2300D5763E /* SettingsRootView.swift */,
+				20C236E92F746D2300D5763E /* WorkoutSummaryView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		20C236EE2F746D2300D5763E /* RYFT */ = {
+			isa = PBXGroup;
+			children = (
+				20C236AD2F746D2300D5763E /* App */,
+				20C236B72F746D2300D5763E /* Components */,
+				20C236C12F746D2300D5763E /* Models */,
+				20C236C32F746D2300D5763E /* Preview */,
+				20C236C52F746D2300D5763E /* Resources */,
+				20C236CE2F746D2300D5763E /* Services */,
+				20C236D52F746D2300D5763E /* ViewModels */,
+				20C236EA2F746D2300D5763E /* Views */,
+				20C236EB2F746D2300D5763E /* Assets.xcassets */,
+				20C236EC2F746D2300D5763E /* Info.plist */,
+				20C236ED2F746D2300D5763E /* RYFT.entitlements */,
+			);
+			path = RYFT;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -195,9 +443,6 @@
 			);
 			dependencies = (
 				20C236942F732C8C00D5763E /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				205CFF612F69D7E200FFF88C /* RYFT */,
 			);
 			name = RYFT;
 			packageProductDependencies = (
@@ -327,6 +572,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				20C237272F746D2300D5763E /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -358,6 +604,62 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				20C236EF2F746D2300D5763E /* AccentTheme.swift in Sources */,
+				20C236F02F746D2300D5763E /* AppState.swift in Sources */,
+				20C236F12F746D2300D5763E /* AppView.swift in Sources */,
+				20C236F22F746D2300D5763E /* HeftApp.swift in Sources */,
+				20C236F32F746D2300D5763E /* MeshTheme.swift in Sources */,
+				20C236F42F746D2300D5763E /* Color+Tokens.swift in Sources */,
+				20C236F52F746D2300D5763E /* CompactStepper.swift in Sources */,
+				20C236F62F746D2300D5763E /* GlassPanel.swift in Sources */,
+				20C236F72F746D2300D5763E /* MeshBackgroundView.swift in Sources */,
+				20C236F82F746D2300D5763E /* PlaceholderScreen.swift in Sources */,
+				20C236F92F746D2300D5763E /* ProGlassModifier.swift in Sources */,
+				20C236FA2F746D2300D5763E /* SetTypeChip.swift in Sources */,
+				20C236FB2F746D2300D5763E /* ThemedBackground.swift in Sources */,
+				20C236FC2F746D2300D5763E /* WheelPickerSheet.swift in Sources */,
+				20C236FD2F746D2300D5763E /* BodyWeightEntry.swift in Sources */,
+				20C236FE2F746D2300D5763E /* ExerciseDefinition.swift in Sources */,
+				20C236FF2F746D2300D5763E /* ExerciseSnapshot.swift in Sources */,
+				20C237002F746D2300D5763E /* RoutineEntry.swift in Sources */,
+				20C237012F746D2300D5763E /* RoutineTemplate.swift in Sources */,
+				20C237022F746D2300D5763E /* SetRecord.swift in Sources */,
+				20C237032F746D2300D5763E /* SetType.swift in Sources */,
+				20C237042F746D2300D5763E /* WorkoutActivityAttributes.swift in Sources */,
+				20C237052F746D2300D5763E /* WorkoutSession.swift in Sources */,
+				20C237062F746D2300D5763E /* HistoryRootPreviewData.swift in Sources */,
+				20C237072F746D2300D5763E /* DesignTokens.swift in Sources */,
+				20C237082F746D2300D5763E /* ActiveWorkoutService.swift in Sources */,
+				20C237092F746D2300D5763E /* ExerciseFrecencyActor.swift in Sources */,
+				20C2370A2F746D2300D5763E /* ExerciseSeeder.swift in Sources */,
+				20C2370B2F746D2300D5763E /* HomeStatsActor.swift in Sources */,
+				20C2370C2F746D2300D5763E /* MeshEngine.swift in Sources */,
+				20C2370D2F746D2300D5763E /* PersistenceController.swift in Sources */,
+				20C2370E2F746D2300D5763E /* RestTimerState.swift in Sources */,
+				20C2370F2F746D2300D5763E /* WorkoutActivityManager.swift in Sources */,
+				20C237102F746D2300D5763E /* ActiveWorkoutViewModel.swift in Sources */,
+				20C237112F746D2300D5763E /* ExercisePickerViewModel.swift in Sources */,
+				20C237122F746D2300D5763E /* HomeStatsViewModel.swift in Sources */,
+				20C237132F746D2300D5763E /* RoutineBuilderViewModel.swift in Sources */,
+				20C237142F746D2300D5763E /* ViewModelNamespace.swift in Sources */,
+				20C237152F746D2300D5763E /* WorkoutSummaryViewModel.swift in Sources */,
+				20C237162F746D2300D5763E /* ActiveExerciseCard.swift in Sources */,
+				20C237172F746D2300D5763E /* ActiveWorkoutView.swift in Sources */,
+				20C237182F746D2300D5763E /* MiniWorkoutBar.swift in Sources */,
+				20C237192F746D2300D5763E /* PRMomentOverlay.swift in Sources */,
+				20C2371A2F746D2300D5763E /* HistoryRootView.swift in Sources */,
+				20C2371B2F746D2300D5763E /* WorkoutDetailView.swift in Sources */,
+				20C2371C2F746D2300D5763E /* HomeGreetingView.swift in Sources */,
+				20C2371D2F746D2300D5763E /* HomeRecentSection.swift in Sources */,
+				20C2371E2F746D2300D5763E /* HomeRootView.swift in Sources */,
+				20C2371F2F746D2300D5763E /* HomeRoutinesSection.swift in Sources */,
+				20C237202F746D2300D5763E /* HomeStatChipsRow.swift in Sources */,
+				20C237212F746D2300D5763E /* SectionHeader.swift in Sources */,
+				20C237222F746D2300D5763E /* ExerciseEditorView.swift in Sources */,
+				20C237232F746D2300D5763E /* ExercisePicker.swift in Sources */,
+				20C237242F746D2300D5763E /* RoutineBuilderView.swift in Sources */,
+				20C237252F746D2300D5763E /* SettingsRootView.swift in Sources */,
+				20C237262F746D2300D5763E /* WorkoutSummaryView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -379,6 +681,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				20C237292F746D2300D5763E /* WorkoutActivityAttributes.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
