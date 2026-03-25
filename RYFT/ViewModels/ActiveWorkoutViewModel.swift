@@ -860,13 +860,23 @@ final class ActiveWorkoutViewModel {
         } else {
             exercise = draftExercises.first?.exerciseName ?? routineName
         }
+        let accent = AccentTheme.currentAccentRGB
         return WorkoutActivityAttributes.ContentState(
             startedAt: session?.startedAt ?? openedAt,
             currentExercise: exercise,
             setsLogged: loggedSetCount,
             restEndsAt: restTimer.targetEndDate,
-            totalRestDuration: restTimer.isActive ? restTimer.totalDuration : nil
+            totalRestDuration: restTimer.isActive ? restTimer.totalDuration : nil,
+            accentR: accent.r,
+            accentG: accent.g,
+            accentB: accent.b
         )
+    }
+
+    /// Pushes a fresh activity state update — call when the user switches themes
+    /// so the Live Activity reflects the new accent colour immediately.
+    func refreshActivityState() {
+        activityManager.update(currentActivityState)
     }
 
     private func ensureSession() -> WorkoutSession {

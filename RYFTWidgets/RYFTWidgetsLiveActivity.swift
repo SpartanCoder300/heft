@@ -7,7 +7,6 @@ import SwiftUI
 // MARK: - Brand colours (duplicated from main target — widget extension is a separate module)
 
 private extension Color {
-    static let ryftBg    = Color(red: 0.038, green: 0.036, blue: 0.058)
     static let ryftGreen = Color(red: 0.204, green: 0.827, blue: 0.600)
     static let ryftAmber = Color(red: 0.961, green: 0.620, blue: 0.043)
     static let ryftRed   = Color(red: 1.000, green: 0.271, blue: 0.227)
@@ -22,11 +21,11 @@ private func restPhaseColor(endsAt: Date, totalDuration: TimeInterval) -> Color 
 }
 
 /// Returns the Dynamic Island keyline tint — tracks rest phase during rest,
-/// brand green during active work.
+/// user's accent colour during active work.
 private func keylineTint(for state: WorkoutActivityAttributes.ContentState) -> Color {
     guard state.isResting,
           let endsAt = state.restEndsAt,
-          let total  = state.totalRestDuration else { return .ryftGreen }
+          let total  = state.totalRestDuration else { return state.accentColor }
     return restPhaseColor(endsAt: endsAt, totalDuration: total)
 }
 
@@ -36,7 +35,6 @@ struct RYFTWidgetsLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: WorkoutActivityAttributes.self) { context in
             LockScreenBanner(context: context)
-                .activityBackgroundTint(Color.ryftBg)
                 .activitySystemActionForegroundColor(.white)
         } dynamicIsland: { context in
             DynamicIsland {
@@ -88,31 +86,32 @@ private struct WorkingBanner: View {
     let routineName: String
 
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
+        HStack(alignment: .center, spacing: 16) {
             Image(systemName: "dumbbell.fill")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(Color.ryftGreen)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(state.accentColor)
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(state.currentExercise)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(.white)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.85)
                 Text("\(state.setsLogged) sets")
-                    .font(.system(size: 13))
+                    .font(.system(size: 14))
                     .foregroundStyle(.white.opacity(0.6))
                     .contentTransition(.numericText(countsDown: false))
             }
-
-            Spacer()
+            // Expands to fill all available space — pushes timer to far right edge
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             Text(state.startedAt, style: .timer)
-                .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                .font(.system(size: 17, weight: .semibold, design: .monospaced))
                 .monospacedDigit()
                 .foregroundStyle(.white.opacity(0.8))
+                .frame(width: 56, alignment: .trailing)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(20)
     }
 }
 
@@ -150,8 +149,7 @@ private struct RestingBanner: View {
                 .foregroundStyle(.white.opacity(0.5))
                 .lineLimit(1)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(20)
     }
 }
 
@@ -166,7 +164,7 @@ private struct ExpandedLeading: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Rest")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.45))
+                    .foregroundStyle(.white.opacity(0.55))
                     .textCase(.uppercase)
                     .tracking(0.8)
                 Text(timerInterval: Date.now...endsAt, countsDown: true, showsHours: false)
@@ -187,7 +185,7 @@ private struct ExpandedLeading: View {
                     .dynamicIsland(verticalPlacement: .belowIfTooWide)
                 Text("\(context.state.setsLogged) sets")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Color.ryftGreen)
+                    .foregroundStyle(context.state.accentColor)
                     .contentTransition(.numericText(countsDown: false))
             }
             .padding(.leading, 12)
@@ -204,7 +202,7 @@ private struct ExpandedTrailing: View {
             VStack(alignment: .trailing, spacing: 3) {
                 Text("Next")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.45))
+                    .foregroundStyle(.white.opacity(0.55))
                     .textCase(.uppercase)
                     .tracking(0.8)
                 Text(context.state.currentExercise)
@@ -251,7 +249,7 @@ private struct ExpandedBottom: View {
                     .contentTransition(.numericText(countsDown: false))
             }
             .font(.system(size: 12, weight: .medium))
-            .foregroundStyle(.white.opacity(0.35))
+            .foregroundStyle(.white.opacity(0.45))
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 12)
         }
@@ -277,7 +275,7 @@ private struct CompactLeading: View {
             // Working: icon signals activity type instantly
             Image(systemName: "dumbbell.fill")
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.ryftGreen)
+                .foregroundStyle(context.state.accentColor)
         }
     }
 }
@@ -324,7 +322,7 @@ private struct MinimalView: View {
             // Minimal working: set count — most readable single metric in a ~20pt circle
             Text("\(context.state.setsLogged)")
                 .font(.system(size: 13, weight: .bold, design: .monospaced))
-                .foregroundStyle(Color.ryftGreen)
+                .foregroundStyle(context.state.accentColor)
                 .contentTransition(.numericText(countsDown: false))
         }
     }
@@ -344,14 +342,16 @@ extension WorkoutActivityAttributes.ContentState {
               currentExercise: "Barbell Bench Press",
               setsLogged: 4,
               restEndsAt: nil,
-              totalRestDuration: nil)
+              totalRestDuration: nil,
+              accentR: 0.486, accentG: 0.498, accentB: 0.961) // Midnight
     }
     fileprivate static var resting: WorkoutActivityAttributes.ContentState {
         .init(startedAt: .now.addingTimeInterval(-780),
               currentExercise: "Barbell Bench Press",
               setsLogged: 5,
               restEndsAt: .now.addingTimeInterval(75),
-              totalRestDuration: 90)
+              totalRestDuration: 90,
+              accentR: 0.486, accentG: 0.498, accentB: 0.961) // Midnight
     }
 }
 

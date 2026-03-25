@@ -114,6 +114,8 @@ struct AppView: View {
         }
         // ── Mesh theme intro ──────────────────────────────────────────────────
         .onChange(of: appState.accentTheme) { _, newTheme in
+            // Push new accent colour to the Live Activity so the island updates immediately.
+            appState.workout.viewModel?.refreshActivityState()
             guard newTheme == .mesh else { return }
             // Slow warm white bloom — welcome to Lux. Deliberate, not reactive.
             // Holds for 2.5s so the 1.5s fade-in has room to breathe, then returns to base.
