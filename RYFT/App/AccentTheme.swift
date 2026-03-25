@@ -46,7 +46,7 @@ enum AccentTheme: String, CaseIterable, Identifiable {
         case .midnight: return (0.486, 0.498, 0.961) // #7C7FF5
         case .graphite: return (0.557, 0.604, 0.671) // #8E9AAB
         case .ember:    return (0.910, 0.384, 0.165) // #E8622A
-        case .mesh:     return (0.929, 0.902, 0.847) // #EDE6D8 warm white
+        case .mesh:     return (0.831, 0.659, 0.325) // #D4A853 champagne
         }
     }
 

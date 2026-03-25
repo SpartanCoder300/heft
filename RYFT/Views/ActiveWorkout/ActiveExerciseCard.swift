@@ -22,7 +22,10 @@ struct ActiveExerciseCard: View {
     let theme: AccentTheme
 
     @Environment(\.ryftCardMaterial) private var cardMaterial
+    @Environment(\.modelContext) private var modelContext
     @State private var showingRemoveConfirm = false
+    @State private var isEditingExercise = false
+    @State private var editingDefinition: ExerciseDefinition? = nil
 
     private var exercise: ActiveWorkoutViewModel.DraftExercise? {
         guard vm.draftExercises.indices.contains(exerciseIndex) else { return nil }
@@ -49,6 +52,15 @@ struct ActiveExerciseCard: View {
                         // TODO: navigate to ExerciseDetailView (§17)
                     } label: {
                         Label("View History", systemImage: "chart.line.uptrend.xyaxis")
+                    }
+
+                    Button {
+                        let name = exercise.exerciseName
+                        let descriptor = FetchDescriptor<ExerciseDefinition>(predicate: #Predicate { $0.name == name })
+                        editingDefinition = (try? modelContext.fetch(descriptor))?.first
+                        isEditingExercise = true
+                    } label: {
+                        Label("Edit Exercise", systemImage: "pencil")
                     }
 
                     Button {
@@ -169,6 +181,11 @@ struct ActiveExerciseCard: View {
         } message: {
             Text("This will remove the exercise and all its logged sets from this session.")
         }
+        .sheet(isPresented: $isEditingExercise, onDismiss: {
+            vm.syncDefinition(at: exerciseIndex)
+        }) {
+            ExerciseEditorView(exercise: editingDefinition)
+        }
     }
 
     private func previousLabel(for exercise: ActiveWorkoutViewModel.DraftExercise) -> String {
@@ -228,18 +245,11 @@ private struct SetRow: View {
                 Text(displayText)
                     .font(.system(size: 16, weight: .medium, design: .rounded))
                     .monospacedDigit()
-                    .foregroundStyle(isLogged ? (isPR ? Color.ryftAmber : Color.ryftGreen) : Color.textPrimary)
+                    .foregroundStyle(isLogged ? Color.ryftGreen : Color.textPrimary)
                     .contentTransition(.numericText())
                     .animation(Motion.standardSpring, value: weightText)
                     .animation(Motion.standardSpring, value: repsText)
 
-                // e1RM subtitle — only on logged PR sets
-                if isPR, let e1rmLabel {
-                    Text(e1rmLabel)
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
-                        .foregroundStyle(Color.ryftGold.opacity(0.7))
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                }
             }
             .animation(Motion.standardSpring, value: isPR)
 
@@ -277,7 +287,7 @@ private struct SetRow: View {
         .onTapGesture {
             if !isLogged { onFocus() }
         }
-        .opacity(isLogged && !isPR ? 0.5 : 1.0)
+        .opacity(isLogged ? 0.5 : 1.0)
         .animation(Motion.standardSpring, value: isLogged)
         .animation(Motion.standardSpring, value: isFocused)
         .contextMenu {
@@ -330,14 +340,6 @@ private struct SetRow: View {
         return "\(w) × \(r)"
     }
 
-    /// Estimated 1RM label for PR rows. Nil for timed exercises or unparseable values.
-    private var e1rmLabel: String? {
-        guard isPR, !isTimed,
-              let w = Double(weightText), w > 0,
-              let r = Int(repsText), r > 0 else { return nil }
-        let e1rm = ExerciseDefinition.estimatedOneRepMax(weight: w, reps: r)
-        return "~\(Int(e1rm.rounded())) lbs e1RM"
-    }
 }
 
 // MARK: - Previews

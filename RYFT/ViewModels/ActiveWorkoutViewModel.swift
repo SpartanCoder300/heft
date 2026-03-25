@@ -410,7 +410,7 @@ final class ActiveWorkoutViewModel {
 
         // If this exercise was added ad-hoc (starts with 1 blank set), expand to match
         // last session's set count so the user doesn't have to tap "Add Set" repeatedly.
-        let isAdHoc = exercise.sets.count == 1 && exercise.sets[0].weightText.isEmpty
+        let isAdHoc = exercise.sets.allSatisfy { $0.weightText.isEmpty && !$0.isLogged }
         if isAdHoc && sortedSets.count > 1 {
             exercise.sets = sortedSets.map { _ in DraftSet() }
         }
@@ -473,13 +473,23 @@ final class ActiveWorkoutViewModel {
         activityManager.update(currentActivityState)
     }
 
+    func syncDefinition(at index: Int) {
+        guard draftExercises.indices.contains(index) else { return }
+        let name = draftExercises[index].exerciseName
+        let descriptor = FetchDescriptor<ExerciseDefinition>(predicate: #Predicate { $0.name == name })
+        guard let def = (try? modelContext.fetch(descriptor))?.first else { return }
+        draftExercises[index].weightIncrement = def.weightIncrement ?? ExerciseDefinition.defaultIncrement(for: def.equipmentType)
+        draftExercises[index].equipmentType = def.equipmentType
+        draftExercises[index].isTimed = def.isTimed
+    }
+
     func addExercise(named name: String) {
         let descriptor = FetchDescriptor<ExerciseDefinition>(predicate: #Predicate { $0.name == name })
         let def = (try? modelContext.fetch(descriptor))?.first
         let equipmentType = def?.equipmentType ?? ""
         let weightIncrement = def?.weightIncrement ?? ExerciseDefinition.defaultIncrement(for: equipmentType)
         let isTimed = def?.isTimed ?? false
-        var draft = DraftExercise(exerciseName: name, equipmentType: equipmentType, weightIncrement: weightIncrement, isTimed: isTimed, sets: [DraftSet()])
+        var draft = DraftExercise(exerciseName: name, equipmentType: equipmentType, weightIncrement: weightIncrement, isTimed: isTimed, sets: [DraftSet(), DraftSet(), DraftSet()])
         applyPreviousPerformance(to: &draft)
         draftExercises.append(draft)
     }
@@ -657,13 +667,15 @@ final class ActiveWorkoutViewModel {
         try? modelContext.save()
         activityManager.update(currentActivityState)
 
-        if !isNewPR {
-            // Haptic is handled in AppView (onChange loggedSetCount) so it can
-            // distinguish exercise-complete from single-set. Don't fire here.
-            startRestTimer(duration: TimeInterval(draftExercises[eIdx].restSeconds))
-        } else {
-            // Rest timer deferred — starts when the PR overlay is dismissed
-            pendingRestDuration = TimeInterval(draftExercises[eIdx].restSeconds)
+        if !isAllSetsLogged {
+            if !isNewPR {
+                // Haptic is handled in AppView (onChange loggedSetCount) so it can
+                // distinguish exercise-complete from single-set. Don't fire here.
+                startRestTimer(duration: TimeInterval(draftExercises[eIdx].restSeconds))
+            } else {
+                // Rest timer deferred — starts when the PR overlay is dismissed
+                pendingRestDuration = TimeInterval(draftExercises[eIdx].restSeconds)
+            }
         }
     }
 
@@ -855,16 +867,21 @@ final class ActiveWorkoutViewModel {
 
     private var currentActivityState: WorkoutActivityAttributes.ContentState {
         let exercise: String
+        let focusedSetLabel: String?
         if let focus = currentFocus, draftExercises.indices.contains(focus.exerciseIndex) {
-            exercise = draftExercises[focus.exerciseIndex].exerciseName
+            let draftExercise = draftExercises[focus.exerciseIndex]
+            exercise = draftExercise.exerciseName
+            focusedSetLabel = "Set \(focus.setIndex + 1) of \(draftExercise.sets.count)"
         } else {
             exercise = draftExercises.first?.exerciseName ?? routineName
+            focusedSetLabel = nil
         }
         let accent = AccentTheme.currentAccentRGB
         return WorkoutActivityAttributes.ContentState(
             startedAt: session?.startedAt ?? openedAt,
             currentExercise: exercise,
             setsLogged: loggedSetCount,
+            focusedSetLabel: focusedSetLabel,
             restEndsAt: restTimer.targetEndDate,
             totalRestDuration: restTimer.isActive ? restTimer.totalDuration : nil,
             accentR: accent.r,

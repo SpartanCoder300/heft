@@ -10,6 +10,8 @@ private extension Color {
     static let ryftGreen = Color(red: 0.204, green: 0.827, blue: 0.600)
     static let ryftAmber = Color(red: 0.961, green: 0.620, blue: 0.043)
     static let ryftRed   = Color(red: 1.000, green: 0.271, blue: 0.227)
+
+    static let ryftWidgetBackground = Color.black
 }
 
 private func restPhaseColor(endsAt: Date, totalDuration: TimeInterval) -> Color {
@@ -29,12 +31,31 @@ private func keylineTint(for state: WorkoutActivityAttributes.ContentState) -> C
     return restPhaseColor(endsAt: endsAt, totalDuration: total)
 }
 
+private func clampedRestEndDate(_ endsAt: Date) -> Date {
+    endsAt < .now ? .now : endsAt
+}
+
+private func workoutTimerEndDate(from startedAt: Date) -> Date {
+    // Live Activities are limited to ~8 hours active. Keep timer ranges finite.
+    startedAt.addingTimeInterval(8 * 60 * 60)
+}
+
+private func compactSetLabel(from focusedSetLabel: String?, fallbackSetsLogged: Int) -> String {
+    guard let label = focusedSetLabel else { return "\(fallbackSetsLogged)" }
+    let parts = label.split(separator: " ")
+    if parts.count >= 4, parts[0] == "Set", parts[2] == "of" {
+        return "\(parts[1])" + "/" + "\(parts[3])"
+    }
+    return "\(fallbackSetsLogged)"
+}
+
 // MARK: - Widget
 
 struct RYFTWidgetsLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: WorkoutActivityAttributes.self) { context in
             LockScreenBanner(context: context)
+                .activityBackgroundTint(.ryftWidgetBackground)
                 .activitySystemActionForegroundColor(.white)
         } dynamicIsland: { context in
             DynamicIsland {
@@ -55,7 +76,7 @@ struct RYFTWidgetsLiveActivity: Widget {
                 MinimalView(context: context)
             }
             // Nudge compact content inward so it sits snug against the pill
-            .contentMargins(.trailing, 6, for: .compactLeading)
+            .contentMargins(.leading, 6, for: .compactLeading)
             .contentMargins(.leading, 6, for: .compactTrailing)
             // Keyline tracks rest phase — pill border goes green → amber → red
             .keylineTint(keylineTint(for: context.state))
@@ -70,14 +91,17 @@ private struct LockScreenBanner: View {
     let context: ActivityViewContext<WorkoutActivityAttributes>
 
     var body: some View {
-        if context.state.isResting, let endsAt = context.state.restEndsAt,
-           let total = context.state.totalRestDuration {
-            RestingBanner(endsAt: endsAt, totalDuration: total,
-                          exercise: context.state.currentExercise)
-        } else {
-            WorkingBanner(state: context.state,
-                          routineName: context.attributes.routineName)
+        Group {
+            if context.state.isResting, let endsAt = context.state.restEndsAt,
+               let total = context.state.totalRestDuration {
+                RestingBanner(endsAt: endsAt, totalDuration: total,
+                              exercise: context.state.currentExercise)
+            } else {
+                WorkingBanner(state: context.state,
+                              routineName: context.attributes.routineName)
+            }
         }
+        .background(Color.ryftWidgetBackground)
     }
 }
 
@@ -112,6 +136,7 @@ private struct WorkingBanner: View {
                 .frame(width: 56, alignment: .trailing)
         }
         .padding(20)
+        .background(Color.ryftWidgetBackground)
     }
 }
 
@@ -120,8 +145,9 @@ private struct RestingBanner: View {
     let totalDuration: TimeInterval
     let exercise: String
 
-    var phaseColor: Color { restPhaseColor(endsAt: endsAt, totalDuration: totalDuration) }
-    var startDate: Date { endsAt.addingTimeInterval(-totalDuration) }
+    var clampedEndDate: Date { clampedRestEndDate(endsAt) }
+    var phaseColor: Color { restPhaseColor(endsAt: clampedEndDate, totalDuration: totalDuration) }
+    var startDate: Date { clampedEndDate.addingTimeInterval(-totalDuration) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -132,13 +158,13 @@ private struct RestingBanner: View {
                     .textCase(.uppercase)
                     .tracking(0.5)
                 Spacer()
-                Text(timerInterval: Date.now...endsAt, countsDown: true, showsHours: false)
+                Text(timerInterval: Date.now...clampedEndDate, countsDown: true, showsHours: false)
                     .font(.system(size: 22, weight: .semibold, design: .monospaced))
                     .monospacedDigit()
                     .foregroundStyle(phaseColor)
             }
 
-            ProgressView(timerInterval: startDate...endsAt, countsDown: true,
+            ProgressView(timerInterval: startDate...clampedEndDate, countsDown: true,
                          label: { EmptyView() },
                          currentValueLabel: { EmptyView() })
                 .progressViewStyle(.linear)
@@ -150,6 +176,7 @@ private struct RestingBanner: View {
                 .lineLimit(1)
         }
         .padding(20)
+        .background(Color.ryftWidgetBackground)
     }
 }
 
@@ -161,20 +188,23 @@ private struct ExpandedLeading: View {
     var body: some View {
         if context.state.isResting, let endsAt = context.state.restEndsAt,
            let total = context.state.totalRestDuration {
+            let clampedEndDate = clampedRestEndDate(endsAt)
             VStack(alignment: .leading, spacing: 2) {
                 Text("Rest")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(.white.opacity(0.55))
                     .textCase(.uppercase)
                     .tracking(0.8)
-                Text(timerInterval: Date.now...endsAt, countsDown: true, showsHours: false)
+                Text(timerInterval: Date.now...clampedEndDate, countsDown: true, showsHours: false)
                     .font(.system(size: 28, weight: .bold, design: .monospaced))
                     .monospacedDigit()
-                    .foregroundStyle(restPhaseColor(endsAt: endsAt, totalDuration: total))
+                    .foregroundStyle(restPhaseColor(endsAt: clampedEndDate, totalDuration: total))
                     .minimumScaleFactor(0.7)
             }
             .padding(.leading, 12)
             .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .background(.black)
         } else {
             VStack(alignment: .leading, spacing: 3) {
                 Text(context.state.currentExercise)
@@ -183,13 +213,15 @@ private struct ExpandedLeading: View {
                     .lineLimit(2)
                     .minimumScaleFactor(0.85)
                     .dynamicIsland(verticalPlacement: .belowIfTooWide)
-                Text("\(context.state.setsLogged) sets")
+                Text(context.state.focusedSetLabel ?? "\(context.state.setsLogged) sets")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(context.state.accentColor)
                     .contentTransition(.numericText(countsDown: false))
             }
             .padding(.leading, 12)
             .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .background(.black)
         }
     }
 }
@@ -214,6 +246,8 @@ private struct ExpandedTrailing: View {
             }
             .padding(.trailing, 12)
             .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+            .background(.black)
         } else {
             Text(context.state.startedAt, style: .timer)
                 .font(.system(size: 24, weight: .semibold, design: .monospaced))
@@ -221,6 +255,8 @@ private struct ExpandedTrailing: View {
                 .foregroundStyle(.white)
                 .padding(.trailing, 12)
                 .padding(.vertical, 8)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+                .background(.black)
         }
     }
 }
@@ -231,32 +267,38 @@ private struct ExpandedBottom: View {
     var body: some View {
         if context.state.isResting, let endsAt = context.state.restEndsAt,
            let total = context.state.totalRestDuration {
+            let clampedEndDate = clampedRestEndDate(endsAt)
             ProgressView(
-                timerInterval: endsAt.addingTimeInterval(-total)...endsAt,
+                timerInterval: clampedEndDate.addingTimeInterval(-total)...clampedEndDate,
                 countsDown: true,
                 label: { EmptyView() },
                 currentValueLabel: { EmptyView() }
             )
             .progressViewStyle(.linear)
-            .tint(restPhaseColor(endsAt: endsAt, totalDuration: total))
+            .tint(restPhaseColor(endsAt: clampedEndDate, totalDuration: total))
             .padding(.horizontal, 12)
+            .padding(.bottom, 8)
+            .background(.black)
         } else {
-            HStack(spacing: 4) {
-                Text(context.attributes.routineName)
-                    .lineLimit(1)
-                Text("·")
-                Text("\(context.state.setsLogged) sets")
-                    .contentTransition(.numericText(countsDown: false))
-            }
-            .font(.system(size: 12, weight: .medium))
-            .foregroundStyle(.white.opacity(0.45))
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 12)
+            Text(context.attributes.routineName)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.white.opacity(0.45))
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
+                .background(.black)
         }
     }
 }
 
 // MARK: - Dynamic Island Compact
+
+private enum CompactMetrics {
+    static let leadingWidth: CGFloat = 40
+    static let leadingInset: CGFloat = 4
+    static let trailingWidth: CGFloat = 40
+}
 
 private struct CompactLeading: View {
     let context: ActivityViewContext<WorkoutActivityAttributes>
@@ -265,17 +307,22 @@ private struct CompactLeading: View {
         if context.state.isResting, let endsAt = context.state.restEndsAt,
            let total = context.state.totalRestDuration {
             // Rest: countdown is the dominant, urgent signal
-            Text(timerInterval: Date.now...endsAt, countsDown: true, showsHours: false)
-                .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                .monospacedDigit()
-                .foregroundStyle(restPhaseColor(endsAt: endsAt, totalDuration: total))
-                .minimumScaleFactor(0.8)
-                .lineLimit(1)
+            HStack(spacing: 0) {
+                Spacer().frame(width: CompactMetrics.leadingInset)
+                Text(timerInterval: Date.now...clampedRestEndDate(endsAt), countsDown: true, showsHours: false)
+                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                    .monospacedDigit()
+                    .foregroundStyle(restPhaseColor(endsAt: endsAt, totalDuration: total))
+                    .minimumScaleFactor(0.8)
+                    .lineLimit(1)
+            }
+            .frame(width: CompactMetrics.leadingWidth, alignment: .leading)
         } else {
             // Working: icon signals activity type instantly
             Image(systemName: "dumbbell.fill")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(context.state.accentColor)
+                .frame(width: CompactMetrics.leadingWidth, alignment: .center)
         }
     }
 }
@@ -285,21 +332,23 @@ private struct CompactTrailing: View {
 
     var body: some View {
         if context.state.isResting {
-            // Rest trailing: stable white — countdown + keyline already track the phase
-            Text("\(context.state.setsLogged)")
-                .font(.system(size: 14, weight: .semibold, design: .monospaced))
+            // Rest trailing: focused set (short form) so it matches the current exercise.
+            Text(compactSetLabel(from: context.state.focusedSetLabel, fallbackSetsLogged: context.state.setsLogged))
+                .font(.system(size: 13, weight: .semibold, design: .monospaced))
                 .foregroundStyle(.white.opacity(0.75))
                 .contentTransition(.numericText(countsDown: false))
+                .frame(width: CompactMetrics.trailingWidth, alignment: .trailing)
         } else {
             // Working trailing: elapsed timer with showsHours: false so it stays M:SS
             // even past 60 min, preventing layout blowout in the compact pill.
-            Text(timerInterval: context.state.startedAt...Date.distantFuture,
+            Text(timerInterval: context.state.startedAt...workoutTimerEndDate(from: context.state.startedAt),
                  countsDown: false, showsHours: false)
-                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                .font(.system(size: 12, weight: .semibold, design: .monospaced))
                 .monospacedDigit()
                 .foregroundStyle(.white.opacity(0.8))
                 .minimumScaleFactor(0.8)
                 .lineLimit(1)
+                .frame(width: CompactMetrics.trailingWidth, alignment: .trailing)
         }
     }
 }
@@ -313,7 +362,7 @@ private struct MinimalView: View {
         if context.state.isResting, let endsAt = context.state.restEndsAt,
            let total = context.state.totalRestDuration {
             // Minimal rest: countdown in 4 chars max (e.g. "1:30") — phase colored
-            Text(timerInterval: Date.now...endsAt, countsDown: true, showsHours: false)
+            Text(timerInterval: Date.now...clampedRestEndDate(endsAt), countsDown: true, showsHours: false)
                 .font(.system(size: 12, weight: .semibold, design: .monospaced))
                 .monospacedDigit()
                 .foregroundStyle(restPhaseColor(endsAt: endsAt, totalDuration: total))
@@ -341,27 +390,66 @@ extension WorkoutActivityAttributes.ContentState {
         .init(startedAt: .now.addingTimeInterval(-720),
               currentExercise: "Barbell Bench Press",
               setsLogged: 4,
+              focusedSetLabel: "Set 3 of 5",
               restEndsAt: nil,
               totalRestDuration: nil,
-              accentR: 0.486, accentG: 0.498, accentB: 0.961) // Midnight
+              accentR: 0.831, accentG: 0.659, accentB: 0.325) // Champagne (Lux)
     }
+
     fileprivate static var resting: WorkoutActivityAttributes.ContentState {
         .init(startedAt: .now.addingTimeInterval(-780),
               currentExercise: "Barbell Bench Press",
               setsLogged: 5,
+              focusedSetLabel: "Set 4 of 5",
               restEndsAt: .now.addingTimeInterval(75),
               totalRestDuration: 90,
-              accentR: 0.486, accentG: 0.498, accentB: 0.961) // Midnight
+              accentR: 0.831, accentG: 0.659, accentB: 0.325) // Champagne (Lux)
     }
 }
 
-#Preview("Working", as: .content, using: WorkoutActivityAttributes.preview) {
+#Preview("Lock Screen - Working", as: .content, using: WorkoutActivityAttributes.preview) {
     RYFTWidgetsLiveActivity()
 } contentStates: {
     WorkoutActivityAttributes.ContentState.working
 }
 
-#Preview("Resting", as: .content, using: WorkoutActivityAttributes.preview) {
+#Preview("Lock Screen - Resting", as: .content, using: WorkoutActivityAttributes.preview) {
+    RYFTWidgetsLiveActivity()
+} contentStates: {
+    WorkoutActivityAttributes.ContentState.resting
+}
+
+#Preview("Dynamic Island Expanded - Working", as: .dynamicIsland(.expanded), using: WorkoutActivityAttributes.preview) {
+    RYFTWidgetsLiveActivity()
+} contentStates: {
+    WorkoutActivityAttributes.ContentState.working
+}
+
+#Preview("Dynamic Island Expanded - Resting", as: .dynamicIsland(.expanded), using: WorkoutActivityAttributes.preview) {
+    RYFTWidgetsLiveActivity()
+} contentStates: {
+    WorkoutActivityAttributes.ContentState.resting
+}
+
+#Preview("Dynamic Island Compact - Working", as: .dynamicIsland(.compact), using: WorkoutActivityAttributes.preview) {
+    RYFTWidgetsLiveActivity()
+} contentStates: {
+    WorkoutActivityAttributes.ContentState.working
+}
+
+#Preview("Dynamic Island Compact - Resting", as: .dynamicIsland(.compact), using: WorkoutActivityAttributes.preview) {
+    RYFTWidgetsLiveActivity()
+} contentStates: {
+    WorkoutActivityAttributes.ContentState.resting
+}
+
+#Preview("Dynamic Island Minimal - Working", as: .dynamicIsland(.minimal), using: WorkoutActivityAttributes.preview) {
+    RYFTWidgetsLiveActivity()
+} contentStates: {
+    WorkoutActivityAttributes.ContentState.working
+}
+
+#Preview("Dynamic Island Minimal - Resting", as: .dynamicIsland(.minimal), using: WorkoutActivityAttributes.preview) {
     RYFTWidgetsLiveActivity()
 } contentStates: {
     WorkoutActivityAttributes.ContentState.resting

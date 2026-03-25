@@ -313,7 +313,7 @@ struct ActiveWorkoutView: View {
                             Text("Log Set")
                                 .font(.system(size: 16, weight: .semibold))
                         }
-                        .foregroundStyle(Color.ryftGreen)
+                        .foregroundStyle(theme.accentColor)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .contentShape(Rectangle())
                     }
