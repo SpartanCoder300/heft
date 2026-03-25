@@ -236,7 +236,7 @@ private struct CompactSessionCard: View {
             }
             Spacer()
             Image(systemName: "chevron.right")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.caption.weight(.semibold))
                 .foregroundStyle(.tertiary)
         }
         .padding(16)

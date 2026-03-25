@@ -88,7 +88,7 @@ private struct DetailStatChip: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
             Text(label)
-                .font(.system(size: 10, weight: .medium))
+                .font(.caption2.weight(.medium))
                 .foregroundStyle(.secondary)
                 .textCase(.uppercase)
                 .tracking(0.5)
@@ -209,15 +209,15 @@ private struct SetDetailRow: View {
             if record.isPersonalRecord {
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("PR")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.caption.weight(.bold))
                         .foregroundStyle(Color.ryftAmber)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 3)
-                        .background(Color.ryftAmber.opacity(0.15))
+                        .background(Color.ryftAmber.opacity(0.15), in: RoundedRectangle(cornerRadius: 4, style: .continuous))
                     let e1rm = ExerciseDefinition.estimatedOneRepMax(weight: record.weight, reps: record.reps)
                     if e1rm > 0 {
                         Text("~\(formattedE1RM(e1rm)) e1RM")
-                            .font(.system(size: 11))
+                            .font(.caption)
                             .foregroundStyle(Color.ryftAmber.opacity(0.6))
                     }
                 }
@@ -251,7 +251,7 @@ private struct SetTypeLabel: View {
 
     var body: some View {
         Text(label)
-            .font(.system(size: 9, weight: .bold))
+            .font(.caption2.weight(.bold))
             .foregroundStyle(color)
             .padding(.horizontal, 5)
             .padding(.vertical, 2)
@@ -262,7 +262,7 @@ private struct SetTypeLabel: View {
         switch setType {
         case .warmup:  "W"
         case .dropset: "D"
-        case .normal:  "N"
+        case .normal:  ""
         }
     }
 
