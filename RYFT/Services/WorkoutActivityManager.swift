@@ -78,9 +78,12 @@ final class WorkoutActivityManager {
         updateTask?.cancel()
         updateTask = Task {
             guard !Task.isCancelled else { return }
-            // During rest, stale date is just after the timer ends so the system
-            // knows the data expires imminently. Otherwise cap at max workout duration.
-            let staleDate = state.restEndsAt.map { $0.addingTimeInterval(5) }
+            // During rest, extend the stale window well past the timer end so the system
+            // doesn't show a stale spinner if the app is suspended when the timer fires.
+            // The app will push a "rest cleared" update via handleForeground() when it
+            // resumes — the extended window just prevents the spinner in the gap.
+            // Otherwise cap at max workout duration.
+            let staleDate = state.restEndsAt.map { $0.addingTimeInterval(30) }
                          ?? (.now + maxWorkoutDuration)
             let content = ActivityContent(
                 state: state,

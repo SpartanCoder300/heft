@@ -353,11 +353,13 @@ final class ActiveWorkoutViewModel {
             }
 
             // Append enough blank sets to fill the routine's target count.
-            // If the user already logged all (or more) planned sets, still leave 1 blank.
+            // For ad-hoc exercises (no routine entry), keep 1 blank for optional logging.
+            // For routine exercises, never exceed the target — a completed exercise should
+            // resume with its logged sets only, not an extra phantom blank.
             let routineEntry = routineEntriesByName[name]
             let targetSets   = routineEntry?.targetSets ?? 0
-            let blanksNeeded = targetSets > sortedRecords.count
-                ? targetSets - sortedRecords.count
+            let blanksNeeded = targetSets > 0
+                ? max(0, targetSets - sortedRecords.count)
                 : 1
             for _ in 0 ..< blanksNeeded {
                 var s = blankNext
@@ -1005,6 +1007,17 @@ final class ActiveWorkoutViewModel {
     /// Pushes a fresh activity state update — call when the user switches themes
     /// so the Live Activity reflects the new accent colour immediately.
     func refreshActivityState() {
+        activityManager.update(currentActivityState)
+    }
+
+    /// Call when the app returns to the foreground. Clears any rest timer that expired
+    /// while the app was suspended — the zeroTask can't fire during suspension, so this
+    /// ensures the Live Activity and in-app state are both updated immediately on resume.
+    func handleForeground() {
+        guard restTimer.isActive, let end = restTimer.targetEndDate, end <= .now else { return }
+        cancelTimerTasks()
+        cancelRestNotification()
+        restTimer.tick(at: .now)
         activityManager.update(currentActivityState)
     }
 

@@ -12,6 +12,7 @@ struct AppView: View {
     @State private var setLoggedTask: Task<Void, Never>?
     @State private var workoutStartTask: Task<Void, Never>?
     @State private var meshIntroTask: Task<Void, Never>?
+    @Environment(\.scenePhase) private var scenePhase
 
 
     var body: some View {
