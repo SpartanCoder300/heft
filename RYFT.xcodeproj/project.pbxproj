@@ -84,6 +84,8 @@
 		20C237472F74B34F00D5763E /* FeaturedRoutineCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C237422F74B34F00D5763E /* FeaturedRoutineCard.swift */; };
 		20C237482F74B34F00D5763E /* RoutineListRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C237432F74B34F00D5763E /* RoutineListRow.swift */; };
 		20C237492F74B34F00D5763E /* EmptyRoutinesPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C237442F74B34F00D5763E /* EmptyRoutinesPrompt.swift */; };
+		HAWD000200002F74B34F00D5 /* HomeActiveWorkoutDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = HAWD000100002F74B34F00D5 /* HomeActiveWorkoutDashboard.swift */; };
+		HPBC000200002F74B34F00D5 /* HomePreviousBestsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = HPBC000100002F74B34F00D5 /* HomePreviousBestsCard.swift */; };
 		20C2374D2F74B34F00D5763E /* SummaryStatChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C2374A2F74B34F00D5763E /* SummaryStatChip.swift */; };
 		20C2374E2F74B34F00D5763E /* SummaryPRBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C2374B2F74B34F00D5763E /* SummaryPRBadge.swift */; };
 		20C2374F2F74B34F00D5763E /* SummaryExerciseCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C2374C2F74B34F00D5763E /* SummaryExerciseCard.swift */; };
@@ -209,6 +211,8 @@
 		20C237422F74B34F00D5763E /* FeaturedRoutineCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeaturedRoutineCard.swift; sourceTree = "<group>"; };
 		20C237432F74B34F00D5763E /* RoutineListRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutineListRow.swift; sourceTree = "<group>"; };
 		20C237442F74B34F00D5763E /* EmptyRoutinesPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyRoutinesPrompt.swift; sourceTree = "<group>"; };
+		HAWD000100002F74B34F00D5 /* HomeActiveWorkoutDashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeActiveWorkoutDashboard.swift; sourceTree = "<group>"; };
+		HPBC000100002F74B34F00D5 /* HomePreviousBestsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomePreviousBestsCard.swift; sourceTree = "<group>"; };
 		20C2374A2F74B34F00D5763E /* SummaryStatChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryStatChip.swift; sourceTree = "<group>"; };
 		20C2374B2F74B34F00D5763E /* SummaryPRBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryPRBadge.swift; sourceTree = "<group>"; };
 		20C2374C2F74B34F00D5763E /* SummaryExerciseCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryExerciseCard.swift; sourceTree = "<group>"; };
@@ -433,6 +437,8 @@
 			isa = PBXGroup;
 			children = (
 				20C237442F74B34F00D5763E /* EmptyRoutinesPrompt.swift */,
+				HAWD000100002F74B34F00D5 /* HomeActiveWorkoutDashboard.swift */,
+				HPBC000100002F74B34F00D5 /* HomePreviousBestsCard.swift */,
 				20C237422F74B34F00D5763E /* FeaturedRoutineCard.swift */,
 				20C236DE2F746D2300D5763E /* HomeGreetingView.swift */,
 				20C236DF2F746D2300D5763E /* HomeRecentSection.swift */,
@@ -730,6 +736,8 @@
 				20C237472F74B34F00D5763E /* FeaturedRoutineCard.swift in Sources */,
 				20C237482F74B34F00D5763E /* RoutineListRow.swift in Sources */,
 				20C237492F74B34F00D5763E /* EmptyRoutinesPrompt.swift in Sources */,
+				HAWD000200002F74B34F00D5 /* HomeActiveWorkoutDashboard.swift in Sources */,
+				HPBC000200002F74B34F00D5 /* HomePreviousBestsCard.swift in Sources */,
 				20C237242F746D2300D5763E /* RoutineBuilderView.swift in Sources */,
 				20C237252F746D2300D5763E /* SettingsRootView.swift in Sources */,
 				20C2374D2F74B34F00D5763E /* SummaryStatChip.swift in Sources */,
