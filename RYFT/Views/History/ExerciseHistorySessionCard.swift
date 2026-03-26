@@ -3,13 +3,35 @@
 import SwiftUI
 import SwiftData
 
-struct ExerciseDetailCard: View {
+struct ExerciseHistorySessionCard: View {
     let snapshot: ExerciseSnapshot
-    var onNameTap: (() -> Void)? = nil
     @Environment(\.ryftCardMaterial) private var cardMaterial
 
     private var sortedSets: [SetRecord] {
         snapshot.sets.sorted { $0.loggedAt < $1.loggedAt }
+    }
+
+    private var hasPR: Bool {
+        sortedSets.contains { $0.isPersonalRecord }
+    }
+
+    private var dateLabel: String {
+        guard let date = snapshot.workoutSession?.completedAt else { return "Unknown Date" }
+        let cal = Calendar.current
+        if cal.isDateInToday(date)     { return "Today" }
+        if cal.isDateInYesterday(date) { return "Yesterday" }
+        let sameYear = cal.component(.year, from: date) == cal.component(.year, from: .now)
+        return sameYear
+            ? date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
+            : date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day().year())
+    }
+
+    private var bestSetLabel: String? {
+        let working = sortedSets.filter { $0.setType != .warmup && $0.weight > 0 }
+        guard let top = working.max(by: { $0.weight < $1.weight }) else { return nil }
+        let w = top.weight.truncatingRemainder(dividingBy: 1) == 0
+            ? "\(Int(top.weight))" : String(format: "%.1f", top.weight)
+        return "\(w) lbs × \(top.reps)"
     }
 
     var body: some View {
@@ -17,22 +39,18 @@ struct ExerciseDetailCard: View {
 
             // ── Header ─────────────────────────────────────────────────
             HStack(alignment: .firstTextBaseline) {
-                if let onNameTap {
-                    Button(action: onNameTap) {
-                        HStack(spacing: 4) {
-                            Text(snapshot.exerciseName)
-                                .font(.headline)
-                                .foregroundStyle(.primary)
-                            Image(systemName: "chevron.right")
-                                .font(.caption2.weight(.semibold))
-                                .foregroundStyle(.tertiary)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                } else {
-                    Text(snapshot.exerciseName)
+                HStack(spacing: Spacing.xs) {
+                    Text(dateLabel)
                         .font(.headline)
                         .foregroundStyle(.primary)
+                    if hasPR {
+                        Text("PR")
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(Color.ryftAmber)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(Color.ryftAmber.opacity(0.15), in: Capsule())
+                    }
                 }
                 Spacer(minLength: Spacing.sm)
                 if let best = bestSetLabel {
@@ -60,27 +78,17 @@ struct ExerciseDetailCard: View {
         .background(cardMaterial, in: RoundedRectangle(cornerRadius: Radius.medium, style: .continuous))
         .proGlass()
     }
-
-    /// "185 lbs × 5" — heaviest working set, excluding warmups.
-    private var bestSetLabel: String? {
-        let working = sortedSets.filter { $0.setType != .warmup && $0.weight > 0 }
-        guard let top = working.max(by: { $0.weight < $1.weight }) else { return nil }
-        let w = top.weight.truncatingRemainder(dividingBy: 1) == 0
-            ? "\(Int(top.weight))" : String(format: "%.1f", top.weight)
-        return "\(w) lbs × \(top.reps)"
-    }
 }
 
 // MARK: - Preview
 
 #Preview {
     {
-        let snapshot = HistoryRootPreviewData.detailPreviewSession.exercises
-            .sorted { $0.order < $1.order }.first!
-        return ExerciseDetailCard(snapshot: snapshot)
+        let snapshot = HistoryRootPreviewData.exerciseHistorySnapshots.first!
+        return ExerciseHistorySessionCard(snapshot: snapshot)
             .padding()
             .environment(\.ryftCardMaterial, .regularMaterial)
-            .modelContainer(HistoryRootPreviewData.populatedContainer)
+            .modelContainer(HistoryRootPreviewData.exerciseHistoryContainer)
             .preferredColorScheme(.dark)
     }()
 }

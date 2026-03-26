@@ -6,6 +6,7 @@ import SwiftData
 struct WorkoutDetailView: View {
     let session: WorkoutSession
     @Environment(\.ryftTheme) private var theme
+    @State private var historyExerciseName: String? = nil
 
     private var sortedExercises: [ExerciseSnapshot] {
         session.exercises.sorted { $0.order < $1.order }
@@ -25,7 +26,9 @@ struct WorkoutDetailView: View {
                 // ── Exercises ──────────────────────────────────────────
                 VStack(spacing: Spacing.sm) {
                     ForEach(sortedExercises) { snapshot in
-                        ExerciseDetailCard(snapshot: snapshot)
+                        ExerciseDetailCard(snapshot: snapshot, onNameTap: {
+                            historyExerciseName = snapshot.exerciseName
+                        })
                     }
                 }
             }
@@ -35,6 +38,15 @@ struct WorkoutDetailView: View {
         .themedBackground()
         .navigationTitle(navTitle)
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: Binding(
+            get: { historyExerciseName != nil },
+            set: { if !$0 { historyExerciseName = nil } }
+        )) {
+            if let name = historyExerciseName {
+                ExerciseHistoryView(exerciseName: name)
+                    .environment(\.ryftCardMaterial, .regularMaterial)
+            }
+        }
     }
 
     // MARK: - Computed

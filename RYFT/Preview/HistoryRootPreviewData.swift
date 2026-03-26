@@ -23,6 +23,61 @@ enum HistoryRootPreviewData {
         return container
     }()
 
+    // MARK: - Exercise History Preview
+
+    static let exerciseHistoryContainer: ModelContainer = {
+        let container = makeContainer()
+        let ctx = container.mainContext
+
+        // 9 sessions of "Bench Press" with progressive overload
+        let progression: [(weight: Double, daysAgo: Int)] = [
+            (135, 56), (145, 49), (155, 42), (155, 35),
+            (165, 28), (175, 21), (185, 14), (205, 7), (215, 0)
+        ]
+
+        for (i, entry) in progression.enumerated() {
+            let end = Calendar.current.date(byAdding: .day, value: -entry.daysAgo, to: .now)!
+            let session = WorkoutSession(
+                startedAt: end.addingTimeInterval(-3600),
+                completedAt: end,
+                routineTemplateId: nil
+            )
+            ctx.insert(session)
+
+            let snapshot = ExerciseSnapshot(exerciseName: "Bench Press", order: 0, workoutSession: session)
+            ctx.insert(snapshot)
+            session.exercises.append(snapshot)
+
+            // Warmup
+            let warmup = SetRecord(weight: 95, reps: 5, setType: .warmup, isPersonalRecord: false, exerciseSnapshot: snapshot)
+            ctx.insert(warmup)
+            snapshot.sets.append(warmup)
+
+            // 3 working sets ramping to the session's best
+            for j in 0..<3 {
+                let w = j == 2 ? entry.weight : entry.weight - 20
+                let r = j == 2 ? 5 : 8
+                let isPR = i == progression.count - 1 && j == 2
+                let set = SetRecord(weight: w, reps: r, setType: .normal, isPersonalRecord: isPR, exerciseSnapshot: snapshot)
+                ctx.insert(set)
+                snapshot.sets.append(set)
+            }
+        }
+
+        return container
+    }()
+
+    static var exerciseHistorySnapshots: [ExerciseSnapshot] {
+        let all = (try? exerciseHistoryContainer.mainContext.fetch(
+            FetchDescriptor<ExerciseSnapshot>()
+        )) ?? []
+        return all
+            .filter { $0.workoutSession?.completedAt != nil }
+            .sorted { $0.workoutSession!.completedAt! > $1.workoutSession!.completedAt! }
+    }
+
+    // MARK: - Existing
+
     static var detailPreviewSession: WorkoutSession {
         let descriptor = FetchDescriptor<WorkoutSession>(
             sortBy: [SortDescriptor(\.completedAt, order: .reverse)]

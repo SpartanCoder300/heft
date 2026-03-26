@@ -15,6 +15,7 @@ struct ActiveExerciseCard: View {
     @State private var showingRemoveConfirm = false
     @State private var isEditingExercise = false
     @State private var editingDefinition: ExerciseDefinition? = nil
+    @State private var isShowingHistory = false
 
     private var exercise: ActiveWorkoutViewModel.DraftExercise? {
         guard vm.draftExercises.indices.contains(exerciseIndex) else { return nil }
@@ -38,7 +39,7 @@ struct ActiveExerciseCard: View {
                 Spacer()
                 Menu {
                     Button {
-                        // TODO: navigate to ExerciseDetailView (§17)
+                        isShowingHistory = true
                     } label: {
                         Label("View History", systemImage: "chart.line.uptrend.xyaxis")
                     }
@@ -174,6 +175,10 @@ struct ActiveExerciseCard: View {
             vm.syncDefinition(at: exerciseIndex)
         }) {
             ExerciseEditorView(exercise: editingDefinition)
+        }
+        .sheet(isPresented: $isShowingHistory) {
+            ExerciseHistoryView(exerciseName: exercise.exerciseName)
+                .environment(\.ryftCardMaterial, .regularMaterial)
         }
     }
 
