@@ -11,14 +11,14 @@ struct SectionHeader: View {
             Text(title)
                 .font(Typography.caption)
                 .fontWeight(.semibold)
-                .foregroundStyle(Color.textFaint)
+                .foregroundStyle(Color.textMuted)
                 .textCase(.uppercase)
                 .tracking(0.8)
             Spacer()
             if let detail {
                 Text(detail)
                     .font(Typography.caption)
-                    .foregroundStyle(Color.textFaint)
+                    .foregroundStyle(Color.textMuted)
             }
         }
     }

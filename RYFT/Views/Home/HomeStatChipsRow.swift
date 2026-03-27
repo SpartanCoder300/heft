@@ -9,7 +9,7 @@ struct HomeStatChipsRow: View {
     var body: some View {
         HStack(spacing: Spacing.sm) {
             StatChip(label: "Day Streak", value: stats.streakLabel,
-                     icon: "flame.fill", iconColor: theme.accentColor)
+                     icon: "flame.fill", iconColor: theme.accentColor, isHighlighted: true)
             StatChip(label: "This Week", value: stats.thisWeekLabel,
                      icon: "figure.strengthtraining.traditional", iconColor: theme.accentColor)
             StatChip(label: "PRs", value: stats.prCountLabel,
@@ -27,6 +27,7 @@ struct StatChip: View {
     var iconColor: Color = Color.textPrimary
     var valueColor: Color = Color.textPrimary
     var isAccented: Bool = false
+    var isHighlighted: Bool = false
 
     @Environment(\.ryftCardMaterial) private var cardMaterial
 
@@ -35,7 +36,7 @@ struct StatChip: View {
             // ── Watermark ────────────────────────────────────────────
             Image(systemName: icon)
                 .font(.system(size: 54, weight: .bold))
-                .foregroundStyle(iconColor.opacity(isAccented ? 0.15 : 0.09))
+                .foregroundStyle(iconColor.opacity(isAccented ? 0.15 : isHighlighted ? 0.18 : 0.13))
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
                 .offset(x: 10, y: 10)
 
@@ -43,11 +44,11 @@ struct StatChip: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(value)
                     .font(.system(size: 26, weight: .bold, design: .rounded))
-                    .foregroundStyle(isAccented ? iconColor : valueColor)
+                    .foregroundStyle(isAccented ? iconColor : .primary)
                     .monospacedDigit()
                 Text(label)
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(isAccented ? iconColor.opacity(0.7) : Color.textFaint)
+                    .foregroundStyle(isAccented ? iconColor.opacity(0.7) : isHighlighted ? iconColor.opacity(0.6) : Color.textFaint)
                     .textCase(.uppercase)
                     .tracking(0.5)
             }
@@ -60,14 +61,15 @@ struct StatChip: View {
                 .fill(cardMaterial)
                 .overlay {
                     RoundedRectangle(cornerRadius: Radius.medium, style: .continuous)
-                        .fill(iconColor.opacity(isAccented ? 0.15 : 0.06))
+                        .fill(iconColor.opacity(isAccented ? 0.15 : isHighlighted ? 0.12 : 0.10))
                 }
         }
         .overlay {
-            if isAccented {
-                RoundedRectangle(cornerRadius: Radius.medium, style: .continuous)
-                    .strokeBorder(iconColor.opacity(0.25), lineWidth: 1)
-            }
+            RoundedRectangle(cornerRadius: Radius.medium, style: .continuous)
+                .strokeBorder(
+                    isAccented ? iconColor.opacity(0.25) : isHighlighted ? iconColor.opacity(0.18) : .white.opacity(0.07),
+                    lineWidth: isAccented || isHighlighted ? 1 : 0.5
+                )
         }
         .clipShape(RoundedRectangle(cornerRadius: Radius.medium, style: .continuous))
         .proGlass()

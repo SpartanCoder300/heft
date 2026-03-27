@@ -21,8 +21,8 @@ struct FeaturedRoutineCard: View {
             HStack(alignment: .center, spacing: Spacing.md) {
                 VStack(alignment: .leading, spacing: Spacing.xs) {
                     Text("Up Next")
-                        .font(Typography.caption.weight(.medium))
-                        .foregroundStyle(Color.textFaint)
+                        .font(Typography.caption.weight(.semibold))
+                        .foregroundStyle(Color.textMuted)
                         .textCase(.uppercase)
 
                     Text(suggestion.routineName)
@@ -51,12 +51,12 @@ struct FeaturedRoutineCard: View {
                     .foregroundStyle(.tertiary)
             }
             .padding(.horizontal, Spacing.lg)
-            .padding(.vertical, Spacing.md)
+            .padding(.vertical, Spacing.lg)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(cardMaterial, in: RoundedRectangle(cornerRadius: Radius.medium, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.medium, style: .continuous)
-                    .strokeBorder(.white.opacity(0.08), lineWidth: 1)
+                    .strokeBorder(.white.opacity(0.13), lineWidth: 1)
             )
             .proGlass()
         }

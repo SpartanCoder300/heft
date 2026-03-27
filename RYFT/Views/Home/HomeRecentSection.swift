@@ -28,6 +28,7 @@ private struct RecentWorkoutListRow: View {
     let onRepeat: () -> Void
 
     @Environment(\.ryftCardMaterial) private var cardMaterial
+    @Environment(\.ryftTheme) private var theme
     @State private var hapticTrigger = false
 
     var body: some View {
@@ -55,9 +56,9 @@ private struct RecentWorkoutListRow: View {
                             .font(Typography.caption)
                             .foregroundStyle(Color.textMuted)
                     }
-                    Text("Repeat →")
-                        .font(Typography.caption)
-                        .foregroundStyle(Color.textFaint)
+                    Label("Repeat", systemImage: "arrow.clockwise")
+                        .font(Typography.caption.weight(.medium))
+                        .foregroundStyle(theme.accentColor.opacity(0.8))
                 }
             }
             .padding(Spacing.md)
@@ -71,7 +72,10 @@ private struct RecentWorkoutListRow: View {
 
     private var dateLabel: String {
         let date = session.completedAt ?? session.startedAt ?? .now
-        return date.formatted(.dateTime.month(.abbreviated).day().year())
+        let cal = Calendar.current
+        if cal.isDateInToday(date) { return "Today" }
+        if cal.isDateInYesterday(date) { return "Yesterday" }
+        return date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
     }
 
     private var durationLabel: String? {

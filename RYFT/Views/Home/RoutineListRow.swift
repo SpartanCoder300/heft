@@ -22,7 +22,7 @@ struct RoutineListRow: View {
                     Text(routine.name)
                         .font(Typography.body)
                         .fontWeight(.semibold)
-                        .foregroundStyle(Color.textPrimary)
+                        .foregroundStyle(.primary)
                     if !routine.muscleGroupSummary.isEmpty {
                         Text(routine.muscleGroupSummary)
                             .font(Typography.caption)
@@ -30,18 +30,27 @@ struct RoutineListRow: View {
                     }
                 }
                 Spacer()
-                VStack(alignment: .trailing, spacing: Spacing.xs) {
-                    Text("\(routine.entries.count) exercises")
-                        .font(Typography.caption)
-                        .foregroundStyle(Color.textMuted)
-                    Text(avgMinutes.map { "\($0) min avg" } ?? "No history yet")
-                        .font(Typography.caption)
-                        .foregroundStyle(Color.textFaint)
+                HStack(spacing: Spacing.sm) {
+                    VStack(alignment: .trailing, spacing: Spacing.xs) {
+                        Text("\(routine.entries.count) exercises")
+                            .font(Typography.caption)
+                            .foregroundStyle(Color.textMuted)
+                        Text(avgMinutes.map { "\($0) min avg" } ?? "No history yet")
+                            .font(Typography.caption)
+                            .foregroundStyle(Color.textFaint)
+                    }
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.tertiary)
                 }
             }
             .padding(Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(cardMaterial, in: RoundedRectangle(cornerRadius: Radius.medium, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.medium, style: .continuous)
+                    .strokeBorder(.white.opacity(0.08), lineWidth: 1)
+            )
             .proGlass()
         }
         .buttonStyle(.plain)
