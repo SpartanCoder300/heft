@@ -139,7 +139,11 @@ struct AppView: View {
                 guard appState.accentTheme == .mesh else { break }
                 playPRHaptics()
             case .workoutComplete:
-                break
+                Task {
+                    UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+                    try? await Task.sleep(for: .milliseconds(150))
+                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                }
             default:
                 break
             }

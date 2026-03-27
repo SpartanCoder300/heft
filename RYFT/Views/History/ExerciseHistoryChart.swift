@@ -43,14 +43,14 @@ struct ExerciseHistoryChart: View {
                     x: .value("Date", point.date, unit: .day),
                     y: .value("e1RM", point.maxWeight)
                 )
-                .foregroundStyle(Color.ryftAmber.opacity(0.5))
+                .foregroundStyle(Color.accentColor.opacity(0.5))
                 .interpolationMethod(.catmullRom)
 
                 PointMark(
                     x: .value("Date", point.date, unit: .day),
                     y: .value("e1RM", point.maxWeight)
                 )
-                .foregroundStyle(point.hasPR ? Color.ryftAmber : .secondary)
+                .foregroundStyle(point.hasPR ? Color.accentColor : .secondary)
                 .symbolSize(point.hasPR ? 72 : 36)
             }
             .chartXAxis {

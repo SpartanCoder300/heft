@@ -25,8 +25,16 @@ struct ExerciseHistoryView: View {
     private var allTimeBest: SetRecord? {
         sessions
             .flatMap { $0.sets }
-            .filter { $0.setType != .warmup && $0.weight > 0 }
-            .max(by: { $0.weight < $1.weight })
+            .filter { $0.setType != .warmup && $0.weight > 0 && $0.reps > 0 }
+            .max(by: {
+                ExerciseDefinition.estimatedOneRepMax(weight: $0.weight, reps: $0.reps) <
+                ExerciseDefinition.estimatedOneRepMax(weight: $1.weight, reps: $1.reps)
+            })
+    }
+
+    private var allTimeBestE1RM: Double {
+        guard let best = allTimeBest else { return 0 }
+        return ExerciseDefinition.estimatedOneRepMax(weight: best.weight, reps: best.reps)
     }
 
     private var bestDate: Date? {
@@ -87,9 +95,16 @@ struct ExerciseHistoryView: View {
                     .foregroundStyle(.tertiary)
                     .textCase(.uppercase)
                     .tracking(0.5)
-                Text(formattedRecord(record))
-                    .font(.title2.weight(.bold).monospacedDigit())
-                    .foregroundStyle(Color.ryftAmber)
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(formattedE1RM(allTimeBestE1RM))
+                        .font(.title2.weight(.bold).monospacedDigit())
+                    Text("BEST")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(Color.accentColor)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(Color.accentColor.opacity(0.15), in: Capsule())
+                }
             }
             Spacer()
             if let date = bestDate {
@@ -124,10 +139,10 @@ struct ExerciseHistoryView: View {
 
     // MARK: - Helpers
 
-    private func formattedRecord(_ record: SetRecord) -> String {
-        let w = record.weight.truncatingRemainder(dividingBy: 1) == 0
-            ? "\(Int(record.weight))" : String(format: "%.1f", record.weight)
-        return "\(w) lbs × \(record.reps)"
+    private func formattedE1RM(_ value: Double) -> String {
+        let v = value.truncatingRemainder(dividingBy: 1) == 0
+            ? "\(Int(value))" : String(format: "%.1f", value)
+        return "\(v) lbs e1RM"
     }
 }
 
