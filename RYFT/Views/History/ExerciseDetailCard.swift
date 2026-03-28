@@ -67,7 +67,7 @@ struct ExerciseDetailCard: View {
             }
         }
         .background(cardMaterial, in: RoundedRectangle(cornerRadius: Radius.medium, style: .continuous))
-        .proGlass()
+        .proGlass(specular: false)
     }
 }
 

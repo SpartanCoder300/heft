@@ -35,10 +35,7 @@ struct EmptyRoutinesPrompt: View {
             .padding(Spacing.lg)
             .frame(maxWidth: .infinity)
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: Radius.medium, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.medium, style: .continuous)
-                    .strokeBorder(theme.accentColor.opacity(0.2), lineWidth: 1)
-            )
+            .proGlass(specular: false)
         }
         .buttonStyle(.plain)
     }

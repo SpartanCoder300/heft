@@ -64,7 +64,7 @@ private struct RecentWorkoutListRow: View {
             .padding(Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(cardMaterial, in: RoundedRectangle(cornerRadius: Radius.medium, style: .continuous))
-            .proGlass()
+            .proGlass(specular: false)
         }
         .buttonStyle(.plain)
         .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)

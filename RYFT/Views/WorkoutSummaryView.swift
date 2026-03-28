@@ -8,6 +8,7 @@ struct WorkoutSummaryView: View {
 
     @State private var vm: WorkoutSummaryViewModel
     @State private var appeared = false
+    @State private var historyExerciseName: String? = nil
     @Environment(\.ryftCardMaterial) private var cardMaterial
 
     init(session: WorkoutSession, onDone: @escaping () -> Void) {
@@ -47,7 +48,12 @@ struct WorkoutSummaryView: View {
                 if !vm.exerciseRows.isEmpty {
                     VStack(spacing: Spacing.sm) {
                         ForEach(Array(vm.exerciseRows.enumerated()), id: \.element.id) { index, row in
-                            SummaryExerciseCard(row: row, formatWeight: vm.formatWeight)
+                            SummaryExerciseCard(
+                                row: row,
+                                formatWeight: vm.formatWeight,
+                                cardIndex: index,
+                                onNameTap: { historyExerciseName = row.name }
+                            )
                                 .offset(y: appeared ? 0 : 18)
                                 .opacity(appeared ? 1.0 : 0.0)
                                 .animation(
@@ -70,6 +76,7 @@ struct WorkoutSummaryView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: Radius.large, style: .continuous))
+                    .proGlass(cornerRadius: Radius.large)
             }
             .padding(.horizontal, Spacing.md)
             .padding(.bottom, Spacing.md)
@@ -78,6 +85,15 @@ struct WorkoutSummaryView: View {
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .onAppear { appeared = true }
+        .sheet(isPresented: Binding(
+            get: { historyExerciseName != nil },
+            set: { if !$0 { historyExerciseName = nil } }
+        )) {
+            if let name = historyExerciseName {
+                ExerciseHistoryView(exerciseName: name)
+                    .environment(\.ryftCardMaterial, .regularMaterial)
+            }
+        }
     }
 }
 

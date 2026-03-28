@@ -6,7 +6,6 @@ import SwiftData
 struct ExerciseHistorySessionCard: View {
     let snapshot: ExerciseSnapshot
     var previousE1RM: Double? = nil
-    var cardIndex: Int = 0
     @Environment(\.ryftCardMaterial) private var cardMaterial
 
     private var sortedSets: [SetRecord] {
@@ -91,7 +90,7 @@ struct ExerciseHistorySessionCard: View {
             }
         }
         .background(cardMaterial, in: RoundedRectangle(cornerRadius: Radius.medium, style: .continuous))
-        .proGlass(cardIndex: cardIndex)
+        .proGlass(specular: false)
     }
 
     private func formatDelta(_ value: Double) -> String {

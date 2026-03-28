@@ -26,7 +26,7 @@ struct DetailStatChip: View {
         .padding(.vertical, Spacing.sm)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(cardMaterial, in: RoundedRectangle(cornerRadius: Radius.medium, style: .continuous))
-        .proGlass()
+        .proGlass(specular: false)
     }
 }
 

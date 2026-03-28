@@ -168,6 +168,7 @@ private struct RecentTile: View {
                 .padding(.horizontal, Spacing.sm)
                 .padding(.vertical, 9)
                 .background(.thinMaterial, in: Capsule())
+                .overlay(Capsule().strokeBorder(.white.opacity(0.08), lineWidth: 1))
         }
         .buttonStyle(.plain)
     }

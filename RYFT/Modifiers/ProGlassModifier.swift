@@ -21,6 +21,10 @@ struct ProGlassModifier: ViewModifier {
     /// don't all reflect from the exact same angle. Uses modulo-5 cycling.
     var cardIndex: Int?
 
+    /// When false, skips the specular highlight — card gets border only.
+    /// Use for content/browsing surfaces; reserve full glass for key interactive cards.
+    var specular: Bool = true
+
     /// Corner radius of the card — used to clip overlays so they respect rounded corners.
     var cornerRadius: CGFloat = Radius.medium
 
@@ -56,18 +60,20 @@ struct ProGlassModifier: ViewModifier {
         if theme == .mesh {
             withBorder
                 .overlay {
-                    // Static diagonal specular — angle shifts slightly per cardIndex
-                    // so stacked cards each catch light from a subtly different angle.
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.08),
-                            Color.clear,
-                        ],
-                        startPoint: specularStart,
-                        endPoint: specularEnd
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-                    .allowsHitTesting(false)
+                    if specular {
+                        // Static diagonal specular — angle shifts slightly per cardIndex
+                        // so stacked cards each catch light from a subtly different angle.
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.08),
+                                Color.clear,
+                            ],
+                            startPoint: specularStart,
+                            endPoint: specularEnd
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                        .allowsHitTesting(false)
+                    }
                 }
                 .overlay {
                     if isShimmering {
@@ -127,7 +133,7 @@ extension View {
     /// Applies the Pro mesh glass treatment. Pass `exerciseIndex` on active workout cards
     /// so only the card whose set was logged receives the shimmer sweep.
     /// `cornerRadius` must match the card's background shape to avoid hard overlay corners.
-    func proGlass(exerciseIndex: Int? = nil, cardIndex: Int? = nil, cornerRadius: CGFloat = Radius.medium) -> some View {
-        modifier(ProGlassModifier(exerciseIndex: exerciseIndex, cardIndex: cardIndex, cornerRadius: cornerRadius))
+    func proGlass(exerciseIndex: Int? = nil, cardIndex: Int? = nil, specular: Bool = true, cornerRadius: CGFloat = Radius.medium) -> some View {
+        modifier(ProGlassModifier(exerciseIndex: exerciseIndex, cardIndex: cardIndex, specular: specular, cornerRadius: cornerRadius))
     }
 }

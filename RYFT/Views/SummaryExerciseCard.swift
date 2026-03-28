@@ -5,14 +5,30 @@ import SwiftUI
 struct SummaryExerciseCard: View {
     let row: WorkoutSummaryViewModel.ExerciseRow
     let formatWeight: (Double) -> String
+    var cardIndex: Int? = nil
+    var onNameTap: (() -> Void)? = nil
     @Environment(\.ryftCardMaterial) private var cardMaterial
 
     var body: some View {
         HStack(alignment: .center, spacing: Spacing.sm) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(row.name)
-                    .font(.body.weight(.medium))
-                    .foregroundStyle(.primary)
+                if let onNameTap {
+                    Button(action: onNameTap) {
+                        HStack(spacing: 4) {
+                            Text(row.name)
+                                .font(.body.weight(.medium))
+                                .foregroundStyle(.primary)
+                            Image(systemName: "chevron.right")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Text(row.name)
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(.primary)
+                }
                 Text(subtitle)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -25,7 +41,7 @@ struct SummaryExerciseCard: View {
         .padding(.horizontal, Spacing.md)
         .padding(.vertical, 14)
         .background(cardMaterial, in: RoundedRectangle(cornerRadius: Radius.medium, style: .continuous))
-        .proGlass()
+        .proGlass(cardIndex: cardIndex)
     }
 
     private var subtitle: String {

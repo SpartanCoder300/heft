@@ -5,6 +5,7 @@ import SwiftData
 
 struct HistoryRootView: View {
     @Environment(\.ryftCardMaterial) private var cardMaterial
+    @Environment(\.modelContext) private var modelContext
 
     @Query(sort: \WorkoutSession.completedAt, order: .reverse)
     private var allSessions: [WorkoutSession]
@@ -35,31 +36,51 @@ struct HistoryRootView: View {
             if completed.isEmpty {
                 HistoryEmptyState()
             } else {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: Spacing.lg) {
-                        ForEach(grouped, id: \.section) { group in
-                            VStack(alignment: .leading, spacing: Spacing.sm) {
-                                SectionHeader(title: group.section)
-                                    .padding(.horizontal, Spacing.md)
-                                ForEach(Array(group.sessions.enumerated()), id: \.element.id) { index, session in
-                                    NavigationLink(value: session) {
-                                        HistorySessionRow(
-                                            session: session,
-                                            title: sessionTitle(session),
-                                            subtitle: sessionSubtitle(session),
-                                            exerciseSummary: exerciseSummary(session),
-                                            hasPR: sessionHasPR(session),
-                                            cardIndex: index
-                                        )
+                List {
+                    ForEach(grouped, id: \.section) { group in
+                        Section(group.section) {
+                            ForEach(group.sessions) { session in
+                                NavigationLink(value: session) {
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        HStack(spacing: Spacing.xs) {
+                                            Text(sessionTitle(session))
+                                                .font(.headline)
+                                                .foregroundStyle(.primary)
+                                            if sessionHasPR(session) {
+                                                Text("PR")
+                                                    .font(.caption2.weight(.bold))
+                                                    .foregroundStyle(Color.ryftAmber)
+                                                    .padding(.horizontal, 5)
+                                                    .padding(.vertical, 2)
+                                                    .background(Color.ryftAmber.opacity(0.15), in: Capsule())
+                                            }
+                                        }
+                                        Text(sessionSubtitle(session))
+                                            .font(.subheadline)
+                                            .foregroundStyle(.secondary)
+                                        if let exercises = exerciseSummary(session) {
+                                            Text(exercises)
+                                                .font(.caption)
+                                                .foregroundStyle(.tertiary)
+                                                .lineLimit(1)
+                                        }
                                     }
-                                    .buttonStyle(.plain)
-                                    .padding(.horizontal, Spacing.md)
+                                    .padding(.vertical, 6)
+                                }
+                                .listRowBackground(Rectangle().fill(cardMaterial))
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    Button(role: .destructive) {
+                                        modelContext.delete(session)
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
                                 }
                             }
                         }
                     }
-                    .padding(.vertical, Spacing.lg)
                 }
+                .listStyle(.insetGrouped)
+                .scrollContentBackground(.hidden)
                 .navigationDestination(for: WorkoutSession.self) { session in
                     WorkoutDetailView(
                         session: session,
@@ -118,57 +139,6 @@ struct HistoryRootView: View {
         let sets = session.exercises.reduce(0) { $0 + $1.sets.count }
         parts.append("\(sets) sets")
         return parts.joined(separator: " · ")
-    }
-}
-
-// MARK: - Session Row Card
-
-private struct HistorySessionRow: View {
-    let session: WorkoutSession
-    let title: String
-    let subtitle: String
-    let exerciseSummary: String?
-    let hasPR: Bool
-    var cardIndex: Int = 0
-
-    @Environment(\.ryftCardMaterial) private var cardMaterial
-
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: Spacing.xs) {
-                    Text(title)
-                        .font(.headline)
-                        .foregroundStyle(.primary)
-                    if hasPR {
-                        Text("PR")
-                            .font(.caption2.weight(.bold))
-                            .foregroundStyle(Color.ryftAmber)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 2)
-                            .background(Color.ryftAmber.opacity(0.15), in: Capsule())
-                    }
-                }
-                Text(subtitle)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                if let exercises = exerciseSummary {
-                    Text(exercises)
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                        .lineLimit(1)
-                }
-            }
-            Spacer()
-            Image(systemName: "chevron.right")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.tertiary)
-        }
-        .padding(.horizontal, Spacing.md)
-        .padding(.vertical, Spacing.md)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(cardMaterial, in: RoundedRectangle(cornerRadius: Radius.medium, style: .continuous))
-        .proGlass(cardIndex: cardIndex)
     }
 }
 

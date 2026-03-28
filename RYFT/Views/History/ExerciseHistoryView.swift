@@ -77,8 +77,7 @@ struct ExerciseHistoryView: View {
                                 ExerciseHistorySessionCard(
                                     snapshot: snapshot,
                                     previousE1RM: index + 1 < sessions.count
-                                        ? e1rmForSnapshot(sessions[index + 1]) : nil,
-                                    cardIndex: index
+                                        ? e1rmForSnapshot(sessions[index + 1]) : nil
                                 )
                             }
                         }
@@ -131,6 +130,7 @@ struct ExerciseHistoryView: View {
         .padding(.horizontal, Spacing.md)
         .padding(.vertical, Spacing.sm)
         .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: Radius.medium, style: .continuous))
+        .proGlass(specular: false)
     }
 
     @ViewBuilder
