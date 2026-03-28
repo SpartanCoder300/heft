@@ -60,9 +60,7 @@ struct ProGlassModifier: ViewModifier {
                     // so stacked cards each catch light from a subtly different angle.
                     LinearGradient(
                         colors: [
-                            Color.white.opacity(0.09),
-                            Color.clear,
-                            Color.white.opacity(0.04),
+                            Color.white.opacity(0.08),
                             Color.clear,
                         ],
                         startPoint: specularStart,
