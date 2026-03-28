@@ -47,10 +47,6 @@ struct RoutineListRow: View {
             .padding(Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(cardMaterial, in: RoundedRectangle(cornerRadius: Radius.medium, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.medium, style: .continuous)
-                    .strokeBorder(.white.opacity(0.08), lineWidth: 1)
-            )
             .proGlass()
         }
         .buttonStyle(.plain)

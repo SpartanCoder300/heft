@@ -27,8 +27,14 @@ struct ProGlassModifier: ViewModifier {
     @State private var shimmerPeak: CGFloat = 0.12
 
     func body(content: Content) -> some View {
+        let withBorder = content
+            .overlay {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .strokeBorder(.white.opacity(0.08), lineWidth: 1)
+            }
+
         if theme == .mesh {
-            content
+            withBorder
                 .overlay {
                     // Static diagonal specular highlight — applies to all cards
                     LinearGradient(
@@ -71,7 +77,7 @@ struct ProGlassModifier: ViewModifier {
                     }
                 }
         } else {
-            content
+            withBorder
         }
     }
 
