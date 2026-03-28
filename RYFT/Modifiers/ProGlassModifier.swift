@@ -31,7 +31,7 @@ struct ProGlassModifier: ViewModifier {
         let withBorder = content
             .overlay {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .strokeBorder(.white.opacity(0.08), lineWidth: 1)
+                    .strokeBorder(.white.opacity(theme == .mesh ? 0.13 : 0.08), lineWidth: 1)
             }
 
         if theme == .mesh {
@@ -40,9 +40,9 @@ struct ProGlassModifier: ViewModifier {
                     // Static diagonal specular highlight — applies to all cards
                     LinearGradient(
                         colors: [
-                            Color.white.opacity(0.04),
+                            Color.white.opacity(0.09),
                             Color.clear,
-                            Color.white.opacity(0.02),
+                            Color.white.opacity(0.04),
                             Color.clear,
                         ],
                         startPoint: .topLeading,
