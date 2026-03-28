@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		20A10DC82F7814980053B465 /* ProgressRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A10DC72F7814980053B465 /* ProgressRootView.swift */; };
 		20A10DD12F78158F0053B465 /* LibraryRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A10DD02F78158F0053B465 /* LibraryRootView.swift */; };
+		20A10DD72F781E0F0053B465 /* ProgressAnalyticsEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A10DD52F781E0F0053B465 /* ProgressAnalyticsEngine.swift */; };
 		20C236842F732C8A00D5763E /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20C236832F732C8A00D5763E /* WidgetKit.framework */; };
 		20C236862F732C8A00D5763E /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20C236852F732C8A00D5763E /* SwiftUI.framework */; };
 		20C236952F732C8C00D5763E /* RYFTWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 20C236812F732C8A00D5763E /* RYFTWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -137,6 +138,7 @@
 		205CFF7A2F69D7E400FFF88C /* RYFTUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RYFTUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		20A10DC72F7814980053B465 /* ProgressRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressRootView.swift; sourceTree = "<group>"; };
 		20A10DD02F78158F0053B465 /* LibraryRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryRootView.swift; sourceTree = "<group>"; };
+		20A10DD52F781E0F0053B465 /* ProgressAnalyticsEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressAnalyticsEngine.swift; sourceTree = "<group>"; };
 		20C236812F732C8A00D5763E /* RYFTWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RYFTWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		20C236832F732C8A00D5763E /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		20C236852F732C8A00D5763E /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -334,6 +336,14 @@
 			path = Library;
 			sourceTree = "<group>";
 		};
+		20A10DD62F781E0F0053B465 /* Analytics */ = {
+			isa = PBXGroup;
+			children = (
+				20A10DD52F781E0F0053B465 /* ProgressAnalyticsEngine.swift */,
+			);
+			path = Analytics;
+			sourceTree = "<group>";
+		};
 		20C236822F732C8A00D5763E /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -504,6 +514,7 @@
 		20C236EE2F746D2300D5763E /* RYFT */ = {
 			isa = PBXGroup;
 			children = (
+				20A10DD62F781E0F0053B465 /* Analytics */,
 				20A10DC62F776E190053B465 /* Modifiers */,
 				20C236AD2F746D2300D5763E /* App */,
 				20C236B72F746D2300D5763E /* Components */,
@@ -708,6 +719,7 @@
 				20C236F62F746D2300D5763E /* GlassPanel.swift in Sources */,
 				20C236F72F746D2300D5763E /* MeshBackgroundView.swift in Sources */,
 				20C236F82F746D2300D5763E /* PlaceholderScreen.swift in Sources */,
+				20A10DD72F781E0F0053B465 /* ProgressAnalyticsEngine.swift in Sources */,
 				20A10DC82F7814980053B465 /* ProgressRootView.swift in Sources */,
 				20C236F92F746D2300D5763E /* ProGlassModifier.swift in Sources */,
 				20C236FA2F746D2300D5763E /* SetTypeChip.swift in Sources */,
