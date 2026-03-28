@@ -7,7 +7,10 @@ struct WorkoutDetailView: View {
     let session: WorkoutSession
     var routineName: String? = nil
     @Environment(\.ryftTheme) private var theme
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
     @State private var historyExerciseName: String? = nil
+    @State private var showDeleteAlert = false
 
     private var sortedExercises: [ExerciseSnapshot] {
         session.exercises.sorted { $0.order < $1.order }
@@ -58,6 +61,25 @@ struct WorkoutDetailView: View {
         .themedBackground()
         .navigationTitle(navTitle)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(role: .destructive) {
+                    showDeleteAlert = true
+                } label: {
+                    Image(systemName: "trash")
+                }
+                .tint(.red)
+            }
+        }
+        .alert("Delete Workout?", isPresented: $showDeleteAlert) {
+            Button("Delete", role: .destructive) {
+                modelContext.delete(session)
+                dismiss()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This workout and all its data will be permanently removed.")
+        }
         .sheet(isPresented: Binding(
             get: { historyExerciseName != nil },
             set: { if !$0 { historyExerciseName = nil } }
