@@ -204,7 +204,7 @@ struct ActiveWorkoutView: View {
 private struct BottomCommandBackdrop: View {
     let theme: AccentTheme
 
-    private let fadeHeight: CGFloat = 140
+    private let fadeHeight: CGFloat = 110
 
     var body: some View {
         GeometryReader { proxy in
@@ -214,8 +214,9 @@ private struct BottomCommandBackdrop: View {
                 LinearGradient(
                     stops: [
                         .init(color: .clear, location: 0),
-                        .init(color: Color.black.opacity(0.32), location: 0.45),
-                        .init(color: Color.black.opacity(0.58), location: 1)
+                        .init(color: Color.black.opacity(0.18), location: 0.18),
+                        .init(color: Color.black.opacity(0.44), location: 0.42),
+                        .init(color: Color.black.opacity(0.70), location: 1)
                     ],
                     startPoint: .top,
                     endPoint: .bottom

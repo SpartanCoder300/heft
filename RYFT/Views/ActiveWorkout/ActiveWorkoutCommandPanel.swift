@@ -13,6 +13,8 @@ struct ActiveWorkoutCommandPanel: View {
 
     @State private var isKeyboardVisible = false
 
+    private let horizontalInset: CGFloat = Spacing.lg
+
     var body: some View {
         if vm.isAllSetsLogged {
             // ── Complete Workout ───────────────────────────────────────────────
@@ -32,6 +34,7 @@ struct ActiveWorkoutCommandPanel: View {
             .buttonStyle(.plain)
             .glassEffect(.regular, in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
             .modifier(CommandPanelElevation(cornerRadius: Radius.sheet))
+            .padding(.horizontal, horizontalInset)
             .padding(.bottom, Spacing.md)
 
         } else if let focus = vm.currentFocus,
@@ -186,7 +189,7 @@ struct ActiveWorkoutCommandPanel: View {
             }
             .glassEffect(.regular, in: RoundedRectangle(cornerRadius: Radius.large, style: .continuous))
             .modifier(CommandPanelElevation(cornerRadius: Radius.large))
-            .padding(.horizontal, Spacing.md)
+            .padding(.horizontal, horizontalInset)
             .padding(.bottom, Spacing.md)
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
                 withAnimation(.easeInOut(duration: 0.2)) { isKeyboardVisible = true }
