@@ -24,8 +24,8 @@ struct SetTypeLabel: View {
 
     private var color: Color {
         switch setType {
-        case .warmup:  Color.ryftAmber
-        case .dropset: Color.blue
+        case .warmup:  Color.ryftWarmup
+        case .dropset: Color.ryftBlue
         case .normal:  Color.textFaint
         }
     }

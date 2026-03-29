@@ -20,8 +20,9 @@ extension Color {
     static var ryftRed: Color             { Color("RYFTRed") }
     static var ryftGreen: Color           { Color("RYFTGreen") }
     static var ryftAmber: Color           { Color("RYFTAmber") }
+    static var ryftWarmup: Color          { Color("RYFTWarmup") }
     static var ryftGold: Color            { Color("RYFTGold") }
-    static var ryftBlue: Color            { Color(red: 0.42, green: 0.55, blue: 1.0) }
+    static var ryftBlue: Color            { Color(red: 0.302, green: 0.490, blue: 0.996) }
 
     // ── Text ──────────────────────────────────────────────────────────────────
     static var textPrimary: Color { .white.opacity(DesignTokens.Opacity.textPrimary) }

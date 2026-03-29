@@ -14,7 +14,7 @@ enum AccentTheme: String, CaseIterable, Identifiable {
         switch self {
         case .midnight: "Midnight"
         case .graphite: "Graphite"
-        case .ember:    "Ember"
+        case .ember:    "Copper"
         case .mesh:     "Lux"
         }
     }
@@ -43,9 +43,9 @@ enum AccentTheme: String, CaseIterable, Identifiable {
     /// Color is not Codable so the widget reconstructs it from these values.
     var accentRGB: (r: Double, g: Double, b: Double) {
         switch self {
-        case .midnight: return (0.486, 0.498, 0.961) // #7C7FF5
-        case .graphite: return (0.557, 0.604, 0.671) // #8E9AAB
-        case .ember:    return (0.788, 0.208, 0.208) // #C93535
+        case .midnight: return (0.431, 0.447, 0.949) // #6E72F2 deep indigo
+        case .graphite: return (0.498, 0.565, 0.651) // #7F90A6 steel slate
+        case .ember:    return (0.722, 0.455, 0.196) // #B87432 burnished copper
         case .mesh:     return (0.780, 0.647, 0.416) // #C7A56A champagne brass
         }
     }
