@@ -10,12 +10,12 @@ struct ActiveWorkoutView: View {
 
     @State private var completedSession: WorkoutSession?
     @State private var isShowingCancelPRWarning = false
-    @Environment(\.ryftTheme) private var theme
+@Environment(\.ryftTheme) private var theme
 
     var body: some View {
         @Bindable var vm = vm
 
-        ZStack {
+        ZStack(alignment: .bottomTrailing) {
             // ── Workout content ────────────────────────────────────────────────
             NavigationStack {
                 ScrollViewReader { proxy in
@@ -37,6 +37,7 @@ struct ActiveWorkoutView: View {
                         .padding(.horizontal, Spacing.md)
                         .padding(.vertical, Spacing.lg)
                     }
+                    .scrollDismissesKeyboard(.interactively)
                     .onAppear {
                         guard let focus = vm.currentFocus,
                               vm.draftExercises.indices.contains(focus.exerciseIndex) else { return }

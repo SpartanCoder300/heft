@@ -53,10 +53,9 @@ final class WorkoutSummaryViewModel {
     }
 
     var totalVolume: Double {
-        session.exercises
-            .flatMap { $0.sets }
-            .filter { $0.setType != .warmup }
-            .reduce(0) { $0 + $1.weight * Double($1.reps) }
+        let allSets = session.exercises.flatMap { $0.sets }
+        let workSets = allSets.filter { $0.setType != .warmup }
+        return workSets.reduce(0.0) { $0 + $1.weight * Double($1.reps) }
     }
 
     var totalVolumeLabel: String {

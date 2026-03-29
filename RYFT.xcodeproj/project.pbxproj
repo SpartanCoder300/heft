@@ -20,6 +20,7 @@
 		20C236F32F746D2300D5763E /* MeshTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236AC2F746D2300D5763E /* MeshTheme.swift */; };
 		20C236F42F746D2300D5763E /* Color+Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236AE2F746D2300D5763E /* Color+Tokens.swift */; };
 		20C236F52F746D2300D5763E /* CompactStepper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236AF2F746D2300D5763E /* CompactStepper.swift */; };
+		20A10DD92F781E0F0053B465 /* SwipeValueControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A10DD82F781E0F0053B465 /* SwipeValueControl.swift */; };
 		20C236F62F746D2300D5763E /* GlassPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236B02F746D2300D5763E /* GlassPanel.swift */; };
 		20C236F72F746D2300D5763E /* MeshBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236B12F746D2300D5763E /* MeshBackgroundView.swift */; };
 		20C236F82F746D2300D5763E /* PlaceholderScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236B22F746D2300D5763E /* PlaceholderScreen.swift */; };
@@ -149,6 +150,7 @@
 		20C236AC2F746D2300D5763E /* MeshTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshTheme.swift; sourceTree = "<group>"; };
 		20C236AE2F746D2300D5763E /* Color+Tokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Tokens.swift"; sourceTree = "<group>"; };
 		20C236AF2F746D2300D5763E /* CompactStepper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompactStepper.swift; sourceTree = "<group>"; };
+		20A10DD82F781E0F0053B465 /* SwipeValueControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeValueControl.swift; sourceTree = "<group>"; };
 		20C236B02F746D2300D5763E /* GlassPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassPanel.swift; sourceTree = "<group>"; };
 		20C236B12F746D2300D5763E /* MeshBackgroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshBackgroundView.swift; sourceTree = "<group>"; };
 		20C236B22F746D2300D5763E /* PlaceholderScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceholderScreen.swift; sourceTree = "<group>"; };
@@ -370,6 +372,7 @@
 			children = (
 				20C236AE2F746D2300D5763E /* Color+Tokens.swift */,
 				20C236AF2F746D2300D5763E /* CompactStepper.swift */,
+				20A10DD82F781E0F0053B465 /* SwipeValueControl.swift */,
 				20C236B02F746D2300D5763E /* GlassPanel.swift */,
 				20C236B12F746D2300D5763E /* MeshBackgroundView.swift */,
 				20C236B22F746D2300D5763E /* PlaceholderScreen.swift */,
@@ -716,6 +719,7 @@
 				20C236F32F746D2300D5763E /* MeshTheme.swift in Sources */,
 				20C236F42F746D2300D5763E /* Color+Tokens.swift in Sources */,
 				20C236F52F746D2300D5763E /* CompactStepper.swift in Sources */,
+				20A10DD92F781E0F0053B465 /* SwipeValueControl.swift in Sources */,
 				20C236F62F746D2300D5763E /* GlassPanel.swift in Sources */,
 				20C236F72F746D2300D5763E /* MeshBackgroundView.swift in Sources */,
 				20C236F82F746D2300D5763E /* PlaceholderScreen.swift in Sources */,

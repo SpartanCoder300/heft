@@ -11,6 +11,8 @@ struct ActiveWorkoutCommandPanel: View {
     let onComplete: (WorkoutSession) -> Void
     let onDismiss: () -> Void
 
+    @State private var isKeyboardVisible = false
+
     var body: some View {
         if vm.isAllSetsLogged {
             // ── Complete Workout ───────────────────────────────────────────────
@@ -38,10 +40,33 @@ struct ActiveWorkoutCommandPanel: View {
             let exercise = vm.draftExercises[focus.exerciseIndex]
 
             VStack(spacing: 0) {
+                // Drag handle — visible only when keyboard is up, swipe down dismisses
+                if isKeyboardVisible {
+                    ZStack {
+                        Color.clear.frame(height: 24)
+                        RoundedRectangle(cornerRadius: 2, style: .continuous)
+                            .fill(Color.white.opacity(0.25))
+                            .frame(width: 36, height: 4)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 10)
+                            .onEnded { value in
+                                guard value.translation.height > 20,
+                                      abs(value.translation.height) > abs(value.translation.width) else { return }
+                                UIApplication.shared.sendAction(
+                                    #selector(UIResponder.resignFirstResponder),
+                                    to: nil, from: nil, for: nil
+                                )
+                            }
+                    )
+                }
+
                 // Row 1: Weight | Reps (or Duration for timed exercises)
                 HStack(spacing: 0) {
                     if !exercise.isTimed {
-                        CompactStepper(
+                        SwipeValueControl(
                             text: Binding(
                                 get: {
                                     guard vm.draftExercises.indices.contains(focus.exerciseIndex),
@@ -61,7 +86,8 @@ struct ActiveWorkoutCommandPanel: View {
                             minValue: 0,
                             maxValue: 999,
                             isInteger: false,
-                            firstTapDefault: weightDefault(for: exercise.equipmentType)
+                            firstTapDefault: weightDefault(for: exercise.equipmentType),
+                            milestones: weightMilestones(for: exercise.equipmentType)
                         )
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
 
@@ -69,8 +95,8 @@ struct ActiveWorkoutCommandPanel: View {
                     }
 
                     if exercise.isTimed {
-                        // Duration stepper — full width for timed exercises
-                        CompactStepper(
+                        // Duration control — full width for timed exercises
+                        SwipeValueControl(
                             text: Binding(
                                 get: {
                                     guard vm.draftExercises.indices.contains(focus.exerciseIndex),
@@ -94,7 +120,7 @@ struct ActiveWorkoutCommandPanel: View {
                         )
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else {
-                        CompactStepper(
+                        SwipeValueControl(
                             text: Binding(
                                 get: {
                                     guard vm.draftExercises.indices.contains(focus.exerciseIndex),
@@ -133,7 +159,13 @@ struct ActiveWorkoutCommandPanel: View {
                     .frame(width: 44)
 
                     // Centre: Log Set fills remaining space, text naturally centred
-                    Button { vm.logFocusedSet() } label: {
+                    Button {
+                        UIApplication.shared.sendAction(
+                            #selector(UIResponder.resignFirstResponder),
+                            to: nil, from: nil, for: nil
+                        )
+                        vm.logFocusedSet()
+                    } label: {
                         HStack(spacing: Spacing.xs) {
                             Image(systemName: "checkmark")
                                 .font(.system(size: 15, weight: .bold))
@@ -154,6 +186,12 @@ struct ActiveWorkoutCommandPanel: View {
             .glassEffect(in: RoundedRectangle(cornerRadius: Radius.large, style: .continuous))
             .padding(.horizontal, Spacing.md)
             .padding(.bottom, Spacing.md)
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+                withAnimation(.easeInOut(duration: 0.2)) { isKeyboardVisible = true }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+                withAnimation(.easeInOut(duration: 0.2)) { isKeyboardVisible = false }
+            }
 
         } else if !vm.draftExercises.isEmpty {
             // ── No focus — prompt user ─────────────────────────────────────────
@@ -213,6 +251,28 @@ struct ActiveWorkoutCommandPanel: View {
             .environment(\.ryftTheme, .midnight)
             .preferredColorScheme(.dark)
     }()
+}
+
+private func weightMilestones(for equipmentType: String) -> Set<Double>? {
+    switch equipmentType {
+    case "Barbell":
+        // Standard plate combinations on a 45 lb bar
+        return [45, 95, 135, 185, 225, 275, 315, 365, 405]
+    case "Dumbbell":
+        // Common dumbbell rack weights every 10 lbs
+        return Set(stride(from: 10.0, through: 150.0, by: 10.0))
+    case "Cable":
+        // Cable stack landmarks every 20 lbs
+        return Set(stride(from: 20.0, through: 300.0, by: 20.0))
+    case "Machine":
+        // Machine stack landmarks every 25 lbs
+        return Set(stride(from: 25.0, through: 400.0, by: 25.0))
+    case "Kettlebell":
+        // Nearest multiples of 4 (the step size) to standard bell weights
+        return [16, 28, 36, 44, 52, 60, 72, 88]
+    default:
+        return nil
+    }
 }
 
 private func weightDefault(for equipmentType: String) -> Double? {
