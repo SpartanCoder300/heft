@@ -12,6 +12,8 @@ final class ExerciseSnapshot {
     var startingWeight: Double?
     var loadTrackingModeRaw: String?
     var isTimed: Bool = false
+    var restSeconds: Int?
+    var draftStateJSON: String?
     var order: Int
     @Relationship(deleteRule: .cascade, inverse: \SetRecord.exerciseSnapshot) var sets: [SetRecord]
     var workoutSession: WorkoutSession?
@@ -29,6 +31,8 @@ final class ExerciseSnapshot {
         startingWeight: Double? = nil,
         loadTrackingModeRaw: String? = nil,
         isTimed: Bool = false,
+        restSeconds: Int? = nil,
+        draftStateJSON: String? = nil,
         order: Int,
         sets: [SetRecord] = [],
         workoutSession: WorkoutSession? = nil
@@ -40,6 +44,8 @@ final class ExerciseSnapshot {
         self.startingWeight = startingWeight
         self.loadTrackingModeRaw = loadTrackingModeRaw
         self.isTimed = isTimed
+        self.restSeconds = restSeconds
+        self.draftStateJSON = draftStateJSON
         self.order = order
         self.sets = sets
         self.workoutSession = workoutSession

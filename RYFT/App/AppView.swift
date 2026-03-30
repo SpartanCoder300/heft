@@ -163,6 +163,16 @@ struct AppView: View {
             ExerciseSeeder.seedIfNeeded(in: modelContext)
             appState.workout.onLaunch(modelContext: modelContext)
         }
+        .onChange(of: scenePhase) { _, newPhase in
+            switch newPhase {
+            case .active:
+                appState.workout.viewModel?.handleForeground()
+            case .inactive, .background:
+                appState.workout.viewModel?.persistDraftState()
+            @unknown default:
+                break
+            }
+        }
     }
 
     private var derivedMeshState: MeshState {

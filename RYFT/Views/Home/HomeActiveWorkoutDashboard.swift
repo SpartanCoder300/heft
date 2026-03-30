@@ -70,7 +70,6 @@ struct HomeActiveWorkoutDashboard: View {
             }
             Spacer()
             TimelineView(.periodic(from: .now, by: 1.0)) { ctx in
-                let _ = vm.restTimer.tick(at: ctx.date)
                 Group {
                     if vm.restTimer.isActive,
                        let label = vm.restTimer.remainingLabel(at: ctx.date) {

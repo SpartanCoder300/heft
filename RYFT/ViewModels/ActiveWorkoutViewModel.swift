@@ -9,6 +9,16 @@ import UserNotifications
 @Observable @MainActor
 final class ActiveWorkoutViewModel {
 
+    private struct PersistedDraftSet: Codable {
+        let weightText: String
+        let repsText: String
+        let durationText: String
+        let setType: SetType
+        let isLogged: Bool
+        let loggedRecordID: UUID?
+        let isPR: Bool
+    }
+
     // MARK: - Types
 
     struct DraftSet: Identifiable {
@@ -196,7 +206,8 @@ final class ActiveWorkoutViewModel {
             }
             eagerlyPersistWorkout()
         }
-        activityManager.start(routineName: routineName, state: currentActivityState)
+        persistDraftState()
+        activityManager.start(sessionID: ensureSession().id, routineName: routineName, state: currentActivityState)
         requestNotificationPermissionIfNeeded()
     }
 
@@ -323,9 +334,23 @@ final class ActiveWorkoutViewModel {
             let weightIncrement = def?.resolvedWeightIncrement ?? snapshot.weightIncrement ?? ExerciseDefinition.defaultIncrement(for: equipmentType)
             let startingWeight  = def?.resolvedStartingWeight ?? snapshot.startingWeight ?? ExerciseDefinition.defaultStartingWeight(for: equipmentType)
             let loadTrackingMode = def?.loadTrackingMode ?? snapshot.loadTrackingMode
+            let restSeconds = snapshot.restSeconds ?? routineEntriesByName[name]?.restSeconds ?? 90
 
             // Reconstruct each persisted set as a logged DraftSet.
             let sortedRecords = snapshot.sets.sorted { $0.loggedAt < $1.loggedAt }
+            if let restored = restorePersistedDraft(
+                from: snapshot,
+                sortedRecords: sortedRecords,
+                exerciseName: name,
+                equipmentType: equipmentType,
+                weightIncrement: weightIncrement,
+                startingWeight: startingWeight,
+                loadTrackingMode: loadTrackingMode,
+                isTimed: isTimed,
+                restSeconds: restSeconds
+            ) {
+                return restored
+            }
             var draftSets: [DraftSet] = sortedRecords.map { record in
                 var draft = DraftSet()
                 if loadTrackingMode != .none {
@@ -393,7 +418,7 @@ final class ActiveWorkoutViewModel {
             let targetSets   = routineEntry?.targetSets ?? 0
             let blanksNeeded = targetSets > 0
                 ? max(0, targetSets - sortedRecords.count)
-                : 1
+                : 0
             for _ in 0 ..< blanksNeeded {
                 var s = blankNext
                 s.id = UUID()
@@ -516,6 +541,7 @@ final class ActiveWorkoutViewModel {
         )
         applyPreviousPerformance(to: &replacement)
         draftExercises[index] = replacement
+        persistDraftState()
         activityManager.update(currentActivityState)
     }
 
@@ -529,6 +555,7 @@ final class ActiveWorkoutViewModel {
         draftExercises[index].loadTrackingMode = def.loadTrackingMode
         draftExercises[index].equipmentType = def.equipmentType
         draftExercises[index].isTimed = def.isTimed
+        persistDraftState()
     }
 
     func addExercise(named name: String) {
@@ -550,6 +577,7 @@ final class ActiveWorkoutViewModel {
         )
         applyPreviousPerformance(to: &draft)
         draftExercises.append(draft)
+        persistDraftState()
         UISelectionFeedbackGenerator().selectionChanged()
     }
 
@@ -563,6 +591,7 @@ final class ActiveWorkoutViewModel {
         draftExercises[eIdx].sets[sIdx].weightText = above.weightText
         draftExercises[eIdx].sets[sIdx].repsText = above.repsText
         draftExercises[eIdx].sets[sIdx].durationText = above.durationText
+        persistDraftState()
         UISelectionFeedbackGenerator().selectionChanged()
     }
 
@@ -576,7 +605,9 @@ final class ActiveWorkoutViewModel {
         // zombie card with zero rows that isAllSetsLogged treats as complete.
         if draftExercises[eIdx].sets.isEmpty {
             removeExercise(at: eIdx)
+            return
         }
+        persistDraftState()
     }
 
     func unlogSet(exerciseIndex eIdx: Int, setIndex sIdx: Int) {
@@ -592,6 +623,7 @@ final class ActiveWorkoutViewModel {
 
         draftExercises[eIdx].sets[sIdx].isLogged = false
         draftExercises[eIdx].sets[sIdx].loggedRecord = nil
+        persistDraftState()
         try? modelContext.save()
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
@@ -606,15 +638,16 @@ final class ActiveWorkoutViewModel {
             new.setType = last.setType
         }
         draftExercises[index].sets.append(new)
+        persistDraftState()
         UISelectionFeedbackGenerator().selectionChanged()
     }
 
     func removeExercise(at index: Int) {
         guard draftExercises.indices.contains(index) else { return }
 
-        // Delete the eagerly-created snapshot if it has no logged sets — it's a placeholder
-        // with no real data. Snapshots with logged sets are left intact (preserve history).
-        if let snapshot = draftExercises[index].snapshot, snapshot.sets.isEmpty {
+        // Removing an exercise from an in-progress workout should remove its persisted draft
+        // and any logged sets from this unfinished session so it cannot resurrect on resume.
+        if let snapshot = draftExercises[index].snapshot {
             modelContext.delete(snapshot)
             try? modelContext.save()
         }
@@ -630,6 +663,7 @@ final class ActiveWorkoutViewModel {
             if mf.exerciseIndex == index { manualFocus = nil }
             else if mf.exerciseIndex > index { manualFocus = SetFocus(exerciseIndex: mf.exerciseIndex - 1, setIndex: mf.setIndex) }
         }
+        persistDraftState()
         activityManager.update(currentActivityState)
     }
 
@@ -638,6 +672,7 @@ final class ActiveWorkoutViewModel {
         guard draftExercises.indices.contains(index),
               draftExercises.indices.contains(target) else { return }
         draftExercises.swapAt(index, target)
+        persistDraftState()
         activityManager.update(currentActivityState)
     }
 
@@ -653,6 +688,7 @@ final class ActiveWorkoutViewModel {
             dropset.durationText = last.durationText
         }
         draftExercises[index].sets.append(dropset)
+        persistDraftState()
     }
 
     func logSet(exerciseIndex eIdx: Int, setIndex sIdx: Int) {
@@ -734,6 +770,7 @@ final class ActiveWorkoutViewModel {
         // Clear manual focus — auto-advance takes over
         manualFocus = nil
 
+        persistDraftState()
         try? modelContext.save()
         activityManager.update(currentActivityState)
 
@@ -865,6 +902,7 @@ final class ActiveWorkoutViewModel {
     func skipRest() {
         cancelTimerTasks()
         restTimer.skip()
+        persistDraftState()
         cancelRestNotification()
         activityManager.update(currentActivityState)
     }
@@ -874,12 +912,14 @@ final class ActiveWorkoutViewModel {
         guard restTimer.isActive, let deadline = restTimer.targetEndDate else {
             // Adjustment clamped the timer to zero — treat as a skip.
             cancelTimerTasks()
+            persistDraftState()
             cancelRestNotification()
             activityManager.update(currentActivityState)
             return
         }
         scheduleTimerTasks(deadline: deadline, duration: restTimer.totalDuration)
         scheduleRestNotification(endsAt: deadline)
+        persistDraftState()
         activityManager.update(currentActivityState)
     }
 
@@ -890,6 +930,7 @@ final class ActiveWorkoutViewModel {
         let current = draftExercises[eIdx].sets[sIdx].setType
         let next = all[((all.firstIndex(of: current) ?? 0) + 1) % all.count]
         draftExercises[eIdx].sets[sIdx].setType = next
+        persistDraftState()
     }
 
     func adjustWeight(exerciseIndex eIdx: Int, setIndex sIdx: Int, increment: Bool) {
@@ -901,10 +942,12 @@ final class ActiveWorkoutViewModel {
         if increment && current == 0 {
             let start = draftExercises[eIdx].startingWeight
             draftExercises[eIdx].sets[sIdx].weightText = formatWeight(start)
+            persistDraftState()
             return
         }
         let next = increment ? current + step : max(0, current - step)
         draftExercises[eIdx].sets[sIdx].weightText = formatWeight(next)
+        persistDraftState()
     }
 
     func adjustReps(exerciseIndex eIdx: Int, setIndex sIdx: Int, increment: Bool) {
@@ -913,6 +956,7 @@ final class ActiveWorkoutViewModel {
         let current = Int(draftExercises[eIdx].sets[sIdx].repsText) ?? 0
         let next = increment ? current + 1 : max(0, current - 1)
         draftExercises[eIdx].sets[sIdx].repsText = "\(next)"
+        persistDraftState()
     }
 
     var loggedSetCount: Int {
@@ -1072,11 +1116,36 @@ final class ActiveWorkoutViewModel {
     /// while the app was suspended — the zeroTask can't fire during suspension, so this
     /// ensures the Live Activity and in-app state are both updated immediately on resume.
     func handleForeground() {
+        persistDraftState()
         guard restTimer.isActive, let end = restTimer.targetEndDate, end <= .now else { return }
         cancelTimerTasks()
         cancelRestNotification()
         restTimer.tick(at: .now)
+        persistDraftState()
         activityManager.update(currentActivityState)
+    }
+
+    func persistDraftState() {
+        guard hasSetup else { return }
+        if draftExercises.isEmpty {
+            try? modelContext.save()
+            return
+        }
+
+        let currentSession = ensureSession()
+        var retainedSnapshotIDs = Set<UUID>()
+
+        for eIdx in draftExercises.indices {
+            let snapshot = ensureSnapshot(exerciseIndex: eIdx, session: currentSession)
+            retainedSnapshotIDs.insert(snapshot.id)
+            syncSnapshot(snapshot, from: draftExercises[eIdx], order: eIdx)
+        }
+
+        for snapshot in currentSession.exercises where !retainedSnapshotIDs.contains(snapshot.id) {
+            modelContext.delete(snapshot)
+        }
+
+        try? modelContext.save()
     }
 
     private func ensureSession() -> WorkoutSession {
@@ -1097,6 +1166,7 @@ final class ActiveWorkoutViewModel {
             startingWeight: draftExercises[eIdx].startingWeight,
             loadTrackingModeRaw: draftExercises[eIdx].loadTrackingMode.rawValue,
             isTimed: draftExercises[eIdx].isTimed,
+            restSeconds: draftExercises[eIdx].restSeconds,
             order: eIdx,
             workoutSession: session
         )
@@ -1104,6 +1174,81 @@ final class ActiveWorkoutViewModel {
         session.exercises.append(snap)
         draftExercises[eIdx].snapshot = snap
         return snap
+    }
+
+    private func syncSnapshot(_ snapshot: ExerciseSnapshot, from exercise: DraftExercise, order: Int) {
+        snapshot.exerciseName = exercise.exerciseName
+        snapshot.equipmentType = exercise.equipmentType
+        snapshot.weightIncrement = exercise.weightIncrement
+        snapshot.startingWeight = exercise.startingWeight
+        snapshot.loadTrackingMode = exercise.loadTrackingMode
+        snapshot.isTimed = exercise.isTimed
+        snapshot.restSeconds = exercise.restSeconds
+        snapshot.order = order
+        snapshot.draftStateJSON = encodeDraftState(exercise.sets)
+    }
+
+    private func encodeDraftState(_ sets: [DraftSet]) -> String? {
+        let payload = sets.map {
+            PersistedDraftSet(
+                weightText: $0.weightText,
+                repsText: $0.repsText,
+                durationText: $0.durationText,
+                setType: $0.setType,
+                isLogged: $0.isLogged,
+                loggedRecordID: $0.loggedRecord?.id,
+                isPR: $0.isPR
+            )
+        }
+        guard let data = try? JSONEncoder().encode(payload) else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+
+    private func decodeDraftState(from snapshot: ExerciseSnapshot) -> [PersistedDraftSet]? {
+        guard let json = snapshot.draftStateJSON,
+              let data = json.data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode([PersistedDraftSet].self, from: data)
+    }
+
+    private func restorePersistedDraft(
+        from snapshot: ExerciseSnapshot,
+        sortedRecords: [SetRecord],
+        exerciseName: String,
+        equipmentType: String,
+        weightIncrement: Double,
+        startingWeight: Double,
+        loadTrackingMode: LoadTrackingMode,
+        isTimed: Bool,
+        restSeconds: Int
+    ) -> DraftExercise? {
+        guard let persistedSets = decodeDraftState(from: snapshot) else { return nil }
+        let recordsByID = Dictionary(uniqueKeysWithValues: sortedRecords.map { ($0.id, $0) })
+
+        let sets = persistedSets.map { persisted -> DraftSet in
+            var draft = DraftSet()
+            draft.weightText = persisted.weightText
+            draft.repsText = persisted.repsText
+            draft.durationText = persisted.durationText
+            draft.setType = persisted.setType
+            draft.isLogged = persisted.isLogged
+            if let recordID = persisted.loggedRecordID {
+                draft.loggedRecord = recordsByID[recordID]
+            }
+            draft.isPR = persisted.isPR || draft.loggedRecord?.isPersonalRecord == true
+            return draft
+        }
+
+        return DraftExercise(
+            exerciseName: exerciseName,
+            equipmentType: equipmentType,
+            weightIncrement: weightIncrement,
+            startingWeight: startingWeight,
+            loadTrackingMode: loadTrackingMode,
+            isTimed: isTimed,
+            sets: sets.isEmpty ? [DraftSet()] : sets,
+            snapshot: snapshot,
+            restSeconds: restSeconds
+        )
     }
 
     @discardableResult

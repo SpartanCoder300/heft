@@ -27,20 +27,32 @@ final class WorkoutActivityManager {
     }
 
     func start(routineName: String, state: WorkoutActivityAttributes.ContentState) {
+        start(sessionID: UUID(), routineName: routineName, state: state)
+    }
+
+    func start(sessionID: UUID, routineName: String, state: WorkoutActivityAttributes.ContentState) {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
         guard activity == nil else { return }
+        let sessionIDString = sessionID.uuidString
+        let activeActivities = Activity<WorkoutActivityAttributes>.activities.filter {
+            $0.activityState == .active
+        }
 
         // Adopt any activity left over from a previous app session (e.g. after a crash/relaunch).
         // Syncs state immediately so the Live Activity reflects current reality.
-        if let existing = Activity<WorkoutActivityAttributes>.activities.first,
-           existing.activityState == .active {
+        if let existing = activeActivities.first(where: { $0.attributes.sessionID == sessionIDString }) {
             activity = existing
             observeActivityState(existing)
+            endExtraActivities(except: existing.id)
             update(state)
             return
         }
 
-        let attributes = WorkoutActivityAttributes(routineName: routineName)
+        if !activeActivities.isEmpty {
+            endActivities(activeActivities)
+        }
+
+        let attributes = WorkoutActivityAttributes(routineName: routineName, sessionID: sessionIDString)
         let content = ActivityContent(state: state, staleDate: .now + maxWorkoutDuration,
                                       relevanceScore: 100)
         do {
@@ -51,6 +63,22 @@ final class WorkoutActivityManager {
             observeActivityState(requested)
         } catch {
             print("[WorkoutActivityManager] Failed to start Live Activity: \(error)")
+        }
+    }
+
+    private func endExtraActivities(except retainedID: String) {
+        let extras = Activity<WorkoutActivityAttributes>.activities.filter {
+            $0.activityState == .active && $0.id != retainedID
+        }
+        guard !extras.isEmpty else { return }
+        endActivities(extras)
+    }
+
+    private func endActivities(_ activities: [Activity<WorkoutActivityAttributes>]) {
+        Task {
+            for activity in activities {
+                await activity.end(nil, dismissalPolicy: .immediate)
+            }
         }
     }
 

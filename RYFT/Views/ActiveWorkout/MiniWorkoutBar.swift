@@ -102,8 +102,6 @@ private struct RestTimerIndicator: View {
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1.0)) { ctx in
-            let _ = timer.tick(at: ctx.date)
-
             if timer.isActive, let label = timer.remainingLabel(at: ctx.date) {
                 let phase = timer.tintColor(at: ctx.date)
                 Text(label)

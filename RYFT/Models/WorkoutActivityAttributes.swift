@@ -9,6 +9,7 @@ import SwiftUI
 struct WorkoutActivityAttributes: ActivityAttributes {
     /// Static — set once when the workout starts.
     let routineName: String
+    let sessionID: String
 
     struct ContentState: Codable, Hashable {
         let startedAt: Date

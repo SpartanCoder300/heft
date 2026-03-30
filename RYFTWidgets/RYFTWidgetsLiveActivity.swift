@@ -422,7 +422,7 @@ private struct MinimalView: View {
 
 extension WorkoutActivityAttributes {
     fileprivate static var preview: WorkoutActivityAttributes {
-        WorkoutActivityAttributes(routineName: "Push Day")
+        WorkoutActivityAttributes(routineName: "Push Day", sessionID: "preview-session")
     }
 }
 
