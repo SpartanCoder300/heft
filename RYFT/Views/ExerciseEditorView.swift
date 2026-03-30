@@ -63,13 +63,15 @@ struct ExerciseEditorView: View {
                     }
                 }
 
-                Section("Load Tracking") {
+                Section {
                     Picker("Load Tracking", selection: $loadTrackingMode) {
                         Text("No Weight").tag(LoadTrackingMode.none)
                         Text("External Weight").tag(LoadTrackingMode.externalWeight)
                         Text("Bodyweight + Load").tag(LoadTrackingMode.bodyweightPlusLoad)
                     }
                     .pickerStyle(.menu)
+                } header: {
+                    Text("Load Tracking")
                 } footer: {
                     Text(loadTrackingFooter)
                 }

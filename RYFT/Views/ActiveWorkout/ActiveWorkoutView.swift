@@ -205,23 +205,57 @@ struct ActiveWorkoutView: View {
 private struct BottomCommandBackdrop: View {
     let theme: AccentTheme
 
-    private let fadeHeight: CGFloat = 110
+    private let fadeHeight: CGFloat = 116
 
     var body: some View {
         GeometryReader { proxy in
             VStack(spacing: 0) {
                 Spacer(minLength: 0)
 
-                LinearGradient(
-                    stops: [
-                        .init(color: .clear, location: 0),
-                        .init(color: Color.black.opacity(0.18), location: 0.18),
-                        .init(color: Color.black.opacity(0.44), location: 0.42),
-                        .init(color: Color.black.opacity(0.70), location: 1)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
+                ZStack(alignment: .bottom) {
+                    Rectangle()
+                        .fill(.thinMaterial)
+                        .opacity(0.70)
+                        .mask {
+                            LinearGradient(
+                                stops: [
+                                    .init(color: .clear, location: 0),
+                                    .init(color: .white.opacity(0.14), location: 0.16),
+                                    .init(color: .white.opacity(0.42), location: 0.50),
+                                    .init(color: .white, location: 1)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        }
+
+                    Rectangle()
+                        .fill(.regularMaterial)
+                        .opacity(0.38)
+                        .mask {
+                            LinearGradient(
+                                stops: [
+                                    .init(color: .clear, location: 0),
+                                    .init(color: .white.opacity(0.04), location: 0.30),
+                                    .init(color: .white.opacity(0.18), location: 0.62),
+                                    .init(color: .white, location: 1)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        }
+
+                    LinearGradient(
+                        stops: [
+                            .init(color: .clear, location: 0),
+                            .init(color: Color.black.opacity(0.14), location: 0.16),
+                            .init(color: Color.black.opacity(0.34), location: 0.42),
+                            .init(color: Color.black.opacity(0.62), location: 1)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                }
                 .frame(height: fadeHeight)
 
                 theme.backgroundColor

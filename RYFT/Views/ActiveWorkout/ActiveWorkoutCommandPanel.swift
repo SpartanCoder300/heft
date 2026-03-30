@@ -218,15 +218,15 @@ private struct CommandPanelElevation: ViewModifier {
         content
             .background {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(.ultraThinMaterial.opacity(0.18))
+                    .fill(.regularMaterial.opacity(0.22))
             }
             .overlay {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .strokeBorder(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(0.18),
-                                Color.white.opacity(0.06)
+                                Color.white.opacity(0.20),
+                                Color.white.opacity(0.07)
                             ],
                             startPoint: .top,
                             endPoint: .bottom
@@ -239,7 +239,7 @@ private struct CommandPanelElevation: ViewModifier {
                     .stroke(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(0.20),
+                                Color.white.opacity(0.24),
                                 Color.white.opacity(0.00)
                             ],
                             startPoint: .top,
@@ -253,8 +253,8 @@ private struct CommandPanelElevation: ViewModifier {
                             .frame(height: 18)
                     }
             }
-            .shadow(color: Color.black.opacity(0.38), radius: 24, y: 16)
-            .shadow(color: Color.black.opacity(0.26), radius: 8, y: 3)
+            .shadow(color: Color.black.opacity(0.44), radius: 28, y: 18)
+            .shadow(color: Color.black.opacity(0.30), radius: 9, y: 4)
     }
 }
 
