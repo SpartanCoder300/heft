@@ -130,9 +130,8 @@ private struct RestTimerIndicator: View {
 
     private func phaseColor(_ phase: TimerTintPhase) -> Color {
         switch phase {
-        case .green: .secondary
-        case .amber: .secondary
-        case .red:   .primary
+        case .calm:      Color.textPrimary.opacity(0.78)
+        case .readySoon: Color.ryftAmber
         }
     }
 }

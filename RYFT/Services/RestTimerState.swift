@@ -31,10 +31,9 @@ final class RestTimerState {
     }
 
     func tintColor(at now: Date) -> TimerTintPhase {
-        guard let ratio = progress(at: now) else { return .green }
-        if ratio > 0.5 { return .green }
-        if ratio > 0.2 { return .amber }
-        return .red
+        guard let ratio = progress(at: now) else { return .calm }
+        if ratio > 0.5 { return .calm }
+        return .readySoon
     }
 
     /// Call from TimelineView on each tick to check for expiration.
@@ -80,5 +79,5 @@ final class RestTimerState {
 }
 
 enum TimerTintPhase: Equatable {
-    case green, amber, red
+    case calm, readySoon
 }

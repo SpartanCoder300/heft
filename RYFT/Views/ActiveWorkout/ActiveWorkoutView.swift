@@ -111,6 +111,7 @@ struct ActiveWorkoutView: View {
                         onDismiss: onDismiss
                     )
                     .frame(maxWidth: .infinity)
+                    .padding(.top, Spacing.md)
                 }
                 .animation(.spring(response: 0.4, dampingFraction: 0.8), value: vm.restTimer.isActive)
                 .alert("End Workout?", isPresented: $vm.isShowingEndConfirm) {
@@ -237,42 +238,36 @@ private struct RestTimerBar: View {
     let onAdjust: (TimeInterval) -> Void
     let onSkip: () -> Void
 
+    @State private var isShowingActions = false
     @State private var adjustTrigger = 0
     @State private var skipTrigger   = 0
 
-    private let sideWidth:  CGFloat = 56
-    private let skipWidth:  CGFloat = 56
-    private let barHeight:  CGFloat = 64
-    private let horizontalInset: CGFloat = Spacing.lg
+    private let cardWidth: CGFloat = 136
+    private let cardHeight: CGFloat = 54
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 0.25)) { context in
             let now   = context.date
-            let color = restPhaseColor(timer.tintColor(at: now))
+            let _ = timer.tick(at: now)
+            let phase = timer.tintColor(at: now)
+            let color = restPhaseColor(phase)
 
-            HStack(spacing: 0) {
-                // Mirror of separator + skip on the right — keeps timer centred
-                Color.clear.frame(width: skipWidth + 1)
-
-                adjustButton(label: "−30s", seconds: -30)
-
+            Button {
+                isShowingActions = true
+            } label: {
                 timerContent(at: now, color: color)
-                    .frame(maxWidth: .infinity)
-
-                adjustButton(label: "+30s", seconds: 30)
-
-                Rectangle()
-                    .fill(.white.opacity(0.10))
-                    .frame(width: 1, height: 20)
-
-                skipButton()
+                    .frame(width: cardWidth, height: cardHeight)
+                    .contentShape(RoundedRectangle(cornerRadius: Radius.large, style: .continuous))
             }
-            .frame(height: barHeight)
-            .glassEffect(in: RoundedRectangle(cornerRadius: Radius.large,
-                                               style: .continuous))
+            .buttonStyle(.plain)
+            .glassEffect(in: RoundedRectangle(cornerRadius: Radius.large, style: .continuous))
             .background {
                 RoundedRectangle(cornerRadius: Radius.large, style: .continuous)
-                    .fill(.regularMaterial.opacity(0.16))
+                    .fill(.regularMaterial.opacity(0.12))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: Radius.large, style: .continuous)
+                            .fill(color.opacity(timerCardTintOpacity(for: phase)))
+                    }
             }
             .overlay {
                 RoundedRectangle(cornerRadius: Radius.large, style: .continuous)
@@ -290,7 +285,6 @@ private struct RestTimerBar: View {
             }
             .shadow(color: Color.black.opacity(0.22), radius: 14, y: 6)
             .shadow(color: Color.black.opacity(0.10), radius: 4, y: 1)
-            .padding(.horizontal, horizontalInset)
             .sensoryFeedback(.selection, trigger: adjustTrigger)
             .sensoryFeedback(.impact(weight: .medium), trigger: skipTrigger)
             .sensoryFeedback(.impact(weight: .heavy, intensity: 1.0),
@@ -298,59 +292,100 @@ private struct RestTimerBar: View {
             .onChange(of: timer.pulseCount) { _, _ in
                 playRestCompleteSound()
             }
+            .sheet(isPresented: $isShowingActions) {
+                RestTimerActionsSheet(
+                    onAdjust: { seconds in
+                        onAdjust(seconds)
+                        adjustTrigger += 1
+                    },
+                    onSkip: {
+                        onSkip()
+                        skipTrigger += 1
+                    }
+                )
+                .presentationDetents([.height(214)])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(Radius.sheet)
+                .presentationBackground(.regularMaterial)
+            }
         }
     }
 
     private func timerContent(at now: Date, color: Color) -> some View {
-        VStack(spacing: 6) {
-            Text(timer.remainingLabel(at: now) ?? "0:00")
-                .font(.system(size: 26, weight: .bold, design: .monospaced))
-                .monospacedDigit()
-                .foregroundStyle(color)
-                .contentTransition(.numericText(countsDown: true))
-                .shadow(color: color.opacity(0.18), radius: 6)
+        VStack(spacing: 5) {
+            HStack(spacing: 6) {
+                Image(systemName: "timer")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(color.opacity(0.82))
+
+                Text(timer.remainingLabel(at: now) ?? "0:00")
+                    .font(.system(size: 22, weight: .bold, design: .monospaced))
+                    .monospacedDigit()
+                    .foregroundStyle(color)
+                    .contentTransition(.numericText(countsDown: true))
+                    .shadow(color: color.opacity(0.18), radius: 6)
+            }
 
             Capsule()
                 .fill(.white.opacity(0.08))
                 .overlay(alignment: .leading) {
                     Capsule()
                         .fill(color)
-                        .frame(width: 80 * CGFloat(timer.progress(at: now) ?? 0))
+                        .frame(width: 76 * CGFloat(timer.progress(at: now) ?? 0))
                 }
-                .frame(width: 80, height: 3)
+                .frame(width: 76, height: 3)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private func adjustButton(label: String, seconds: Double) -> some View {
-        Button {
-            onAdjust(seconds)
-            adjustTrigger += 1
-        } label: {
-            Text(label)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Color.textMuted.opacity(0.9))
-                .frame(width: sideWidth, height: barHeight)
-                .contentShape(Rectangle())
+    private func timerCardTintOpacity(for phase: TimerTintPhase) -> Double {
+        switch phase {
+        case .calm:      0.06
+        case .readySoon: 0.10
         }
-        .buttonStyle(.plain)
+    }
+}
+
+private struct RestTimerActionsSheet: View {
+    let onAdjust: (TimeInterval) -> Void
+    let onSkip: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: Spacing.sm) {
+            actionButton("+30s") {
+                onAdjust(30)
+                dismiss()
+            }
+
+            actionButton("−30s") {
+                onAdjust(-30)
+                dismiss()
+            }
+
+            actionButton("Skip Rest", role: .destructive) {
+                onSkip()
+                dismiss()
+            }
+        }
+        .padding(.horizontal, Spacing.lg)
+        .padding(.top, Spacing.md)
     }
 
-    private func skipButton() -> some View {
-        Button {
-            onSkip()
-            skipTrigger += 1
-        } label: {
-            Image(systemName: "forward.end.fill")
-                .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(colorForSkipButton)
-                .frame(width: skipWidth, height: barHeight)
-                .contentShape(Rectangle())
+    private func actionButton(
+        _ title: String,
+        role: ButtonRole? = nil,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(role: role, action: action) {
+            Text(title)
+                .font(.headline.weight(.semibold))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, Spacing.md)
         }
-        .buttonStyle(.plain)
-    }
-
-    private var colorForSkipButton: Color {
-        Color.textPrimary.opacity(0.9)
+        .buttonStyle(.bordered)
+        .tint(role == .destructive ? Color.ryftRed : nil)
     }
 }
 
@@ -371,9 +406,10 @@ private func playRestCompleteSound() {
 
 private func restPhaseColor(_ phase: TimerTintPhase) -> Color {
     switch phase {
-    case .green: .secondary
-    case .amber: Color.ryftAmber
-    case .red:   .primary
+    case .calm:
+        return Color.textPrimary.opacity(0.78)
+    case .readySoon:
+        return Color.ryftAmber
     }
 }
 
