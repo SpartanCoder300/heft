@@ -152,6 +152,21 @@ private struct RoutineBuilderRequest: Identifiable {
     .preferredColorScheme(.dark)
 }
 
+#Preview("Lux Featured") {
+    let appState = AppState()
+    appState.accentTheme = .mesh
+
+    return NavigationStack {
+        HomeRootView()
+    }
+    .environment(appState)
+    .environment(\.ryftTheme, .mesh)
+    .environment(\.ryftCardMaterial, .ultraThinMaterial)
+    .environment(MeshEngine())
+    .modelContainer(HomePreviewData.featuredRootContainer)
+    .preferredColorScheme(.dark)
+}
+
 #Preview("No Featured") {
     NavigationStack {
         HomeRootView()

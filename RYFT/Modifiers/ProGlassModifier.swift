@@ -54,25 +54,16 @@ struct ProGlassModifier: ViewModifier {
         let withBorder = content
             .overlay {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .strokeBorder(.white.opacity(theme == .mesh ? 0.13 : 0.08), lineWidth: 1)
+                    .strokeBorder(.white.opacity(theme == .mesh ? 0.10 : 0.08), lineWidth: 1)
             }
 
         if theme == .mesh {
             withBorder
                 .overlay {
                     if specular {
-                        // Static diagonal specular — angle shifts slightly per cardIndex
-                        // so stacked cards each catch light from a subtly different angle.
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.08),
-                                Color.clear,
-                            ],
-                            startPoint: specularStart,
-                            endPoint: specularEnd
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-                        .allowsHitTesting(false)
+                        glassLightOverlay
+                            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                            .allowsHitTesting(false)
                     }
                 }
                 .overlay {
@@ -126,6 +117,44 @@ struct ProGlassModifier: ViewModifier {
             .offset(x: shimmerPhase * geo.size.width)
         }
         .clipped()
+    }
+
+    private var glassLightOverlay: some View {
+        ZStack {
+            // Broad warm bloom — reads like ambient light diffusing through the glass.
+            RadialGradient(
+                stops: [
+                    .init(color: Color.white.opacity(0.07), location: 0),
+                    .init(color: theme.accentColor.opacity(0.04), location: 0.24),
+                    .init(color: .clear, location: 0.76)
+                ],
+                center: UnitPoint(x: 0.18 + specularT * 0.10, y: 0.06 + specularT * 0.04),
+                startRadius: 4,
+                endRadius: 220
+            )
+
+            // Narrower specular streak — gives the surface a more glass-like catch light.
+            LinearGradient(
+                stops: [
+                    .init(color: Color.white.opacity(0.09), location: 0),
+                    .init(color: Color.white.opacity(0.035), location: 0.16),
+                    .init(color: .clear, location: 0.44)
+                ],
+                startPoint: specularStart,
+                endPoint: specularEnd
+            )
+
+            // Subtle counter-sheen so the glass has depth instead of a single flat wash.
+            LinearGradient(
+                stops: [
+                    .init(color: .clear, location: 0.42),
+                    .init(color: Color.white.opacity(0.025), location: 0.76),
+                    .init(color: Color.white.opacity(0.045), location: 1)
+                ],
+                startPoint: UnitPoint(x: 0.92, y: 0.18),
+                endPoint: UnitPoint(x: 0.30, y: 1.0)
+            )
+        }
     }
 }
 
