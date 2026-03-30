@@ -89,16 +89,6 @@ struct HomeRootView: View {
         }
         .themedBackground()
         .toolbar(appState.workout.hasActiveWorkout ? .hidden : .visible, for: .navigationBar)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    routineBuilderRequest = RoutineBuilderRequest(routine: nil)
-                } label: {
-                    Image(systemName: "plus").fontWeight(.semibold)
-                }
-                .accessibilityLabel("New routine")
-            }
-        }
         .sheet(item: $routineBuilderRequest) { request in
             RoutineBuilderView(existingRoutine: request.routine) { routineID in
                 appState.workout.startWorkout(routineID: routineID, modelContext: modelContext)
