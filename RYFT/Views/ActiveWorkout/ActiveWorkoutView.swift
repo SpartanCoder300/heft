@@ -292,7 +292,7 @@ private struct RestTimerBar: View {
             .onChange(of: timer.pulseCount) { _, _ in
                 playRestCompleteSound()
             }
-            .sheet(isPresented: $isShowingActions) {
+            .popover(isPresented: $isShowingActions, attachmentAnchor: .point(.bottom), arrowEdge: .top) {
                 RestTimerActionsSheet(
                     onAdjust: { seconds in
                         onAdjust(seconds)
@@ -303,10 +303,6 @@ private struct RestTimerBar: View {
                         skipTrigger += 1
                     }
                 )
-                .presentationDetents([.height(214)])
-                .presentationDragIndicator(.visible)
-                .presentationCornerRadius(Radius.sheet)
-                .presentationBackground(.regularMaterial)
             }
         }
     }
@@ -327,7 +323,7 @@ private struct RestTimerBar: View {
             }
 
             Capsule()
-                .fill(.white.opacity(0.08))
+                .fill(.white.opacity(0.14))
                 .overlay(alignment: .leading) {
                     Capsule()
                         .fill(color)
@@ -353,39 +349,50 @@ private struct RestTimerActionsSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(spacing: Spacing.sm) {
-            actionButton("+30s") {
+        VStack(spacing: 0) {
+            actionRow("+30s", systemImage: "plus.circle") {
                 onAdjust(30)
                 dismiss()
             }
 
-            actionButton("−30s") {
+            Divider()
+
+            actionRow("−30s", systemImage: "minus.circle") {
                 onAdjust(-30)
                 dismiss()
             }
 
-            actionButton("Skip Rest", role: .destructive) {
+            Divider()
+
+            actionRow("Skip", systemImage: "forward.end") {
                 onSkip()
                 dismiss()
             }
         }
-        .padding(.horizontal, Spacing.lg)
-        .padding(.top, Spacing.md)
+        .frame(width: 180)
+        .padding(6)
+        .background(
+            RoundedRectangle(cornerRadius: Radius.large, style: .continuous)
+                .fill(Color.black.opacity(0.22))
+        )
+        .presentationCompactAdaptation(.popover)
     }
 
-    private func actionButton(
+    private func actionRow(
         _ title: String,
-        role: ButtonRole? = nil,
+        systemImage: String,
         action: @escaping () -> Void
     ) -> some View {
-        Button(role: role, action: action) {
-            Text(title)
-                .font(.headline.weight(.semibold))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, Spacing.md)
+        Button(action: action) {
+            Label(title, systemImage: systemImage)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.textPrimary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Spacing.md)
+                .padding(.vertical, 14)
+                .contentShape(Rectangle())
         }
-        .buttonStyle(.bordered)
-        .tint(role == .destructive ? Color.ryftRed : nil)
+        .buttonStyle(.plain)
     }
 }
 
