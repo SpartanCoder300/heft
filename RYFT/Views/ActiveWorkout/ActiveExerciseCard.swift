@@ -12,7 +12,6 @@ struct ActiveExerciseCard: View {
 
     @Environment(\.modelContext) private var modelContext
     @State private var showingRemoveConfirm = false
-    @State private var isEditingExercise = false
     @State private var editingDefinition: ExerciseDefinition? = nil
     @State private var isShowingHistory = false
 
@@ -47,7 +46,6 @@ struct ActiveExerciseCard: View {
                         let name = exercise.exerciseName
                         let descriptor = FetchDescriptor<ExerciseDefinition>(predicate: #Predicate { $0.name == name })
                         editingDefinition = (try? modelContext.fetch(descriptor))?.first
-                        isEditingExercise = true
                     } label: {
                         Label("Edit Exercise", systemImage: "pencil")
                     }
@@ -174,10 +172,10 @@ struct ActiveExerciseCard: View {
         } message: {
             Text("This will remove the exercise and all its logged sets from this session.")
         }
-        .sheet(isPresented: $isEditingExercise, onDismiss: {
+        .sheet(item: $editingDefinition, onDismiss: {
             vm.syncDefinition(at: exerciseIndex)
-        }) {
-            ExerciseEditorView(exercise: editingDefinition)
+        }) { definition in
+            ExerciseEditorView(exercise: definition)
         }
         .sheet(isPresented: $isShowingHistory) {
             ExerciseHistoryView(exerciseName: exercise.exerciseName)
