@@ -34,27 +34,28 @@ struct StatChip: View {
         ZStack(alignment: .leading) {
             // ── Watermark ────────────────────────────────────────────
             Image(systemName: icon)
-                .font(.system(size: 54, weight: .bold))
+                .font(.system(size: 46, weight: .bold))
                 .foregroundStyle(iconColor.opacity(isAccented ? 0.15 : isHighlighted ? 0.18 : 0.13))
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-                .offset(x: 10, y: 10)
+                .offset(x: 8, y: 8)
 
             // ── Content ──────────────────────────────────────────────
             VStack(alignment: .leading, spacing: 3) {
                 Text(value)
-                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .font(.system(size: 23, weight: .bold, design: .rounded))
                     .foregroundStyle(isAccented ? iconColor : .primary)
                     .monospacedDigit()
                 Text(label)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(isAccented ? iconColor.opacity(0.7) : isHighlighted ? iconColor.opacity(0.6) : Color.textFaint)
                     .textCase(.uppercase)
-                    .tracking(0.5)
+                    .tracking(0.45)
             }
         }
-        .padding(.horizontal, Spacing.md)
-        .padding(.vertical, Spacing.md)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(minHeight: 92, alignment: .leading)
         .background {
             RoundedRectangle(cornerRadius: Radius.medium, style: .continuous)
                 .fill(cardMaterial)
