@@ -152,38 +152,24 @@ struct ActiveWorkoutCommandPanel: View {
 
                 Divider()
 
-                // Row 2: Set type (left) | Log Set (centered) | mirror spacer (right)
-                HStack(spacing: 0) {
-                    // Left: set type chip — 44pt to match the mirror spacer
-                    SetTypeChip(
-                        setType: vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].setType,
-                        onTap: { vm.cycleSetType(exerciseIndex: focus.exerciseIndex, setIndex: focus.setIndex) }
+                Button {
+                    UIApplication.shared.sendAction(
+                        #selector(UIResponder.resignFirstResponder),
+                        to: nil, from: nil, for: nil
                     )
-                    .frame(width: 44)
-
-                    // Centre: Log Set fills remaining space, text naturally centred
-                    Button {
-                        UIApplication.shared.sendAction(
-                            #selector(UIResponder.resignFirstResponder),
-                            to: nil, from: nil, for: nil
-                        )
-                        vm.logFocusedSet()
-                    } label: {
-                        HStack(spacing: Spacing.xs) {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 15, weight: .bold))
-                            Text("Log Set")
-                                .font(.system(size: 16, weight: .semibold))
-                        }
-                        .foregroundStyle(theme.accentColor)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .contentShape(Rectangle())
+                    vm.logFocusedSet()
+                } label: {
+                    HStack(spacing: Spacing.xs) {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 15, weight: .bold))
+                        Text("Log Set")
+                            .font(.system(size: 16, weight: .semibold))
                     }
-                    .buttonStyle(.plain)
-
-                    // Right mirror: same width as chip so the label stays centred
-                    Color.clear.frame(width: 44)
+                    .foregroundStyle(theme.accentColor)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
                 .frame(height: 52)
             }
             .glassEffect(.regular, in: RoundedRectangle(cornerRadius: Radius.large, style: .continuous))

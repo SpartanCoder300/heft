@@ -52,8 +52,6 @@ struct SetRow: View {
                 .foregroundStyle(Color.textFaint)
                 .frame(width: 20, alignment: .center)
 
-            SetTypeChip(setType: setType, onTap: isLogged ? nil : onCycleType)
-
             VStack(alignment: .leading, spacing: 2) {
                 Text(displayText)
                     .font(.system(size: 16, weight: .medium, design: .rounded))
