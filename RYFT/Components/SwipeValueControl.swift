@@ -127,6 +127,15 @@ struct SwipeValueControl: View {
         formatSteppedValue(v, isInteger: isInteger)
     }
 
+    /// Strips trailing `.0` for whole numbers so committed values are clean (e.g. "185" not "185.0").
+    /// The control re-applies `formatted()` when displaying, so consistent width is preserved.
+    private func cleanFormatted(_ v: Double) -> String {
+        if isInteger { return "\(Int(v.rounded()))" }
+        let rounded = (v * 10).rounded() / 10
+        if rounded == rounded.rounded() { return "\(Int(rounded))" }
+        return String(format: "%.1f", rounded)
+    }
+
     /// Starting value for a drag. Blank field uses firstTapDefault so dragging from
     /// an empty weight cell starts at 45 lbs, not 0.
     private var dragBase: Double {
@@ -334,7 +343,7 @@ struct SwipeValueControl: View {
         guard !didCommit else { return }
         didCommit = true
 
-        if let live = liveValue { text = formatted(live) }
+        if let live = liveValue { text = cleanFormatted(live) }
 
         dragStartValue = nil
         dragAccumulator = 0
@@ -360,7 +369,7 @@ struct SwipeValueControl: View {
         let raw = formatter.number(from: editText)?.doubleValue ?? Double(editText)
         guard let raw else { return }
         let sanitized = Swift.max(minValue, raw)
-        text = formatted(sanitized)
+        text = cleanFormatted(sanitized)
         UISelectionFeedbackGenerator().selectionChanged()
     }
 }
