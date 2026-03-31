@@ -5,14 +5,14 @@ import SwiftData
 
 enum PickerFilter: Hashable {
     case muscleGroup(String)
+    case equipment(String)
     case custom
-    case edited
 
     var label: String {
         switch self {
         case .muscleGroup(let g): return g
+        case .equipment(let e):   return e
         case .custom:             return "Custom"
-        case .edited:             return "Edited"
         }
     }
 }
@@ -33,14 +33,14 @@ final class ExercisePickerViewModel {
 
     // MARK: - Filtering / search
 
-    /// Top-8 exercises by frecency score the user has actually used (score > 0).
+    /// Top-5 exercises by frecency score the user has actually used (score > 0).
     /// Scoped to the active filter set.
     func recentExercises(from all: [ExerciseDefinition], filters: Set<PickerFilter> = []) -> [ExerciseDefinition] {
         var candidates = all.filter { scoreFor($0) > 0 }
         candidates = applyFilters(filters, to: candidates)
         return candidates
             .sorted { scoreFor($0) > scoreFor($1) }
-            .prefix(8)
+            .prefix(5)
             .map { $0 }
     }
 
@@ -67,8 +67,8 @@ final class ExercisePickerViewModel {
             filters.contains { filter in
                 switch filter {
                 case .muscleGroup(let g): return exercise.muscleGroups.contains(g)
+                case .equipment(let e):   return exercise.equipmentType == e
                 case .custom:             return exercise.isCustom
-                case .edited:             return exercise.isEdited && !exercise.isCustom
                 }
             }
         }

@@ -2,9 +2,6 @@
 
 import SwiftUI
 import SwiftData
-import SwiftData
-import SwiftData
-import SwiftData
 
 struct LibraryRow: View {
     let exercise: ExerciseDefinition
@@ -24,8 +21,9 @@ struct LibraryRow: View {
                     )
                     .font(Typography.body)
 
-                    if !exercise.muscleGroups.isEmpty {
-                        Text(exercise.muscleGroups.prefix(2).joined(separator: " · "))
+                    let subtitle = subtitleText
+                    if !subtitle.isEmpty {
+                        Text(subtitle)
                             .font(Typography.caption)
                             .foregroundStyle(Color.textFaint)
                     }
@@ -37,17 +35,6 @@ struct LibraryRow: View {
                     Image(systemName: "timer")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(Color.textFaint)
-                }
-
-                if exercise.isEdited && !exercise.isCustom {
-                    Text("Edited")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(Color.textFaint)
-                        .textCase(.uppercase)
-                        .tracking(0.4)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.white.opacity(0.08), in: Capsule())
                 }
 
                 if exercise.isCustom {
@@ -71,6 +58,18 @@ struct LibraryRow: View {
                 Label("Edit Exercise", systemImage: "pencil")
             }
         }
+    }
+
+    private var subtitleText: String {
+        var parts: [String] = []
+        if !exercise.equipmentType.isEmpty {
+            parts.append(exercise.equipmentType)
+        }
+        let muscles = exercise.muscleGroups.prefix(2)
+        if !muscles.isEmpty {
+            parts.append(contentsOf: muscles)
+        }
+        return parts.joined(separator: " · ")
     }
 }
 

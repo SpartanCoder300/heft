@@ -4,6 +4,7 @@ import SwiftUI
 import SwiftData
 
 private let allMuscleGroups = ["Chest", "Back", "Shoulders", "Biceps", "Triceps", "Forearms", "Legs", "Core"]
+private let allEquipmentTypes = ["Barbell", "Dumbbell", "Cable", "Machine", "Kettlebell", "Bodyweight", "Band"]
 
 struct ExercisePicker: View {
     let onSelect: (ExerciseDefinition) -> Void
@@ -17,70 +18,71 @@ struct ExercisePicker: View {
     @State private var vm = ExercisePickerViewModel()
     @State private var editorTarget: ExerciseEditorTarget? = nil
 
-    private let filterOptions: [PickerFilter] =
-        allMuscleGroups.map { .muscleGroup($0) } + [.custom, .edited]
+    private let muscleFilters    = allMuscleGroups.map    { PickerFilter.muscleGroup($0) }
+    private let equipmentFilters = allEquipmentTypes.map  { PickerFilter.equipment($0)  }
+    private let specialFilters: [PickerFilter] = [.custom]
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: Spacing.xl) {
 
-                    // ── Filter chips (horizontal scroll, multi-select) ─────
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: Spacing.xs) {
-                            // "All" clears all active filters
-                            let isAll = vm.selectedFilters.isEmpty
-                            Button { vm.selectedFilters.removeAll() } label: {
-                                Text("All")
-                                    .font(.system(size: 12, weight: isAll ? .semibold : .regular))
-                                    .foregroundStyle(isAll ? theme.accentColor : Color.textMuted)
-                                    .padding(.horizontal, Spacing.sm)
-                                    .padding(.vertical, 6)
-                            }
-                            .buttonStyle(.plain)
-                            .glassEffect(.regular.interactive(), in: Capsule())
-
-                            ForEach(filterOptions, id: \.self) { option in
-                                let isSelected = vm.selectedFilters.contains(option)
-                                Button {
-                                    if isSelected {
-                                        vm.selectedFilters.remove(option)
-                                    } else {
-                                        vm.selectedFilters.insert(option)
-                                    }
-                                } label: {
-                                    Text(option.label)
-                                        .font(.system(size: 12, weight: isSelected ? .semibold : .regular))
-                                        .foregroundStyle(isSelected ? theme.accentColor : Color.textMuted)
-                                        .padding(.horizontal, Spacing.sm)
-                                        .padding(.vertical, 6)
+                    // ── Filter chips ───────────────────────────────────────────
+                    VStack(alignment: .leading, spacing: Spacing.xs) {
+                        // Row 1: muscle groups
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: Spacing.xs) {
+                                filterChip("All", isSelected: vm.selectedFilters.isEmpty) {
+                                    vm.selectedFilters.removeAll()
                                 }
-                                .buttonStyle(.plain)
-                                .glassEffect(.regular.interactive(), in: Capsule())
+                                filterSeparator
+                                ForEach(muscleFilters, id: \.self) { option in
+                                    let on = vm.selectedFilters.contains(option)
+                                    filterChip(option.label, isSelected: on) { toggle(option) }
+                                }
                             }
+                            .padding(.horizontal, Spacing.xs)
+                            .padding(.vertical, Spacing.xs)
                         }
-                        .padding(.horizontal, 1)
+                        .scrollClipDisabled()
+                        // Row 2: equipment + custom
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: Spacing.xs) {
+                                ForEach(equipmentFilters, id: \.self) { option in
+                                    let on = vm.selectedFilters.contains(option)
+                                    filterChip(option.label, isSelected: on) { toggle(option) }
+                                }
+                                filterSeparator
+                                ForEach(specialFilters, id: \.self) { option in
+                                    let on = vm.selectedFilters.contains(option)
+                                    filterChip(option.label, isSelected: on) { toggle(option) }
+                                }
+                            }
+                            .padding(.horizontal, Spacing.xs)
+                            .padding(.vertical, Spacing.xs)
+                        }
+                        .scrollClipDisabled()
                     }
 
-                    // ── Recents (hidden during search) ──────────────────────────────────────
+                    // ── Recents ────────────────────────────────────────────────
                     let recents = vm.recentExercises(from: allExercises, filters: vm.selectedFilters)
                     if vm.searchText.isEmpty && !recents.isEmpty {
                         VStack(alignment: .leading, spacing: Spacing.sm) {
-                            pickerSectionLabel("Recent")
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: Spacing.xs) {
-                                    ForEach(recents) { exercise in
-                                        RecentTile(exercise: exercise) {
-                                            select(exercise)
-                                        }
-                                    }
-                                }
-                                .padding(.horizontal, 1) // prevent clipping on glass effect
+                            pickerSectionLabel("Recents")
+
+                            exerciseCard(recents) { exercise in
+                                LibraryRow(
+                                    exercise: exercise,
+                                    matchRanges: [],
+                                    accentColor: theme.accentColor,
+                                    onTap: { select(exercise) },
+                                    onEdit: { editorTarget = .edit(exercise) }
+                                )
                             }
                         }
                     }
 
-                    // ── Full Library ────────────────────────────────────────
+                    // ── Full Library ───────────────────────────────────────────
                     let library = vm.libraryExercises(from: allExercises)
                     VStack(alignment: .leading, spacing: Spacing.sm) {
                         pickerSectionLabel(vm.searchText.isEmpty && vm.selectedFilters.isEmpty
@@ -94,16 +96,14 @@ struct ExercisePicker: View {
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, Spacing.lg)
                         } else {
-                            LazyVStack(spacing: 2) {
-                                ForEach(library) { exercise in
-                                    LibraryRow(
-                                        exercise: exercise,
-                                        matchRanges: vm.matchRanges(query: vm.searchText, in: exercise.name),
-                                        accentColor: theme.accentColor,
-                                        onTap: { select(exercise) },
-                                        onEdit: { editorTarget = .edit(exercise) }
-                                    )
-                                }
+                            exerciseCard(library) { exercise in
+                                LibraryRow(
+                                    exercise: exercise,
+                                    matchRanges: vm.matchRanges(query: vm.searchText, in: exercise.name),
+                                    accentColor: theme.accentColor,
+                                    onTap: { select(exercise) },
+                                    onEdit: { editorTarget = .edit(exercise) }
+                                )
                             }
                         }
                     }
@@ -113,15 +113,19 @@ struct ExercisePicker: View {
             }
             .navigationTitle("Add Exercise")
             .navigationBarTitleDisplayMode(.inline)
-            .searchable(text: $vm.searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search exercises")
+            .searchable(text: $vm.searchText,
+                        placement: .navigationBarDrawer(displayMode: .always),
+                        prompt: "Search exercises")
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button { editorTarget = .new } label: {
-                        Label("New Exercise", systemImage: "plus")
-                    }
-                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .bottomBar) {
+                    Button { editorTarget = .new } label: {
+                        Label("New Exercise", systemImage: "plus.circle.fill")
+                            .font(.system(size: 16, weight: .semibold))
+                    }
+                    .tint(theme.accentColor)
                 }
             }
             .sheet(item: $editorTarget) { target in
@@ -133,13 +137,63 @@ struct ExercisePicker: View {
         }
     }
 
-    // MARK: - Private
+    // MARK: - Helpers
+
+    private func toggle(_ filter: PickerFilter) {
+        if vm.selectedFilters.contains(filter) {
+            vm.selectedFilters.remove(filter)
+        } else {
+            vm.selectedFilters.insert(filter)
+        }
+    }
 
     private func select(_ exercise: ExerciseDefinition) {
         let impact = UIImpactFeedbackGenerator(style: .medium)
         impact.impactOccurred()
         onSelect(exercise)
         dismiss()
+    }
+
+    // MARK: - View builders
+
+    /// Renders a list of exercises in a grouped card with inset dividers.
+    @ViewBuilder
+    private func exerciseCard(_ exercises: [ExerciseDefinition],
+                               row: @escaping (ExerciseDefinition) -> LibraryRow) -> some View {
+        LazyVStack(spacing: 0) {
+            ForEach(Array(exercises.enumerated()), id: \.element.id) { idx, exercise in
+                row(exercise)
+                if idx < exercises.count - 1 {
+                    Divider()
+                        .padding(.leading, Spacing.md)
+                }
+            }
+        }
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: Radius.medium, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: Radius.medium, style: .continuous)
+                .strokeBorder(.white.opacity(0.08), lineWidth: 1)
+        }
+    }
+
+    @ViewBuilder
+    private func filterChip(_ label: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(label)
+                .font(.system(size: 14, weight: isSelected ? .semibold : .regular))
+                .foregroundStyle(isSelected ? theme.accentColor : Color.textMuted)
+                .padding(.horizontal, Spacing.md)
+                .padding(.vertical, 12)
+        }
+        .buttonStyle(.plain)
+        .glassEffect(.regular.interactive(), in: Capsule())
+    }
+
+    private var filterSeparator: some View {
+        Rectangle()
+            .fill(Color.white.opacity(0.15))
+            .frame(width: 1, height: 18)
+            .padding(.horizontal, 2)
     }
 
     @ViewBuilder
@@ -150,27 +204,6 @@ struct ExercisePicker: View {
             .foregroundStyle(Color.textFaint)
             .textCase(.uppercase)
             .tracking(0.8)
-    }
-}
-
-// MARK: - Recent Tile
-
-private struct RecentTile: View {
-    let exercise: ExerciseDefinition
-    let onTap: () -> Void
-
-    var body: some View {
-        Button(action: onTap) {
-            Text(exercise.name)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(Color.textPrimary)
-                .lineLimit(1)
-                .padding(.horizontal, Spacing.sm)
-                .padding(.vertical, 9)
-                .background(.thinMaterial, in: Capsule())
-                .overlay(Capsule().strokeBorder(.white.opacity(0.08), lineWidth: 1))
-        }
-        .buttonStyle(.plain)
     }
 }
 
