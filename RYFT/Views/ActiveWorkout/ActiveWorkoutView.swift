@@ -12,6 +12,12 @@ struct ActiveWorkoutView: View {
     @State private var isShowingCancelPRWarning = false
     @Environment(\.ryftTheme) private var theme
 
+    private var shouldRunSetupTask: Bool {
+        let environment = ProcessInfo.processInfo.environment
+        return environment["XCODE_RUNNING_FOR_PREVIEWS"] != "1"
+            && environment["XCODE_RUNNING_FOR_PLAYGROUNDS"] != "1"
+    }
+
     var body: some View {
         @Bindable var vm = vm
 
@@ -163,7 +169,10 @@ struct ActiveWorkoutView: View {
                     }
                 }
             }
-            .task { vm.setup() }
+            .task {
+                guard shouldRunSetupTask else { return }
+                vm.setup()
+            }
 
             // ── PR moment overlay ──────────────────────────────────────────────
             if let moment = vm.showingPRMoment {

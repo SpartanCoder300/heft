@@ -14,6 +14,12 @@ struct AppView: View {
     @State private var meshIntroTask: Task<Void, Never>?
     @Environment(\.scenePhase) private var scenePhase
 
+    private var isRunningInPreview: Bool {
+        let environment = ProcessInfo.processInfo.environment
+        return environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+            || environment["XCODE_RUNNING_FOR_PLAYGROUNDS"] == "1"
+    }
+
 
     var body: some View {
         @Bindable var appState = appState
@@ -160,10 +166,12 @@ struct AppView: View {
             appState.workout.isShowingFullWorkout = true
         }
         .task {
+            guard !isRunningInPreview else { return }
             ExerciseSeeder.seedIfNeeded(in: modelContext)
             appState.workout.onLaunch(modelContext: modelContext)
         }
         .onChange(of: scenePhase) { _, newPhase in
+            guard !isRunningInPreview else { return }
             switch newPhase {
             case .active:
                 appState.workout.viewModel?.handleForeground()

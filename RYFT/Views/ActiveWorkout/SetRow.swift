@@ -27,6 +27,8 @@ struct SetRow: View {
     let setType: SetType
     let isLogged: Bool
     let isFocused: Bool
+    let isFirstInCard: Bool
+    let isLastInCard: Bool
     let isPR: Bool
     let justGotPR: Bool
     let accentColor: Color
@@ -44,23 +46,28 @@ struct SetRow: View {
         HStack(spacing: 6) {
             // Focused accent bar
             RoundedRectangle(cornerRadius: 1.5)
-                .fill(isFocused ? accentColor : .clear)
-                .frame(width: 3, height: 28)
+                .fill(isFocused ? accentColor.opacity(0.96) : .clear)
+                .frame(width: 3, height: isFocused ? 30 : 28)
 
             Text("\(setNumber)")
                 .font(.system(size: 13, weight: .semibold, design: .rounded))
-                .foregroundStyle(Color.textFaint)
+                .foregroundStyle(isLogged ? Color.textMuted.opacity(0.68) : Color.textFaint)
                 .frame(width: 20, alignment: .center)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(displayText)
                     .font(.system(size: 16, weight: .medium, design: .rounded))
                     .monospacedDigit()
-                    .foregroundStyle(isLogged ? Color.textMuted : Color.textPrimary)
+                    .foregroundStyle(
+                        isLogged
+                            ? Color.textMuted.opacity(0.76)
+                            : isFocused
+                                ? Color.white.opacity(0.98)
+                                : Color.textPrimary
+                    )
                     .contentTransition(.numericText())
                     .animation(Motion.standardSpring, value: weightText)
                     .animation(Motion.standardSpring, value: repsText)
-
             }
             .animation(Motion.standardSpring, value: isPR)
 
@@ -83,7 +90,20 @@ struct SetRow: View {
             Button(action: isLogged ? onUndo : onLog) {
                 Image(systemName: isLogged ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 20))
-                    .foregroundStyle(isLogged ? Color.ryftGreen : Color.textMuted)
+                    .foregroundStyle(
+                        isLogged
+                            ? Color.ryftGreen
+                            : isFocused
+                                ? Color.textPrimary.opacity(0.9)
+                                : Color.textMuted
+                    )
+                    .background {
+                        if isLogged {
+                            Circle()
+                                .fill(Color.ryftGreen.opacity(0.14))
+                                .frame(width: 28, height: 28)
+                        }
+                    }
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
@@ -93,7 +113,18 @@ struct SetRow: View {
         .padding(.vertical, 4)
         .padding(.leading, Spacing.xs)
         .padding(.trailing, Spacing.sm)
-        .background(isFocused ? accentColor.opacity(0.13) : .clear)
+        .background(rowBackground)
+        .overlay {
+            if isLogged || isFocused {
+                rowShape
+                    .strokeBorder(
+                        isLogged
+                            ? Color.white.opacity(0.035)
+                            : accentColor.opacity(0.16),
+                        lineWidth: 1
+                    )
+            }
+        }
         .contentShape(Rectangle())
         .onTapGesture {
             if !isLogged { onFocus() }
@@ -157,6 +188,29 @@ struct SetRow: View {
         let r = repsText.isEmpty ? "—" : repsText
         return "\(w) × \(r)"
     }
+
+    private var rowShape: some InsettableShape {
+        UnevenRoundedRectangle(
+            cornerRadii: .init(
+                topLeading: isFirstInCard ? 8 : 0,
+                bottomLeading: isLastInCard ? 8 : 0,
+                bottomTrailing: isLastInCard ? 8 : 0,
+                topTrailing: isFirstInCard ? 8 : 0
+            ),
+            style: .continuous
+        )
+    }
+
+    private var rowBackground: some View {
+        rowShape
+            .fill(
+                isLogged
+                ? Color.white.opacity(0.065)
+                : isFocused
+                    ? accentColor.opacity(0.18)
+                    : .clear
+            )
+    }
 }
 
 // MARK: - Previews
@@ -172,6 +226,8 @@ struct SetRow: View {
         setType: .normal,
         isLogged: false,
         isFocused: true,
+        isFirstInCard: true,
+        isLastInCard: false,
         isPR: false,
         justGotPR: false,
         accentColor: AccentTheme.midnight.accentColor,
@@ -192,6 +248,8 @@ struct SetRow: View {
         setType: .normal,
         isLogged: true,
         isFocused: false,
+        isFirstInCard: false,
+        isLastInCard: false,
         isPR: true,
         justGotPR: false,
         accentColor: AccentTheme.midnight.accentColor,
@@ -212,6 +270,8 @@ struct SetRow: View {
         setType: .warmup,
         isLogged: false,
         isFocused: false,
+        isFirstInCard: false,
+        isLastInCard: true,
         isPR: false,
         justGotPR: false,
         accentColor: AccentTheme.midnight.accentColor,

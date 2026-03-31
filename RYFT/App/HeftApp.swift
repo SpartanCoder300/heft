@@ -23,7 +23,14 @@ struct RYFTApp: App {
     private let sharedModelContainer = PersistenceController.sharedModelContainer
     private let notificationDelegate = NotificationDelegate()
 
+    private static var isRunningInPreview: Bool {
+        let environment = ProcessInfo.processInfo.environment
+        return environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+            || environment["XCODE_RUNNING_FOR_PLAYGROUNDS"] == "1"
+    }
+
     init() {
+        guard !Self.isRunningInPreview else { return }
         UNUserNotificationCenter.current().delegate = notificationDelegate
     }
 

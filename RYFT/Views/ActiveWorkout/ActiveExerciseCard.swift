@@ -140,6 +140,8 @@ struct ActiveExerciseCard: View {
                     isFocused: vm.currentFocus == ActiveWorkoutViewModel.SetFocus(
                         exerciseIndex: exerciseIndex, setIndex: sIdx
                     ),
+                    isFirstInCard: sIdx == 0,
+                    isLastInCard: sIdx == exercise.sets.count - 1,
                     isPR: set.isPR,
                     justGotPR: vm.lastPRSetID != nil && vm.lastPRSetID == set.loggedRecord?.id,
                     accentColor: theme.accentColor,
