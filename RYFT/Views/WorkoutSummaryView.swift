@@ -8,7 +8,7 @@ struct WorkoutSummaryView: View {
 
     @State private var vm: WorkoutSummaryViewModel
     @State private var appeared = false
-    @State private var historyExerciseName: String? = nil
+    @State private var historyTarget: (name: String, lineageID: UUID?)? = nil
     @Environment(\.ryftCardMaterial) private var cardMaterial
 
     init(session: WorkoutSession, onDone: @escaping () -> Void) {
@@ -52,7 +52,7 @@ struct WorkoutSummaryView: View {
                                 row: row,
                                 formatWeight: vm.formatWeight,
                                 cardIndex: index,
-                                onNameTap: { historyExerciseName = row.name }
+                                onNameTap: { historyTarget = (row.name, row.lineageID) }
                             )
                                 .offset(y: appeared ? 0 : 18)
                                 .opacity(appeared ? 1.0 : 0.0)
@@ -86,11 +86,11 @@ struct WorkoutSummaryView: View {
         .toolbar(.hidden, for: .navigationBar)
         .onAppear { appeared = true }
         .sheet(isPresented: Binding(
-            get: { historyExerciseName != nil },
-            set: { if !$0 { historyExerciseName = nil } }
+            get: { historyTarget != nil },
+            set: { if !$0 { historyTarget = nil } }
         )) {
-            if let name = historyExerciseName {
-                ExerciseHistoryView(exerciseName: name)
+            if let target = historyTarget {
+                ExerciseHistoryView(exerciseName: target.name, exerciseLineageID: target.lineageID)
                     .environment(\.ryftCardMaterial, .regularMaterial)
             }
         }

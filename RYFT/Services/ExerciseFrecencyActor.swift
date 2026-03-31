@@ -3,15 +3,17 @@
 import Foundation
 import SwiftData
 
-/// Computes frecency scores for exercise names based on historical usage.
+/// Computes frecency scores for exercise lineages based on historical usage.
 /// score = (1 / (daysSinceLastUse + 1)) * log(timesUsed + 1)
 @ModelActor
 actor ExerciseFrecencyActor {
 
-    /// Returns a dictionary mapping exercise name → frecency score.
+    /// Returns a dictionary mapping exercise lineage → frecency score.
     /// Only exercises that appear in at least one completed session are scored.
-    func scores() throws -> [String: Double] {
+    func scores() throws -> [UUID: Double] {
         let snapshots = try modelContext.fetch(FetchDescriptor<ExerciseSnapshot>())
+        let definitions = try modelContext.fetch(FetchDescriptor<ExerciseDefinition>())
+        let lineageByName = Dictionary(uniqueKeysWithValues: definitions.map { ($0.name, $0.id) })
 
         // Group by exercise name, collecting last-used dates and total usage counts.
         struct Usage {
@@ -19,26 +21,26 @@ actor ExerciseFrecencyActor {
             var lastUsed: Date = .distantPast
         }
 
-        var usageMap: [String: Usage] = [:]
+        var usageMap: [UUID: Usage] = [:]
 
         for snapshot in snapshots {
+            guard let lineageID = snapshot.exerciseLineageID ?? lineageByName[snapshot.exerciseName] else { continue }
             let sessionDate = snapshot.workoutSession?.completedAt
                            ?? snapshot.workoutSession?.startedAt
                            ?? .distantPast
-            let name = snapshot.exerciseName
-            var u = usageMap[name, default: Usage()]
+            var u = usageMap[lineageID, default: Usage()]
             u.count += 1
             if sessionDate > u.lastUsed { u.lastUsed = sessionDate }
-            usageMap[name] = u
+            usageMap[lineageID] = u
         }
 
         let now = Date.now
-        var result: [String: Double] = [:]
-        for (name, usage) in usageMap {
+        var result: [UUID: Double] = [:]
+        for (lineageID, usage) in usageMap {
             let days = now.timeIntervalSince(usage.lastUsed) / 86_400
             let recency = 1.0 / (days + 1)
             let frequency = log(Double(usage.count) + 1)
-            result[name] = recency * frequency
+            result[lineageID] = recency * frequency
         }
         return result
     }

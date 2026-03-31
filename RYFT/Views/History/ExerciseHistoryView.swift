@@ -5,6 +5,7 @@ import SwiftData
 
 struct ExerciseHistoryView: View {
     let exerciseName: String
+    let exerciseLineageID: UUID?
 
     @Query private var snapshots: [ExerciseSnapshot]
     @Environment(\.dismiss) private var dismiss
@@ -15,10 +16,18 @@ struct ExerciseHistoryView: View {
     /// How many session cards to show. Expanded by the "Show more" button.
     @State private var displayLimit: Int = 50
 
-    init(exerciseName: String) {
+    init(exerciseName: String, exerciseLineageID: UUID? = nil) {
         self.exerciseName = exerciseName
-        let name = exerciseName
-        _snapshots = Query(filter: #Predicate<ExerciseSnapshot> { $0.exerciseName == name })
+        self.exerciseLineageID = exerciseLineageID
+        if let lineageID = exerciseLineageID {
+            let name = exerciseName
+            _snapshots = Query(filter: #Predicate<ExerciseSnapshot> {
+                $0.exerciseLineageID == lineageID || ($0.exerciseLineageID == nil && $0.exerciseName == name)
+            })
+        } else {
+            let name = exerciseName
+            _snapshots = Query(filter: #Predicate<ExerciseSnapshot> { $0.exerciseName == name })
+        }
     }
 
     // Sorted newest-first; only completed sessions.

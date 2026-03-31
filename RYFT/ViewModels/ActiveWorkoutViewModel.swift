@@ -41,6 +41,8 @@ final class ActiveWorkoutViewModel {
 
     struct DraftExercise: Identifiable {
         var id = UUID()
+        var exerciseDefinitionID: UUID? = nil
+        var exerciseLineageID: UUID? = nil
         var exerciseName: String
         var equipmentType: String = ""
         var weightIncrement: Double = 2.5
@@ -97,8 +99,8 @@ final class ActiveWorkoutViewModel {
     private(set) var lastPRSetID: UUID? = nil
     /// Rest duration stored when a PR is detected so it starts after the PR overlay is dismissed.
     private var pendingRestDuration: TimeInterval? = nil
-    /// Best in-session e1RM per exercise name. Written to ExerciseDefinition only on endWorkout().
-    private var pendingPRByExercise: [String: Double] = [:]
+    /// Best in-session e1RM per exercise lineage. Written to ExerciseDefinition only on endWorkout().
+    private var pendingPRByExercise: [UUID: Double] = [:]
     /// True if at least one PR has been logged this session and would be lost on cancel.
     var hasPendingPRs: Bool { !pendingPRByExercise.isEmpty }
 
@@ -176,6 +178,23 @@ final class ActiveWorkoutViewModel {
     /// @ObservationIgnored — the callback itself doesn't need to be tracked.
     @ObservationIgnored var onSessionCreated: ((UUID) -> Void)?
 
+    private func definition(id: UUID?) -> ExerciseDefinition? {
+        guard let id else { return nil }
+        let descriptor = FetchDescriptor<ExerciseDefinition>(predicate: #Predicate { $0.id == id })
+        return (try? modelContext.fetch(descriptor))?.first
+    }
+
+    private func definition(lineageID: UUID?) -> ExerciseDefinition? {
+        guard let lineageID else { return nil }
+        let descriptor = FetchDescriptor<ExerciseDefinition>(predicate: #Predicate { $0.id == lineageID })
+        return (try? modelContext.fetch(descriptor))?.first
+    }
+
+    private func definition(named name: String) -> ExerciseDefinition? {
+        let descriptor = FetchDescriptor<ExerciseDefinition>(predicate: #Predicate { $0.name == name })
+        return (try? modelContext.fetch(descriptor))?.first
+    }
+
     // MARK: - Init
 
     init(
@@ -252,6 +271,8 @@ final class ActiveWorkoutViewModel {
                     return s
                 }
                 return DraftExercise(
+                    exerciseDefinitionID: def.id,
+                    exerciseLineageID: def.id,
                     exerciseName: def.name,
                     equipmentType: def.equipmentType,
                     weightIncrement: def.resolvedWeightIncrement,
@@ -276,15 +297,16 @@ final class ActiveWorkoutViewModel {
             .sorted { $0.order < $1.order }
             .map { snap in
                 let name = snap.exerciseName
-                let defDescriptor = FetchDescriptor<ExerciseDefinition>(
-                    predicate: #Predicate { $0.name == name }
-                )
-                let def = (try? modelContext.fetch(defDescriptor))?.first ?? ExerciseSeeder.defaultDefinition(named: name)
+                let def = definition(lineageID: snap.exerciseLineageID)
+                    ?? definition(named: name)
+                    ?? ExerciseSeeder.defaultDefinition(named: name)
                 let isTimed = def?.isTimed ?? snap.isTimed
                 let equipmentType = def?.equipmentType ?? snap.equipmentType ?? ""
                 let loadTrackingMode = def?.loadTrackingMode ?? snap.loadTrackingMode
                 // Start with one blank set; applyPreviousPerformance will expand and fill it.
                 return DraftExercise(
+                    exerciseDefinitionID: def?.id,
+                    exerciseLineageID: snap.exerciseLineageID ?? def?.id,
                     exerciseName: name,
                     equipmentType: equipmentType,
                     weightIncrement: def?.resolvedWeightIncrement ?? snap.weightIncrement ?? ExerciseDefinition.defaultIncrement(for: equipmentType),
@@ -331,10 +353,9 @@ final class ActiveWorkoutViewModel {
 
         draftExercises = sortedSnapshots.map { snapshot in
             let name = snapshot.exerciseName
-            let defDescriptor = FetchDescriptor<ExerciseDefinition>(
-                predicate: #Predicate { $0.name == name }
-            )
-            let def = (try? modelContext.fetch(defDescriptor))?.first ?? ExerciseSeeder.defaultDefinition(named: name)
+            let def = definition(lineageID: snapshot.exerciseLineageID)
+                ?? definition(named: name)
+                ?? ExerciseSeeder.defaultDefinition(named: name)
             let isTimed         = def?.isTimed ?? snapshot.isTimed
             let equipmentType   = def?.equipmentType ?? snapshot.equipmentType ?? ""
             let weightIncrement = def?.resolvedWeightIncrement ?? snapshot.weightIncrement ?? ExerciseDefinition.defaultIncrement(for: equipmentType)
@@ -348,6 +369,8 @@ final class ActiveWorkoutViewModel {
                 from: snapshot,
                 sortedRecords: sortedRecords,
                 exerciseName: name,
+                exerciseDefinitionID: def?.id,
+                exerciseLineageID: snapshot.exerciseLineageID ?? def?.id,
                 equipmentType: equipmentType,
                 weightIncrement: weightIncrement,
                 startingWeight: startingWeight,
@@ -387,6 +410,8 @@ final class ActiveWorkoutViewModel {
                     return set
                 }
                 var exercise = DraftExercise(
+                    exerciseDefinitionID: def?.id,
+                    exerciseLineageID: snapshot.exerciseLineageID ?? def?.id,
                     exerciseName:    name,
                     equipmentType:   equipmentType,
                     weightIncrement: weightIncrement,
@@ -433,6 +458,8 @@ final class ActiveWorkoutViewModel {
 
             let routineRestSecs = routineEntriesByName[name]?.restSeconds ?? 90
             return DraftExercise(
+                exerciseDefinitionID: def?.id,
+                exerciseLineageID: snapshot.exerciseLineageID ?? def?.id,
                 exerciseName:    name,
                 equipmentType:   equipmentType,
                 weightIncrement: weightIncrement,
@@ -459,10 +486,18 @@ final class ActiveWorkoutViewModel {
     }
 
     private func applyPreviousPerformance(to exercise: inout DraftExercise) {
-        let name = exercise.exerciseName
-        let snapshotDescriptor = FetchDescriptor<ExerciseSnapshot>(
-            predicate: #Predicate { $0.exerciseName == name }
-        )
+        let snapshotDescriptor: FetchDescriptor<ExerciseSnapshot>
+        if let lineageID = exercise.exerciseLineageID {
+            let name = exercise.exerciseName
+            snapshotDescriptor = FetchDescriptor<ExerciseSnapshot>(
+                predicate: #Predicate { $0.exerciseLineageID == lineageID || ($0.exerciseLineageID == nil && $0.exerciseName == name) }
+            )
+        } else {
+            let name = exercise.exerciseName
+            snapshotDescriptor = FetchDescriptor<ExerciseSnapshot>(
+                predicate: #Predicate { $0.exerciseName == name }
+            )
+        }
         guard let all = try? modelContext.fetch(snapshotDescriptor) else { return }
 
         let completed = all
@@ -526,8 +561,7 @@ final class ActiveWorkoutViewModel {
             try? modelContext.save()
         }
 
-        let descriptor = FetchDescriptor<ExerciseDefinition>(predicate: #Predicate { $0.name == name })
-        let def = (try? modelContext.fetch(descriptor))?.first ?? ExerciseSeeder.defaultDefinition(named: name)
+        let def = definition(named: name) ?? ExerciseSeeder.defaultDefinition(named: name)
         let equipmentType = def?.equipmentType ?? ""
         let weightIncrement = def?.resolvedWeightIncrement ?? ExerciseDefinition.defaultIncrement(for: equipmentType)
         let startingWeight = def?.resolvedStartingWeight ?? ExerciseDefinition.defaultStartingWeight(for: equipmentType)
@@ -537,6 +571,8 @@ final class ActiveWorkoutViewModel {
         let setCount = max(1, draftExercises[index].sets.count)
         let sets = (0..<setCount).map { _ in DraftSet() }
         var replacement = DraftExercise(
+            exerciseDefinitionID: def?.id,
+            exerciseLineageID: def?.id,
             exerciseName: name,
             equipmentType: equipmentType,
             weightIncrement: weightIncrement,
@@ -554,9 +590,14 @@ final class ActiveWorkoutViewModel {
 
     func syncDefinition(at index: Int) {
         guard draftExercises.indices.contains(index) else { return }
-        let name = draftExercises[index].exerciseName
-        let descriptor = FetchDescriptor<ExerciseDefinition>(predicate: #Predicate { $0.name == name })
-        guard let def = (try? modelContext.fetch(descriptor))?.first ?? ExerciseSeeder.defaultDefinition(named: name) else { return }
+        let draft = draftExercises[index]
+        guard let def = definition(id: draft.exerciseDefinitionID)
+            ?? definition(lineageID: draft.exerciseLineageID)
+            ?? definition(named: draft.exerciseName)
+            ?? ExerciseSeeder.defaultDefinition(named: draft.exerciseName) else { return }
+        draftExercises[index].exerciseDefinitionID = def.id
+        draftExercises[index].exerciseLineageID = def.id
+        draftExercises[index].exerciseName = def.name
         draftExercises[index].weightIncrement = def.resolvedWeightIncrement
         draftExercises[index].startingWeight = def.resolvedStartingWeight
         draftExercises[index].loadTrackingMode = def.loadTrackingMode
@@ -566,14 +607,15 @@ final class ActiveWorkoutViewModel {
     }
 
     func addExercise(named name: String) {
-        let descriptor = FetchDescriptor<ExerciseDefinition>(predicate: #Predicate { $0.name == name })
-        let def = (try? modelContext.fetch(descriptor))?.first ?? ExerciseSeeder.defaultDefinition(named: name)
+        let def = definition(named: name) ?? ExerciseSeeder.defaultDefinition(named: name)
         let equipmentType = def?.equipmentType ?? ""
         let weightIncrement = def?.resolvedWeightIncrement ?? ExerciseDefinition.defaultIncrement(for: equipmentType)
         let startingWeight = def?.resolvedStartingWeight ?? ExerciseDefinition.defaultStartingWeight(for: equipmentType)
         let loadTrackingMode = def?.loadTrackingMode ?? .externalWeight
         let isTimed = def?.isTimed ?? false
         var draft = DraftExercise(
+            exerciseDefinitionID: def?.id,
+            exerciseLineageID: def?.id,
             exerciseName: name,
             equipmentType: equipmentType,
             weightIncrement: weightIncrement,
@@ -733,7 +775,13 @@ final class ActiveWorkoutViewModel {
         // PR check skipped for timed exercises — duration-based PRs aren't tracked here
         let isNewPR: Bool
         if draft.setType != .warmup && !isTimed {
-            isNewPR = checkPR(exerciseName: draftExercises[eIdx].exerciseName, weight: weight, reps: reps, record: record)
+            isNewPR = checkPR(
+                exerciseLineageID: draftExercises[eIdx].exerciseLineageID,
+                exerciseName: draftExercises[eIdx].exerciseName,
+                weight: weight,
+                reps: reps,
+                record: record
+            )
         } else {
             isNewPR = false
         }
@@ -1018,11 +1066,8 @@ final class ActiveWorkoutViewModel {
     }
 
     private func applyPendingPRs() {
-        for (exerciseName, newE1RM) in pendingPRByExercise {
-            let d = FetchDescriptor<ExerciseDefinition>(
-                predicate: #Predicate { $0.name == exerciseName }
-            )
-            guard let def = (try? modelContext.fetch(d))?.first else { continue }
+        for (lineageID, newE1RM) in pendingPRByExercise {
+            guard let def = definition(lineageID: lineageID) else { continue }
             def.previousPR = def.currentPR
             def.currentPR = newE1RM
             def.prDate = .now
@@ -1175,6 +1220,7 @@ final class ActiveWorkoutViewModel {
         if let existing = draftExercises[eIdx].snapshot { return existing }
         let snap = ExerciseSnapshot(
             exerciseName: draftExercises[eIdx].exerciseName,
+            exerciseLineageID: draftExercises[eIdx].exerciseLineageID,
             equipmentType: draftExercises[eIdx].equipmentType,
             weightIncrement: draftExercises[eIdx].weightIncrement,
             startingWeight: draftExercises[eIdx].startingWeight,
@@ -1192,6 +1238,7 @@ final class ActiveWorkoutViewModel {
 
     private func syncSnapshot(_ snapshot: ExerciseSnapshot, from exercise: DraftExercise, order: Int) {
         snapshot.exerciseName = exercise.exerciseName
+        snapshot.exerciseLineageID = exercise.exerciseLineageID
         snapshot.equipmentType = exercise.equipmentType
         snapshot.weightIncrement = exercise.weightIncrement
         snapshot.startingWeight = exercise.startingWeight
@@ -1228,6 +1275,8 @@ final class ActiveWorkoutViewModel {
         from snapshot: ExerciseSnapshot,
         sortedRecords: [SetRecord],
         exerciseName: String,
+        exerciseDefinitionID: UUID?,
+        exerciseLineageID: UUID?,
         equipmentType: String,
         weightIncrement: Double,
         startingWeight: Double,
@@ -1253,6 +1302,8 @@ final class ActiveWorkoutViewModel {
         }
 
         return DraftExercise(
+            exerciseDefinitionID: exerciseDefinitionID,
+            exerciseLineageID: exerciseLineageID,
             exerciseName: exerciseName,
             equipmentType: equipmentType,
             weightIncrement: weightIncrement,
@@ -1266,16 +1317,14 @@ final class ActiveWorkoutViewModel {
     }
 
     @discardableResult
-    private func checkPR(exerciseName: String, weight: Double, reps: Int, record: SetRecord) -> Bool {
-        let d = FetchDescriptor<ExerciseDefinition>(
-            predicate: #Predicate { $0.name == exerciseName }
-        )
-        guard let def = (try? modelContext.fetch(d))?.first else { return false }
+    private func checkPR(exerciseLineageID: UUID?, exerciseName: String, weight: Double, reps: Int, record: SetRecord) -> Bool {
+        guard let def = definition(lineageID: exerciseLineageID) ?? definition(named: exerciseName) else { return false }
+        let lineageID = def.id
         let e1rm = ExerciseDefinition.estimatedOneRepMax(weight: weight, reps: reps)
         // Compare against both the persisted best and any better set already logged this session
-        let sessionBest = pendingPRByExercise[exerciseName] ?? 0
+        let sessionBest = pendingPRByExercise[lineageID] ?? 0
         guard e1rm > max(def.currentPR, sessionBest) else { return false }
-        pendingPRByExercise[exerciseName] = e1rm
+        pendingPRByExercise[lineageID] = e1rm
         record.isPersonalRecord = true
         return true
     }

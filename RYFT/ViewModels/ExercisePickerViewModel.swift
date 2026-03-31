@@ -29,14 +29,14 @@ final class ExercisePickerViewModel {
 
     // MARK: - Loaded data
 
-    private(set) var frecencyScores: [String: Double] = [:]
+    private(set) var frecencyScores: [UUID: Double] = [:]
 
     // MARK: - Filtering / search
 
     /// Top-5 exercises by frecency score the user has actually used (score > 0).
     /// Scoped to the active filter set.
     func recentExercises(from all: [ExerciseDefinition], filters: Set<PickerFilter> = []) -> [ExerciseDefinition] {
-        var candidates = all.filter { scoreFor($0) > 0 }
+        var candidates = all.filter { !$0.isArchived && scoreFor($0) > 0 }
         candidates = applyFilters(filters, to: candidates)
         return candidates
             .sorted { scoreFor($0) > scoreFor($1) }
@@ -48,7 +48,7 @@ final class ExercisePickerViewModel {
     /// Multiple active filters are joined as a union.
     /// Custom exercises float to the top within their group.
     func libraryExercises(from all: [ExerciseDefinition]) -> [ExerciseDefinition] {
-        var filtered = applyFilters(selectedFilters, to: all)
+        var filtered = applyFilters(selectedFilters, to: all.filter { !$0.isArchived })
 
         if searchText.count >= 2 {
             filtered = filtered.filter { fuzzyMatches(query: searchText, in: $0.name) }
@@ -111,7 +111,7 @@ final class ExercisePickerViewModel {
     // MARK: - Helpers
 
     private func scoreFor(_ def: ExerciseDefinition) -> Double {
-        frecencyScores[def.name] ?? 0
+        frecencyScores[def.id] ?? 0
     }
 
     private func popularityScore(for name: String) -> Int {

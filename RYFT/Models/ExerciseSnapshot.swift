@@ -7,6 +7,7 @@ import SwiftData
 final class ExerciseSnapshot {
     @Attribute(.unique) var id: UUID
     var exerciseName: String
+    var exerciseLineageID: UUID?
     var equipmentType: String?
     var weightIncrement: Double?
     var startingWeight: Double?
@@ -26,6 +27,7 @@ final class ExerciseSnapshot {
     init(
         id: UUID = UUID(),
         exerciseName: String,
+        exerciseLineageID: UUID? = nil,
         equipmentType: String? = nil,
         weightIncrement: Double? = nil,
         startingWeight: Double? = nil,
@@ -39,6 +41,7 @@ final class ExerciseSnapshot {
     ) {
         self.id = id
         self.exerciseName = exerciseName
+        self.exerciseLineageID = exerciseLineageID
         self.equipmentType = equipmentType
         self.weightIncrement = weightIncrement
         self.startingWeight = startingWeight

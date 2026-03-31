@@ -9,10 +9,13 @@ private let editorMuscleGroups   = ["Chest", "Back", "Shoulders", "Biceps", "Tri
 struct ExerciseEditorView: View {
     /// Pass an existing exercise to edit, or nil to create a new custom one.
     let exercise: ExerciseDefinition?
+    var allowsLifecycleActions: Bool = true
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(\.ryftTheme) private var theme
+
+    @Query(sort: \ExerciseDefinition.name) private var allExercises: [ExerciseDefinition]
 
     @State private var name = ""
     @State private var equipmentType = "Barbell"
@@ -21,9 +24,54 @@ struct ExerciseEditorView: View {
     @State private var isTimed = false
     @State private var weightIncrementText = ""
     @State private var startingWeightText = ""
+    @State private var saveErrorMessage: String? = nil
+    @State private var showingArchiveConfirmation = false
+    @State private var showingPermanentDeleteConfirmation = false
 
     private var isNew: Bool { exercise == nil }
-    private var isSaveEnabled: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
+    private var canEditName: Bool { exercise?.isCustom ?? true }
+    private var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
+    private var nameError: String? {
+        guard canEditName else { return nil }
+        guard !trimmedName.isEmpty else { return "Enter an exercise name." }
+        guard !hasActiveDuplicateName else { return "An exercise with this name already exists." }
+        if !isNew, archivedMatch != nil {
+            return "An archived exercise already uses this name. Restore it instead."
+        }
+        return nil
+    }
+    private var weightIncrementError: String? {
+        guard loadTrackingMode != .none else { return nil }
+        guard !weightIncrementText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        guard parsedNumber(from: weightIncrementText) != nil else { return "Enter a valid number." }
+        return nil
+    }
+    private var startingWeightError: String? {
+        guard loadTrackingMode != .none else { return nil }
+        guard !startingWeightText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        guard parsedNumber(from: startingWeightText) != nil else { return "Enter a valid number." }
+        return nil
+    }
+    private var formErrorMessage: String? { nameError ?? weightIncrementError ?? startingWeightError }
+    private var isSaveEnabled: Bool { formErrorMessage == nil }
+    private var activeMatch: ExerciseDefinition? {
+        guard canEditName else { return nil }
+        return allExercises.first { existing in
+            guard existing.persistentModelID != exercise?.persistentModelID else { return false }
+            guard !existing.isArchived else { return false }
+            return existing.name.compare(trimmedName, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
+        }
+    }
+    private var archivedMatch: ExerciseDefinition? {
+        guard canEditName else { return nil }
+        return allExercises.first { existing in
+            guard existing.persistentModelID != exercise?.persistentModelID else { return false }
+            guard existing.isArchived else { return false }
+            return existing.name.compare(trimmedName, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
+        }
+    }
+    private var hasActiveDuplicateName: Bool { activeMatch != nil }
+    private var canManageLifecycle: Bool { allowsLifecycleActions && (exercise?.isCustom ?? false) }
 
     var body: some View {
         NavigationStack {
@@ -33,11 +81,15 @@ struct ExerciseEditorView: View {
                 Section {
                     TextField("Exercise name", text: $name)
                         .autocorrectionDisabled()
-                        .disabled(!(exercise?.isCustom ?? true))
+                        .disabled(!canEditName)
                 } header: {
                     Text("Name")
                 } footer: {
-                    if let ex = exercise, !ex.isCustom {
+                    if let error = nameError, canEditName {
+                        Text(error)
+                    } else if isNew, archivedMatch != nil {
+                        Text("Saving will restore the archived exercise and keep its history.")
+                    } else if let ex = exercise, !ex.isCustom {
                         Text("Name cannot be changed for built-in exercises.")
                     }
                 }
@@ -122,6 +174,28 @@ struct ExerciseEditorView: View {
                         Text("Restores the original muscle groups, equipment, load tracking, type, increment, and starting weight.")
                     }
                 }
+
+                if canManageLifecycle {
+                    Section {
+                        Button(role: .destructive) {
+                            showingArchiveConfirmation = true
+                        } label: {
+                            Label("Archive Exercise", systemImage: "archivebox")
+                        }
+                    } footer: {
+                        Text("Removes this exercise from your library and picker, but keeps its history and lets you restore it later by reusing the same name.")
+                    }
+
+                    Section {
+                        Button(role: .destructive) {
+                            showingPermanentDeleteConfirmation = true
+                        } label: {
+                            Label("Delete Exercise and History", systemImage: "trash")
+                        }
+                    } footer: {
+                        Text("Permanently deletes this exercise, its history, and any routine references. This cannot be undone.")
+                    }
+                }
             }
             .navigationTitle(isNew ? "New Exercise" : "Edit Exercise")
             .navigationBarTitleDisplayMode(.inline)
@@ -130,13 +204,36 @@ struct ExerciseEditorView: View {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Save") { save(); dismiss() }
+                    Button("Save") { save() }
                         .fontWeight(.semibold)
                         .disabled(!isSaveEnabled)
                 }
             }
         }
         .onAppear { populateDraft() }
+        .alert("Couldn’t Save Exercise", isPresented: saveErrorIsPresented) {
+            Button("OK", role: .cancel) {
+                saveErrorMessage = nil
+            }
+        } message: {
+            Text(saveErrorMessage ?? "Please review your changes and try again.")
+        }
+        .alert("Archive Exercise?", isPresented: $showingArchiveConfirmation) {
+            Button("Archive", role: .destructive) {
+                archiveExercise()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This removes the exercise from your library without deleting any workout history.")
+        }
+        .alert("Delete Exercise and History?", isPresented: $showingPermanentDeleteConfirmation) {
+            Button("Delete", role: .destructive) {
+                permanentlyDeleteExercise()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This permanently deletes the exercise definition, its workout history, and any routine references.")
+        }
     }
 
     // MARK: - Chip grid
@@ -147,19 +244,34 @@ struct ExerciseEditorView: View {
         selected: @escaping (String) -> Bool,
         onTap: @escaping (String) -> Void
     ) -> some View {
-        let columns = Array(repeating: GridItem(.flexible(), spacing: Spacing.xs), count: 4)
+        let columns = [GridItem(.adaptive(minimum: 92), spacing: Spacing.xs)]
         LazyVGrid(columns: columns, spacing: Spacing.xs) {
             ForEach(items, id: \.self) { item in
                 let isSelected = selected(item)
                 Button { onTap(item) } label: {
-                    Text(item)
-                        .font(.system(size: 12, weight: isSelected ? .semibold : .regular))
-                        .foregroundStyle(isSelected ? theme.accentColor : Color.textMuted)
+                    HStack(spacing: 6) {
+                        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                            .imageScale(.small)
+                            .foregroundStyle(isSelected ? theme.accentColor : Color.textFaint)
+                        Text(item)
+                            .font(.footnote.weight(isSelected ? .semibold : .regular))
+                            .foregroundStyle(Color.textPrimary)
+                            .multilineTextAlignment(.center)
+                    }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 6)
+                        .frame(minHeight: 36)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
                 }
                 .buttonStyle(.plain)
                 .glassEffect(.regular.interactive(), in: Capsule())
+                .overlay {
+                    Capsule()
+                        .strokeBorder(isSelected ? theme.accentColor.opacity(0.45) : Color.white.opacity(0.08), lineWidth: 1)
+                }
+                .accessibilityLabel(item)
+                .accessibilityValue(isSelected ? "Selected" : "Not selected")
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
         }
         .listRowBackground(Color.clear)
@@ -180,19 +292,30 @@ struct ExerciseEditorView: View {
     }
 
     private func save() {
-        let trimmedName = name.trimmingCharacters(in: .whitespaces)
+        guard nameError == nil else {
+            saveErrorMessage = nameError
+            return
+        }
+        let increment = validatedOptionalNumber(from: weightIncrementText, fieldName: "Weight Increment")
+        let startingWeight = validatedOptionalNumber(from: startingWeightText, fieldName: "Starting Weight")
+        guard increment.isValid, startingWeight.isValid else {
+            return
+        }
         let orderedGroups = editorMuscleGroups.filter { selectedGroups.contains($0) }
-        let increment = loadTrackingMode == .none ? nil : Double(weightIncrementText)
-        let startingWeight = loadTrackingMode == .none ? nil : Double(startingWeightText)
 
         if let ex = exercise {
-            if ex.isCustom { ex.name = trimmedName }
+            let previousName = ex.name
+            if ex.isCustom {
+                ex.name = trimmedName
+                attachHistory(to: ex, matchingLegacyName: previousName)
+            }
             ex.equipmentType = equipmentType
             ex.muscleGroups = orderedGroups
             ex.loadTrackingMode = loadTrackingMode
             ex.isTimed = isTimed
-            ex.weightIncrement = increment
-            ex.startingWeight = startingWeight
+            ex.weightIncrement = increment.value
+            ex.startingWeight = startingWeight.value
+            ex.archivedAt = nil
             // Mark edited if values differ from the seed
             if !ex.isCustom {
                 let original = ExerciseSeeder.defaultDefinition(named: ex.name)
@@ -201,25 +324,42 @@ struct ExerciseEditorView: View {
                     Set($0.muscleGroups) == selectedGroups &&
                     $0.loadTrackingMode == loadTrackingMode &&
                     $0.isTimed == isTimed &&
-                    increment == $0.weightIncrement &&
-                    startingWeight == $0.startingWeight
+                    increment.value == $0.weightIncrement &&
+                    startingWeight.value == $0.startingWeight
                 } ?? false
                 ex.isEdited = !matchesDefault
             }
         } else {
-            let newEx = ExerciseDefinition(
-                name: trimmedName,
-                muscleGroups: orderedGroups,
-                equipmentType: equipmentType,
-                isCustom: true,
-                weightIncrement: increment,
-                startingWeight: startingWeight,
-                loadTrackingMode: loadTrackingMode,
-                isTimed: isTimed
-            )
-            modelContext.insert(newEx)
+            if let archived = archivedMatch {
+                archived.name = trimmedName
+                archived.archivedAt = nil
+                archived.equipmentType = equipmentType
+                archived.muscleGroups = orderedGroups
+                archived.loadTrackingMode = loadTrackingMode
+                archived.isTimed = isTimed
+                archived.weightIncrement = increment.value
+                archived.startingWeight = startingWeight.value
+                attachHistory(to: archived, matchingLegacyName: trimmedName)
+            } else {
+                let newEx = ExerciseDefinition(
+                    name: trimmedName,
+                    muscleGroups: orderedGroups,
+                    equipmentType: equipmentType,
+                    isCustom: true,
+                    weightIncrement: increment.value,
+                    startingWeight: startingWeight.value,
+                    loadTrackingMode: loadTrackingMode,
+                    isTimed: isTimed
+                )
+                modelContext.insert(newEx)
+            }
         }
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+            dismiss()
+        } catch {
+            saveErrorMessage = "Your changes couldn’t be saved. Please try again."
+        }
     }
 
     private func resetToDefault(_ ex: ExerciseDefinition) {
@@ -244,6 +384,77 @@ struct ExerciseEditorView: View {
 
     private func formatIncrement(_ v: Double) -> String {
         v.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int(v))" : String(format: "%.1f", v)
+    }
+
+    private func attachHistory(to exercise: ExerciseDefinition, matchingLegacyName legacyName: String? = nil) {
+        let snapshots = (try? modelContext.fetch(FetchDescriptor<ExerciseSnapshot>())) ?? []
+        let names = Set([exercise.name, legacyName].compactMap { $0 })
+        for snapshot in snapshots {
+            if snapshot.exerciseLineageID == exercise.id || (snapshot.exerciseLineageID == nil && names.contains(snapshot.exerciseName)) {
+                snapshot.exerciseLineageID = exercise.id
+            }
+        }
+    }
+
+    private func archiveExercise() {
+        guard let exercise, canManageLifecycle else { return }
+        exercise.archivedAt = .now
+        do {
+            try modelContext.save()
+            dismiss()
+        } catch {
+            saveErrorMessage = "This exercise couldn’t be archived. Please try again."
+        }
+    }
+
+    private func permanentlyDeleteExercise() {
+        guard let exercise, canManageLifecycle else { return }
+        let snapshots = (try? modelContext.fetch(FetchDescriptor<ExerciseSnapshot>())) ?? []
+        for snapshot in snapshots where snapshot.exerciseLineageID == exercise.id
+            || (snapshot.exerciseLineageID == nil && snapshot.exerciseName == exercise.name) {
+            modelContext.delete(snapshot)
+        }
+
+        let routineEntries = (try? modelContext.fetch(FetchDescriptor<RoutineEntry>())) ?? []
+        for entry in routineEntries where entry.exerciseDefinition?.id == exercise.id {
+            modelContext.delete(entry)
+        }
+
+        modelContext.delete(exercise)
+
+        do {
+            try modelContext.save()
+            dismiss()
+        } catch {
+            saveErrorMessage = "This exercise couldn’t be deleted. Please try again."
+        }
+    }
+
+    private func parsedNumber(from text: String) -> Double? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        guard let decimal = Decimal(string: trimmed, locale: .current) else { return nil }
+        return NSDecimalNumber(decimal: decimal).doubleValue
+    }
+
+    private func validatedOptionalNumber(from text: String, fieldName: String) -> (isValid: Bool, value: Double?) {
+        guard loadTrackingMode != .none else { return (true, nil) }
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return (true, nil) }
+        guard let value = parsedNumber(from: trimmed) else {
+            saveErrorMessage = "\(fieldName) must be a valid number."
+            return (false, nil)
+        }
+        return (true, value)
+    }
+
+    private var saveErrorIsPresented: Binding<Bool> {
+        Binding(
+            get: { saveErrorMessage != nil },
+            set: { isPresented in
+                if !isPresented { saveErrorMessage = nil }
+            }
+        )
     }
 
     private var loadTrackingFooter: String {

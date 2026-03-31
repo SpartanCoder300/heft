@@ -16,6 +16,7 @@ final class ExerciseDefinition {
     var muscleGroups: [String]
     var equipmentType: String
     var isCustom: Bool
+    var archivedAt: Date?
     var createdAt: Date
     var currentPR: Double
     var previousPR: Double
@@ -44,6 +45,7 @@ final class ExerciseDefinition {
         muscleGroups: [String] = [],
         equipmentType: String,
         isCustom: Bool = false,
+        archivedAt: Date? = nil,
         createdAt: Date = .now,
         currentPR: Double = .zero,
         previousPR: Double = .zero,
@@ -58,6 +60,7 @@ final class ExerciseDefinition {
         self.muscleGroups = muscleGroups
         self.equipmentType = equipmentType
         self.isCustom = isCustom
+        self.archivedAt = archivedAt
         self.createdAt = createdAt
         self.currentPR = currentPR
         self.previousPR = previousPR
@@ -84,6 +87,7 @@ final class ExerciseDefinition {
     }
 
     var tracksWeight: Bool { loadTrackingMode != .none }
+    var isArchived: Bool { archivedAt != nil }
 
     /// Epley estimated one-rep max: weight × (1 + reps / 30).
     /// Returns weight as-is for 0–1 reps or 0 weight.

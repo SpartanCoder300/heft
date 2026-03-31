@@ -5,7 +5,7 @@ import SwiftData
 
 struct ExerciseDetailCard: View {
     let snapshot: ExerciseSnapshot
-    var onNameTap: (() -> Void)? = nil
+    var onNameTap: ((ExerciseSnapshot) -> Void)? = nil
     @Environment(\.ryftCardMaterial) private var cardMaterial
 
     private var sortedSets: [SetRecord] {
@@ -27,7 +27,7 @@ struct ExerciseDetailCard: View {
             // ── Header ─────────────────────────────────────────────────
             HStack(alignment: .firstTextBaseline) {
                 if let onNameTap {
-                    Button(action: onNameTap) {
+                    Button(action: { onNameTap(snapshot) }) {
                         HStack(spacing: 4) {
                             Text(snapshot.exerciseName)
                                 .font(.headline)

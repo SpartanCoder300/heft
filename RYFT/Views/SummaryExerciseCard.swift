@@ -66,6 +66,7 @@ private let _formatWeight: (Double) -> String = { w in
     let row = WorkoutSummaryViewModel.ExerciseRow(
         id: UUID(),
         name: "Squat",
+        lineageID: nil,
         setCount: 3,
         maxWeight: 225,
         volume: 4050,
@@ -83,6 +84,7 @@ private let _formatWeight: (Double) -> String = { w in
     let row = WorkoutSummaryViewModel.ExerciseRow(
         id: UUID(),
         name: "Bench Press",
+        lineageID: nil,
         setCount: 4,
         maxWeight: 185,
         volume: 2960,

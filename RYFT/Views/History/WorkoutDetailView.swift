@@ -9,7 +9,7 @@ struct WorkoutDetailView: View {
     @Environment(\.ryftTheme) private var theme
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
-    @State private var historyExerciseName: String? = nil
+    @State private var historyTarget: (name: String, lineageID: UUID?)? = nil
     @State private var showDeleteAlert = false
 
     private var sortedExercises: [ExerciseSnapshot] {
@@ -49,8 +49,8 @@ struct WorkoutDetailView: View {
                 // ── Exercises ──────────────────────────────────────────
                 VStack(spacing: Spacing.sm) {
                     ForEach(sortedExercises) { snapshot in
-                        ExerciseDetailCard(snapshot: snapshot, onNameTap: {
-                            historyExerciseName = snapshot.exerciseName
+                        ExerciseDetailCard(snapshot: snapshot, onNameTap: { snapshot in
+                            historyTarget = (snapshot.exerciseName, snapshot.exerciseLineageID)
                         })
                     }
                 }
@@ -81,11 +81,11 @@ struct WorkoutDetailView: View {
             Text("This workout and all its data will be permanently removed.")
         }
         .sheet(isPresented: Binding(
-            get: { historyExerciseName != nil },
-            set: { if !$0 { historyExerciseName = nil } }
+            get: { historyTarget != nil },
+            set: { if !$0 { historyTarget = nil } }
         )) {
-            if let name = historyExerciseName {
-                ExerciseHistoryView(exerciseName: name)
+            if let target = historyTarget {
+                ExerciseHistoryView(exerciseName: target.name, exerciseLineageID: target.lineageID)
                     .environment(\.ryftCardMaterial, .regularMaterial)
             }
         }

@@ -12,6 +12,7 @@ final class WorkoutSummaryViewModel {
     struct ExerciseRow: Identifiable {
         let id: UUID
         let name: String
+        let lineageID: UUID?
         let setCount: Int
         let maxWeight: Double
         let volume: Double
@@ -85,6 +86,7 @@ final class WorkoutSummaryViewModel {
                 return ExerciseRow(
                     id: snap.id,
                     name: snap.exerciseName,
+                    lineageID: snap.exerciseLineageID,
                     setCount: snap.sets.count,
                     maxWeight: maxW,
                     volume: vol,

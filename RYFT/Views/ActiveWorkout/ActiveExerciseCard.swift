@@ -43,9 +43,17 @@ struct ActiveExerciseCard: View {
                     }
 
                     Button {
-                        let name = exercise.exerciseName
-                        let descriptor = FetchDescriptor<ExerciseDefinition>(predicate: #Predicate { $0.name == name })
-                        editingDefinition = (try? modelContext.fetch(descriptor))?.first
+                        if let definitionID = exercise.exerciseDefinitionID {
+                            let descriptor = FetchDescriptor<ExerciseDefinition>(predicate: #Predicate { $0.id == definitionID })
+                            editingDefinition = (try? modelContext.fetch(descriptor))?.first
+                        } else if let lineageID = exercise.exerciseLineageID {
+                            let descriptor = FetchDescriptor<ExerciseDefinition>(predicate: #Predicate { $0.id == lineageID })
+                            editingDefinition = (try? modelContext.fetch(descriptor))?.first
+                        } else {
+                            let name = exercise.exerciseName
+                            let descriptor = FetchDescriptor<ExerciseDefinition>(predicate: #Predicate { $0.name == name })
+                            editingDefinition = (try? modelContext.fetch(descriptor))?.first
+                        }
                     } label: {
                         Label("Edit Exercise", systemImage: "pencil")
                     }
@@ -177,10 +185,10 @@ struct ActiveExerciseCard: View {
         .sheet(item: $editingDefinition, onDismiss: {
             vm.syncDefinition(at: exerciseIndex)
         }) { definition in
-            ExerciseEditorView(exercise: definition)
+            ExerciseEditorView(exercise: definition, allowsLifecycleActions: false)
         }
         .sheet(isPresented: $isShowingHistory) {
-            ExerciseHistoryView(exerciseName: exercise.exerciseName)
+            ExerciseHistoryView(exerciseName: exercise.exerciseName, exerciseLineageID: exercise.exerciseLineageID)
                 .environment(\.ryftCardMaterial, .regularMaterial)
         }
     }
