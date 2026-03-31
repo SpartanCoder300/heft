@@ -73,6 +73,9 @@ struct ExerciseHistoryView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: Spacing.lg) {
+                    header
+                        .padding(.horizontal, Spacing.md)
+
                     if sessions.isEmpty {
                         emptyState
                     } else {
@@ -116,8 +119,8 @@ struct ExerciseHistoryView: View {
                 .padding(.vertical, Spacing.lg)
             }
             .themedBackground()
-            .navigationTitle(exerciseName)
-            .navigationBarTitleDisplayMode(.large)
+            .navigationTitle("History")
+            .navigationBarTitleDisplayMode(.inline)
             .task { recomputeBest() }
             .onChange(of: snapshots.count) { recomputeBest() }
             .toolbar {
@@ -130,6 +133,15 @@ struct ExerciseHistoryView: View {
     }
 
     // MARK: - Subviews
+
+    @ViewBuilder
+    private var header: some View {
+        Text(exerciseName)
+            .font(.title.weight(.bold))
+            .foregroundStyle(.primary)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityAddTraits(.isHeader)
+    }
 
     @ViewBuilder
     private func bestBanner() -> some View {
