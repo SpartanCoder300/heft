@@ -18,6 +18,27 @@ struct ActiveWorkoutView: View {
             && environment["XCODE_RUNNING_FOR_PLAYGROUNDS"] != "1"
     }
 
+    private var pickerExistingExerciseCounts: [String: Int] {
+        vm.draftExercises.enumerated().reduce(into: [:]) { counts, entry in
+            let (index, exercise) = entry
+            guard vm.swappingExerciseIndex != index else { return }
+            counts[exercise.exerciseName, default: 0] += 1
+        }
+    }
+
+    private var pickerRemovableExerciseNames: Set<String> {
+        Set(vm.draftExercises.compactMap { exercise in
+            exercise.sets.allSatisfy { !$0.isLogged } ? exercise.exerciseName : nil
+        })
+    }
+
+    private var pickerRemovableExerciseCounts: [String: Int] {
+        vm.draftExercises.reduce(into: [:]) { counts, exercise in
+            guard exercise.sets.allSatisfy({ !$0.isLogged }) else { return }
+            counts[exercise.exerciseName, default: 0] += 1
+        }
+    }
+
     var body: some View {
         @Bindable var vm = vm
 
@@ -170,13 +191,22 @@ struct ActiveWorkoutView: View {
                 .sheet(isPresented: $vm.isShowingExercisePicker, onDismiss: {
                     vm.cancelSwap()
                 }) {
-                    ExercisePicker { exercise in
-                        if let idx = vm.swappingExerciseIndex {
-                            vm.swapExercise(at: idx, named: exercise.name)
-                        } else {
-                            vm.addExercise(named: exercise.name)
-                        }
-                    }
+                    ExercisePicker(
+                        onSelect: { exercise in
+                            if let idx = vm.swappingExerciseIndex {
+                                vm.swapExercise(at: idx, named: exercise.name)
+                            } else {
+                                vm.addExercise(named: exercise.name)
+                            }
+                        },
+                        dismissesOnSelection: vm.swappingExerciseIndex != nil,
+                        existingExerciseCounts: pickerExistingExerciseCounts,
+                        removableExerciseCounts: vm.swappingExerciseIndex == nil ? pickerRemovableExerciseCounts : [:],
+                        removableExerciseNames: vm.swappingExerciseIndex == nil ? pickerRemovableExerciseNames : [],
+                        onRemoveExisting: vm.swappingExerciseIndex == nil ? { exercise in
+                            _ = vm.removeMostRecentUnloggedExercise(named: exercise.name)
+                        } : nil
+                    )
                 }
             }
             .task {

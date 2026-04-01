@@ -94,6 +94,15 @@ final class RoutineBuilderViewModel {
         entries.remove(atOffsets: offsets)
     }
 
+    @discardableResult
+    func removeMostRecentExercise(named name: String) -> Bool {
+        guard let index = entries.indices.reversed().first(where: { entries[$0].exercise.name == name }) else {
+            return false
+        }
+        entries.remove(at: index)
+        return true
+    }
+
     func move(from source: IndexSet, to destination: Int) {
         entries.move(fromOffsets: source, toOffset: destination)
     }

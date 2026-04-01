@@ -720,6 +720,20 @@ final class ActiveWorkoutViewModel {
         activityManager.update(currentActivityState)
     }
 
+    /// Undo path for picker multi-add. Removes the most recent matching exercise that
+    /// hasn't had any sets logged yet, so a picker correction can't silently delete
+    /// work the user has already started.
+    @discardableResult
+    func removeMostRecentUnloggedExercise(named name: String) -> Bool {
+        guard let index = draftExercises.indices.reversed().first(where: { idx in
+            let exercise = draftExercises[idx]
+            return exercise.exerciseName == name && exercise.sets.allSatisfy { !$0.isLogged }
+        }) else { return false }
+
+        removeExercise(at: index)
+        return true
+    }
+
     func moveExercise(at index: Int, direction: MoveDirection) {
         let target = direction == .up ? index - 1 : index + 1
         guard draftExercises.indices.contains(index),

@@ -8,15 +8,22 @@ private let allEquipmentTypes = ["Barbell", "Dumbbell", "Cable", "Machine", "Ket
 
 struct ExercisePicker: View {
     let onSelect: (ExerciseDefinition) -> Void
+    var dismissesOnSelection: Bool = true
+    var existingExerciseCounts: [String: Int] = [:]
+    var removableExerciseCounts: [String: Int] = [:]
+    var removableExerciseNames: Set<String> = []
+    var onRemoveExisting: ((ExerciseDefinition) -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(\.OrinTheme) private var theme
+    @AppStorage("Orin.exercisePickerSwipeHintSeen") private var hasSeenSwipeHint = false
 
     @Query(sort: \ExerciseDefinition.name) private var allExercises: [ExerciseDefinition]
 
     @State private var vm = ExercisePickerViewModel()
     @State private var editorTarget: ExerciseEditorTarget? = nil
+    @State private var isShowingSwipeHint = false
 
     private let muscleFilters    = allMuscleGroups.map    { PickerFilter.muscleGroup($0) }
     private let equipmentFilters = allEquipmentTypes.map  { PickerFilter.equipment($0)  }
@@ -75,6 +82,9 @@ struct ExercisePicker: View {
                                     exercise: exercise,
                                     matchRanges: [],
                                     accentColor: theme.accentColor,
+                                    statusText: statusText(for: exercise),
+                                    secondaryActionTitle: removableExerciseNames.contains(exercise.name) ? "Undo" : nil,
+                                    secondaryAction: removableExerciseNames.contains(exercise.name) ? { remove(exercise) } : nil,
                                     onTap: { select(exercise) },
                                     onEdit: { editorTarget = .edit(exercise) }
                                 )
@@ -101,6 +111,9 @@ struct ExercisePicker: View {
                                     exercise: exercise,
                                     matchRanges: vm.matchRanges(query: vm.searchText, in: exercise.name),
                                     accentColor: theme.accentColor,
+                                    statusText: statusText(for: exercise),
+                                    secondaryActionTitle: removableExerciseNames.contains(exercise.name) ? "Undo" : nil,
+                                    secondaryAction: removableExerciseNames.contains(exercise.name) ? { remove(exercise) } : nil,
                                     onTap: { select(exercise) },
                                     onEdit: { editorTarget = .edit(exercise) }
                                 )
@@ -118,7 +131,8 @@ struct ExercisePicker: View {
                         prompt: "Search exercises")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Cancel") { dismiss() }
+                    Button(dismissesOnSelection ? "Cancel" : "Done") { dismiss() }
+                        .fontWeight(.semibold)
                 }
                 ToolbarItem(placement: .bottomBar) {
                     Button { editorTarget = .new } label: {
@@ -131,10 +145,19 @@ struct ExercisePicker: View {
             .sheet(item: $editorTarget) { target in
                 ExerciseEditorView(exercise: target.exercise)
             }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if isShowingSwipeHint {
+                    undoHintBanner
+                        .padding(.horizontal, Spacing.md)
+                        .padding(.bottom, Spacing.sm)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
         }
         .onAppear {
             vm.load(container: modelContext.container)
         }
+        .animation(Motion.standardSpring, value: isShowingSwipeHint)
     }
 
     // MARK: - Helpers
@@ -151,7 +174,42 @@ struct ExercisePicker: View {
         let impact = UIImpactFeedbackGenerator(style: .medium)
         impact.impactOccurred()
         onSelect(exercise)
-        dismiss()
+        maybeShowSwipeHint()
+        if dismissesOnSelection {
+            dismiss()
+        }
+    }
+
+    private func statusText(for exercise: ExerciseDefinition) -> String? {
+        let totalCount = existingExerciseCounts[exercise.name] ?? 0
+        let removableCount = removableExerciseCounts[exercise.name] ?? 0
+
+        if removableCount > 0 {
+            return removableCount == 1 ? "Added" : "\(removableCount)x Added"
+        }
+        guard totalCount > 0 else { return nil }
+        return totalCount == 1 ? "In Use" : "\(totalCount)x In Use"
+    }
+
+    private func maybeShowSwipeHint() {
+        guard !dismissesOnSelection,
+              onRemoveExisting != nil,
+              !hasSeenSwipeHint else { return }
+
+        hasSeenSwipeHint = true
+        isShowingSwipeHint = true
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(4.5))
+            guard isShowingSwipeHint else { return }
+            withAnimation(Motion.standardSpring) {
+                isShowingSwipeHint = false
+            }
+        }
+    }
+
+    private func remove(_ exercise: ExerciseDefinition) {
+        onRemoveExisting?(exercise)
     }
 
     // MARK: - View builders
@@ -196,6 +254,27 @@ struct ExercisePicker: View {
             .padding(.horizontal, 2)
     }
 
+    private var undoHintBanner: some View {
+        HStack(spacing: Spacing.sm) {
+            Image(systemName: "arrow.uturn.backward.circle.fill")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(theme.accentColor)
+
+            Text("Added. Tap Undo on a row to remove the last one.")
+                .font(Typography.caption)
+                .foregroundStyle(Color.textPrimary)
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, Spacing.sm)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Radius.medium, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: Radius.medium, style: .continuous)
+                .strokeBorder(.white.opacity(0.08), lineWidth: 1)
+        }
+    }
+
     @ViewBuilder
     private func pickerSectionLabel(_ title: String) -> some View {
         Text(title)
@@ -230,7 +309,12 @@ private enum ExerciseEditorTarget: Identifiable {
 }
 
 #Preview {
-    ExercisePicker { _ in }
+    ExercisePicker(
+        onSelect: { _ in },
+        dismissesOnSelection: false,
+        existingExerciseCounts: ["Bench Press": 1, "Squat": 2, "Deadlift": 1],
+        removableExerciseCounts: ["Bench Press": 1, "Squat": 2]
+    )
         .environment(AppState())
         .modelContainer(PersistenceController.previewContainer)
 }

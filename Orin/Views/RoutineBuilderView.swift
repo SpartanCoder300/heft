@@ -33,6 +33,20 @@ struct RoutineBuilderView: View {
         )
     }
 
+    private var pickerExistingExerciseCounts: [String: Int] {
+        vm.entries.reduce(into: [:]) { counts, entry in
+            counts[entry.exercise.name, default: 0] += 1
+        }
+    }
+
+    private var pickerRemovableExerciseCounts: [String: Int] {
+        pickerExistingExerciseCounts
+    }
+
+    private var pickerRemovableExerciseNames: Set<String> {
+        Set(vm.entries.map(\.exercise.name))
+    }
+
     var body: some View {
         @Bindable var vm = vm
 
@@ -131,9 +145,18 @@ struct RoutineBuilderView: View {
                 }
             }
             .sheet(isPresented: $isShowingExercisePicker) {
-                ExercisePicker { exercise in
-                    vm.addExercise(exercise)
-                }
+                ExercisePicker(
+                    onSelect: { exercise in
+                        vm.addExercise(exercise)
+                    },
+                    dismissesOnSelection: false,
+                    existingExerciseCounts: pickerExistingExerciseCounts,
+                    removableExerciseCounts: pickerRemovableExerciseCounts,
+                    removableExerciseNames: pickerRemovableExerciseNames,
+                    onRemoveExisting: { exercise in
+                        _ = vm.removeMostRecentExercise(named: exercise.name)
+                    }
+                )
             }
             .sheet(isPresented: configSheetIsPresented) {
                 if let id = configEntryID,
