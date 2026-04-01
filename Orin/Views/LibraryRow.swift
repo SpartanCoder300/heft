@@ -7,7 +7,10 @@ struct LibraryRow: View {
     let exercise: ExerciseDefinition
     let matchRanges: [Range<String.Index>]
     let accentColor: Color
-    let statusText: String?
+    /// Number of times this exercise was added in the current picker session (removable).
+    var addedCount: Int = 0
+    /// Number of times this exercise already exists in the workout from before this session.
+    var inUseCount: Int = 0
     let onTap: () -> Void
     let onEdit: () -> Void
     var onAddAgain: (() -> Void)? = nil
@@ -46,15 +49,21 @@ struct LibraryRow: View {
                         .foregroundStyle(Color.textFaint)
                 }
 
-                if let statusText, !statusText.isEmpty {
-                    Text(statusText)
-                        .font(.system(size: 10, weight: .medium))
+                if addedCount > 0 {
+                    HStack(spacing: 3) {
+                        if addedCount > 1 {
+                            Text("\(addedCount)")
+                                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                .foregroundStyle(accentColor)
+                        }
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(accentColor)
+                    }
+                } else if inUseCount > 0 {
+                    Text(inUseCount == 1 ? "In Workout" : "\(inUseCount)× In Workout")
+                        .font(.system(size: 13))
                         .foregroundStyle(Color.textFaint)
-                        .textCase(.uppercase)
-                        .tracking(0.4)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.white.opacity(0.08), in: Capsule())
                 }
 
                 if exercise.isCustom {
@@ -115,7 +124,7 @@ struct LibraryRow: View {
             isTimed: false
         )
         PersistenceController.previewContainer.mainContext.insert(exercise)
-        return LibraryRow(exercise: exercise, matchRanges: [], accentColor: AccentTheme.midnight.accentColor, statusText: nil, onTap: {}, onEdit: {})
+        return LibraryRow(exercise: exercise, matchRanges: [], accentColor: AccentTheme.midnight.accentColor, onTap: {}, onEdit: {})
             .padding()
             .preferredColorScheme(.dark)
     }()
@@ -133,7 +142,7 @@ struct LibraryRow: View {
         exercise.isCustom = true
         PersistenceController.previewContainer.mainContext.insert(exercise)
         let range = "Z Press".range(of: "Z Pre")!
-        return LibraryRow(exercise: exercise, matchRanges: [range], accentColor: AccentTheme.midnight.accentColor, statusText: "Added", onTap: {}, onEdit: {})
+        return LibraryRow(exercise: exercise, matchRanges: [range], accentColor: AccentTheme.midnight.accentColor, addedCount: 1, onTap: {}, onEdit: {})
             .padding()
             .preferredColorScheme(.dark)
     }()

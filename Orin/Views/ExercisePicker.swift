@@ -159,22 +159,6 @@ struct ExercisePicker: View {
         }
     }
 
-    private func statusText(for exercise: ExerciseDefinition) -> String? {
-        let totalCount = existingExerciseCounts[exercise.name] ?? 0
-        let removableCount = removableExerciseCounts[exercise.name] ?? 0
-
-        if removableCount > 0 {
-            let preExisting = totalCount - removableCount
-            if preExisting > 0 {
-                // Exercise was already in the workout before this session + more were added
-                return "\(totalCount)x In Routine"
-            }
-            return removableCount == 1 ? "Added" : "\(removableCount)x Added"
-        }
-        guard totalCount > 0 else { return nil }
-        return totalCount == 1 ? "In Use" : "\(totalCount)x In Use"
-    }
-
     private func addAgain(_ exercise: ExerciseDefinition) {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         onSelect(exercise)
@@ -188,14 +172,17 @@ struct ExercisePicker: View {
 
     @ViewBuilder
     private func exerciseRow(_ exercise: ExerciseDefinition, matchRanges: [Range<String.Index>]) -> some View {
+        let removable = removableExerciseCounts[exercise.name] ?? 0
+        let total = existingExerciseCounts[exercise.name] ?? 0
         LibraryRow(
             exercise: exercise,
             matchRanges: matchRanges,
             accentColor: theme.accentColor,
-            statusText: statusText(for: exercise),
+            addedCount: removable,
+            inUseCount: max(0, total - removable),
             onTap: { select(exercise) },
             onEdit: { editorTarget = .edit(exercise) },
-            onAddAgain: (removableExerciseCounts[exercise.name] ?? 0) > 0 ? { addAgain(exercise) } : nil
+            onAddAgain: removable > 0 ? { addAgain(exercise) } : nil
         )
         .listRowInsets(.init(top: 0, leading: 0, bottom: 0, trailing: 0))
     }
