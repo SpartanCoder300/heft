@@ -149,7 +149,7 @@ struct SwipeValueControl: View {
                 Image(systemName: "chevron.left")
                     .font(.system(size: isDragging ? 10 : 11, weight: .semibold))
                     .foregroundStyle(Color.textFaint)
-                    .opacity(isDragging ? (lastRawSteps <= 0 ? 0.9 : 0.2) : 0)
+                    .opacity(isDragging ? (lastRawSteps <= 0 ? 0.9 : 0.2) : 0.32)
                     .scaleEffect(isDragging && lastRawSteps < 0
                         ? 1.0 + min(CGFloat(abs(lastRawSteps)) * 0.08, 0.7) : 1.0)
                     .animation(.spring(response: 0.1, dampingFraction: 0.7), value: lastRawSteps)
@@ -197,7 +197,7 @@ struct SwipeValueControl: View {
                 Image(systemName: "chevron.right")
                     .font(.system(size: isDragging ? 10 : 11, weight: .semibold))
                     .foregroundStyle(Color.textFaint)
-                    .opacity(isDragging ? (lastRawSteps >= 0 ? 0.9 : 0.2) : 0)
+                    .opacity(isDragging ? (lastRawSteps >= 0 ? 0.9 : 0.2) : 0.32)
                     .scaleEffect(isDragging && lastRawSteps > 0
                         ? 1.0 + min(CGFloat(abs(lastRawSteps)) * 0.08, 0.7) : 1.0)
                     .animation(.spring(response: 0.1, dampingFraction: 0.7), value: lastRawSteps)

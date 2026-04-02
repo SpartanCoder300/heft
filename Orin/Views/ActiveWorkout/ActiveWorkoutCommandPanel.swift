@@ -11,6 +11,7 @@ struct ActiveWorkoutCommandPanel: View {
     let onComplete: (WorkoutSession) -> Void
     let onDismiss: () -> Void
 
+    @AppStorage("hasUsedSwipeControl") private var hasUsedSwipeControl: Bool = false
     @State private var isKeyboardVisible = false
 
     private let horizontalInset: CGFloat = Spacing.lg
@@ -92,7 +93,7 @@ struct ActiveWorkoutCommandPanel: View {
                             isInteger: false,
                             firstTapDefault: exercise.startingWeight,
                             milestones: weightMilestones(for: exercise.equipmentType),
-                            onInteractionStart: { vm.requestRevealCurrentFocus() }
+                            onInteractionStart: { vm.requestRevealCurrentFocus(); hasUsedSwipeControl = true }
                         )
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
 
@@ -121,7 +122,7 @@ struct ActiveWorkoutCommandPanel: View {
                             maxValue: 600,
                             isInteger: true,
                             firstTapDefault: 30,
-                            onInteractionStart: { vm.requestRevealCurrentFocus() }
+                            onInteractionStart: { vm.requestRevealCurrentFocus(); hasUsedSwipeControl = true }
                         )
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else {
@@ -146,12 +147,20 @@ struct ActiveWorkoutCommandPanel: View {
                             maxValue: 50,
                             isInteger: true,
                             firstTapDefault: 5,
-                            onInteractionStart: { vm.requestRevealCurrentFocus() }
+                            onInteractionStart: { vm.requestRevealCurrentFocus(); hasUsedSwipeControl = true }
                         )
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                 }
                 .frame(height: 72)
+
+                if !hasUsedSwipeControl {
+                    Text("Swipe left or right to adjust")
+                        .font(.caption2)
+                        .foregroundStyle(Color.textFaint.opacity(0.55))
+                        .padding(.vertical, Spacing.xs)
+                        .transition(.opacity)
+                }
 
                 Divider()
 
