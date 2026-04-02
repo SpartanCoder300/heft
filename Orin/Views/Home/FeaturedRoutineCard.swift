@@ -46,9 +46,9 @@ struct FeaturedRoutineCard: View {
 
                 Spacer(minLength: Spacing.sm)
 
-                Image(systemName: "chevron.right")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.tertiary)
+                Image(systemName: "play.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
             }
             .padding(.horizontal, Spacing.lg)
             .padding(.vertical, Spacing.lg)

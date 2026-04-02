@@ -16,7 +16,7 @@ struct EmptyRoutinesPrompt: View {
                     .font(Typography.body)
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.textPrimary)
-                Text("Tap here to build a routine and launch sessions faster.")
+                Text("Save a set of exercises as a routine — tap it to instantly start a workout with everything loaded.")
                     .font(Typography.caption)
                     .foregroundStyle(Color.textMuted)
                     .multilineTextAlignment(.center)

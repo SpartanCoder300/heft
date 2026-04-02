@@ -14,7 +14,7 @@ struct HomeRoutinesSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            SectionHeader(title: "Routines")
+            SectionHeader(title: "Routines", detail: "Tap to start a workout")
 
             if routines.isEmpty {
                 EmptyRoutinesPrompt(onTap: onNew)

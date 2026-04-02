@@ -39,9 +39,9 @@ struct RoutineListRow: View {
                             .font(Typography.caption)
                             .foregroundStyle(Color.textFaint)
                     }
-                    Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.tertiary)
+                    Image(systemName: "play.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
                 }
             }
             .padding(Spacing.md)
