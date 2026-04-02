@@ -155,7 +155,7 @@ struct ActiveWorkoutCommandPanel: View {
                 .frame(height: 72)
 
                 if !hasUsedSwipeControl {
-                    Text("Swipe left or right to adjust")
+                    Text("Swipe to adjust · Tap to type")
                         .font(.caption2)
                         .foregroundStyle(Color.textFaint.opacity(0.55))
                         .padding(.vertical, Spacing.xs)
