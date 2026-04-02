@@ -11,7 +11,7 @@ import SwiftUI
 /// 1. Set logged       → stellar flare (pale blue-white burst)
 /// 2. Exercise done    → brighter flare
 /// 3. PR               → amber supernova (two-stage: hot flash → sustained bloom)
-/// 4. Workout complete / theme intro → electric violet bloom
+/// 4. Workout complete / theme intro → hot fuchsia bloom
 enum MeshTheme {
 
     // MARK: - Void
@@ -62,12 +62,12 @@ enum MeshTheme {
     private static let amberGlow = Color(red: 0.310, green: 0.185, blue: 0.020)
     private static let amberHot  = Color(red: 0.460, green: 0.285, blue: 0.030)
 
-    // MARK: - Violet Palette (workout complete + theme intro)
-    // Electric violet bloom — distinct from amber PR, distinct from the cold galaxy base.
+    // MARK: - Magenta Palette (workout complete + theme intro)
+    // Hot fuchsia bloom — distinct from the blue-violet base and the amber PR.
 
-    private static let violetDeep   = Color(red: 0.055, green: 0.018, blue: 0.165)
-    private static let violetCorner = Color(red: 0.115, green: 0.038, blue: 0.345)
-    private static let violetCore   = Color(red: 0.320, green: 0.065, blue: 0.680)
+    private static let violetDeep   = Color(red: 0.110, green: 0.012, blue: 0.130)
+    private static let violetCorner = Color(red: 0.260, green: 0.022, blue: 0.300)
+    private static let violetCore   = Color(red: 0.580, green: 0.040, blue: 0.560)
 
     // MARK: - Session Intensity Interpolation
 
@@ -157,7 +157,7 @@ enum MeshTheme {
         amberDeep, amberMid,  amberDeep,
     ]
 
-    /// Workout complete / theme intro — electric violet bloom.
+    /// Workout complete / theme intro — hot fuchsia bloom.
     static let complete: [Color] = [
         violetCorner, violetCore,   violetCorner,
         violetDeep,   violetDeep,   violetDeep,
