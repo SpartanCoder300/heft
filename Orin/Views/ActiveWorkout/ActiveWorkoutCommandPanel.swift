@@ -101,6 +101,7 @@ struct ActiveWorkoutCommandPanel: View {
                                           vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex)
                                     else { return }
                                     vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].weightText = $0
+                                    vm.markSetTouched(exerciseIndex: focus.exerciseIndex, setIndex: focus.setIndex)
                                 }
                             ),
                             unit: "lbs",
@@ -131,6 +132,7 @@ struct ActiveWorkoutCommandPanel: View {
                                           vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex)
                                     else { return }
                                     vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].durationText = $0
+                                    vm.markSetTouched(exerciseIndex: focus.exerciseIndex, setIndex: focus.setIndex)
                                 }
                             ),
                             unit: "sec",
@@ -156,6 +158,7 @@ struct ActiveWorkoutCommandPanel: View {
                                           vm.draftExercises[focus.exerciseIndex].sets.indices.contains(focus.setIndex)
                                     else { return }
                                     vm.draftExercises[focus.exerciseIndex].sets[focus.setIndex].repsText = $0
+                                    vm.markSetTouched(exerciseIndex: focus.exerciseIndex, setIndex: focus.setIndex)
                                 }
                             ),
                             unit: "reps",

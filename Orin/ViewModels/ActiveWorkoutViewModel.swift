@@ -10,13 +10,36 @@ import UserNotifications
 final class ActiveWorkoutViewModel {
 
     private struct PersistedDraftSet: Codable {
-        let weightText: String
-        let repsText: String
-        let durationText: String
-        let setType: SetType
-        let isLogged: Bool
-        let loggedRecordID: UUID?
-        let isPR: Bool
+        var weightText: String
+        var repsText: String
+        var durationText: String
+        var setType: SetType
+        var isLogged: Bool
+        var loggedRecordID: UUID?
+        var isPR: Bool
+        var isTouched: Bool
+
+        init(weightText: String, repsText: String, durationText: String, setType: SetType, isLogged: Bool, loggedRecordID: UUID?, isPR: Bool, isTouched: Bool) {
+            self.weightText = weightText; self.repsText = repsText; self.durationText = durationText
+            self.setType = setType; self.isLogged = isLogged; self.loggedRecordID = loggedRecordID
+            self.isPR = isPR; self.isTouched = isTouched
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case weightText, repsText, durationText, setType, isLogged, loggedRecordID, isPR, isTouched
+        }
+
+        init(from decoder: any Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            weightText     = try c.decode(String.self,   forKey: .weightText)
+            repsText       = try c.decode(String.self,   forKey: .repsText)
+            durationText   = try c.decode(String.self,   forKey: .durationText)
+            setType        = try c.decode(SetType.self,  forKey: .setType)
+            isLogged       = try c.decode(Bool.self,     forKey: .isLogged)
+            loggedRecordID = try c.decodeIfPresent(UUID.self, forKey: .loggedRecordID)
+            isPR           = try c.decode(Bool.self,     forKey: .isPR)
+            isTouched      = (try? c.decodeIfPresent(Bool.self, forKey: .isTouched)) ?? false
+        }
     }
 
     // MARK: - Types
@@ -31,6 +54,9 @@ final class ActiveWorkoutViewModel {
         var isLogged: Bool = false
         var loggedRecord: SetRecord? = nil
         var isPR: Bool = false
+        /// True once the user has manually edited this set's values.
+        /// Prefilled/default values start as false; propagation only writes to false sets.
+        var isTouched: Bool = false
     }
 
     struct PreviousSet {
@@ -158,6 +184,38 @@ final class ActiveWorkoutViewModel {
     func requestRevealCurrentFocus() {
         guard currentFocus != nil else { return }
         focusRevealRequestID = UUID()
+    }
+
+    /// Marks a set as user-touched and, when conditions allow, propagates set 0's
+    /// values to all untouched future sets (no-history, no-logged-sets scenario only).
+    func markSetTouched(exerciseIndex eIdx: Int, setIndex sIdx: Int) {
+        guard draftExercises.indices.contains(eIdx),
+              draftExercises[eIdx].sets.indices.contains(sIdx) else { return }
+        draftExercises[eIdx].sets[sIdx].isTouched = true
+
+        // Propagate every time set 0 is edited, while:
+        // • the exercise has no prior session history (previousSets is empty)
+        // • no sets in this exercise have been logged yet (first-time entry)
+        guard sIdx == 0,
+              draftExercises[eIdx].previousSets.isEmpty,
+              !draftExercises[eIdx].sets.contains(where: { $0.isLogged }) else { return }
+        propagateFromFirstSet(exerciseIndex: eIdx)
+    }
+
+    private func propagateFromFirstSet(exerciseIndex eIdx: Int) {
+        guard draftExercises.indices.contains(eIdx),
+              !draftExercises[eIdx].sets.isEmpty else { return }
+        let source = draftExercises[eIdx].sets[0]
+        var propagated: [UUID] = []
+        for sIdx in 1 ..< draftExercises[eIdx].sets.count {
+            guard !draftExercises[eIdx].sets[sIdx].isTouched,
+                  !draftExercises[eIdx].sets[sIdx].isLogged else { continue }
+            draftExercises[eIdx].sets[sIdx].weightText   = source.weightText
+            draftExercises[eIdx].sets[sIdx].repsText     = source.repsText
+            draftExercises[eIdx].sets[sIdx].durationText = source.durationText
+            propagated.append(draftExercises[eIdx].sets[sIdx].id)
+        }
+        _ = propagated
     }
 
     // MARK: - Private
@@ -510,10 +568,17 @@ final class ActiveWorkoutViewModel {
                 ($1.workoutSession?.completedAt ?? .distantPast)
             }
 
-        guard let latest = completed.first else { return }
+        guard let latest = completed.first else {
+            // No history — fill with sensible defaults so fields are never blank.
+            applyDefaultValues(to: &exercise)
+            return
+        }
 
         let sortedSets = latest.sets.sorted { $0.loggedAt < $1.loggedAt }
-        guard !sortedSets.isEmpty else { return }
+        guard !sortedSets.isEmpty else {
+            applyDefaultValues(to: &exercise)
+            return
+        }
 
         exercise.previousSets = sortedSets.map { PreviousSet(weight: $0.weight, reps: $0.reps, duration: $0.duration) }
 
@@ -527,6 +592,7 @@ final class ActiveWorkoutViewModel {
         // Auto-fill: seed each draft set from the matching position, else last set.
         // Last session's actual reps/duration always win — more accurate than the routine target.
         for i in exercise.sets.indices {
+            guard !exercise.sets[i].isLogged else { continue }
             let source = i < sortedSets.count ? sortedSets[i] : sortedSets[sortedSets.count - 1]
             if exercise.tracksWeight {
                 exercise.sets[i].weightText = formatWeight(source.weight)
@@ -537,6 +603,26 @@ final class ActiveWorkoutViewModel {
                 exercise.sets[i].repsText = "\(source.reps)"
             }
             exercise.sets[i].setType = source.setType
+        }
+    }
+
+    /// Fills empty fields with sensible defaults when no prior history exists.
+    /// Uses the exercise's own startingWeight and generic rep/duration targets.
+    private func applyDefaultValues(to exercise: inout DraftExercise) {
+        for i in exercise.sets.indices {
+            guard !exercise.sets[i].isLogged else { continue }
+            if exercise.tracksWeight && exercise.sets[i].weightText.isEmpty {
+                exercise.sets[i].weightText = formatWeight(exercise.startingWeight)
+            }
+            if exercise.isTimed {
+                if exercise.sets[i].durationText.isEmpty {
+                    exercise.sets[i].durationText = "30"
+                }
+            } else {
+                let r = Int(exercise.sets[i].repsText) ?? 0
+                if r == 0 { exercise.sets[i].repsText = "8" }
+            }
+            // isTouched stays false — these are app-provided defaults, not user input
         }
     }
 
@@ -645,6 +731,7 @@ final class ActiveWorkoutViewModel {
         draftExercises[eIdx].sets[sIdx].weightText = source.weightText
         draftExercises[eIdx].sets[sIdx].repsText = source.repsText
         draftExercises[eIdx].sets[sIdx].durationText = source.durationText
+        draftExercises[eIdx].sets[sIdx].isTouched = true
         persistDraftState()
         setManualFocus(exerciseIndex: eIdx, setIndex: sIdx)
     }
@@ -659,6 +746,7 @@ final class ActiveWorkoutViewModel {
         draftExercises[eIdx].sets[sIdx].weightText = above.weightText
         draftExercises[eIdx].sets[sIdx].repsText = above.repsText
         draftExercises[eIdx].sets[sIdx].durationText = above.durationText
+        draftExercises[eIdx].sets[sIdx].isTouched = true
         persistDraftState()
         UISelectionFeedbackGenerator().selectionChanged()
         requestRevealCurrentFocus()
@@ -1293,7 +1381,8 @@ final class ActiveWorkoutViewModel {
                 setType: $0.setType,
                 isLogged: $0.isLogged,
                 loggedRecordID: $0.loggedRecord?.id,
-                isPR: $0.isPR
+                isPR: $0.isPR,
+                isTouched: $0.isTouched
             )
         }
         guard let data = try? JSONEncoder().encode(payload) else { return nil }
@@ -1333,6 +1422,11 @@ final class ActiveWorkoutViewModel {
                 draft.loggedRecord = recordsByID[recordID]
             }
             draft.isPR = persisted.isPR || draft.loggedRecord?.isPersonalRecord == true
+            // Restore touched state. For non-logged sets with values, treat as touched
+            // to prevent propagation from overwriting established values on resume.
+            draft.isTouched = persisted.isTouched || (!persisted.isLogged && (
+                !persisted.weightText.isEmpty || !persisted.repsText.isEmpty || !persisted.durationText.isEmpty
+            ))
             return draft
         }
 
