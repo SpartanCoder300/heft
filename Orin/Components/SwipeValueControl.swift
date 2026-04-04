@@ -73,6 +73,8 @@ struct SwipeValueControl: View {
     /// Called when the user starts interacting, either by tapping into manual entry
     /// or by beginning a horizontal swipe.
     var onInteractionStart: (() -> Void)? = nil
+    /// Called when the control commits a value change after drag, direct entry, or accessibility adjustment.
+    var onCommit: (() -> Void)? = nil
     /// Set to a new UUID to trigger the swipe hint animation. Nil means no hint.
     var hintToken: UUID? = nil
 
@@ -267,6 +269,7 @@ struct SwipeValueControl: View {
             let snapped = minValue + stepsFromMin * step
             let clamped = Swift.min(maxValue, Swift.max(minValue, snapped))
             text = formatted(clamped)
+            onCommit?()
         }
     }
 
@@ -361,7 +364,10 @@ struct SwipeValueControl: View {
         guard !didCommit else { return }
         didCommit = true
 
-        if let live = liveValue { text = cleanFormatted(live) }
+        if let live = liveValue {
+            text = cleanFormatted(live)
+            onCommit?()
+        }
 
         dragStartValue = nil
         dragAccumulator = 0
@@ -388,6 +394,7 @@ struct SwipeValueControl: View {
         guard let raw else { return }
         let sanitized = Swift.max(minValue, raw)
         text = cleanFormatted(sanitized)
+        onCommit?()
         UISelectionFeedbackGenerator().selectionChanged()
     }
 }

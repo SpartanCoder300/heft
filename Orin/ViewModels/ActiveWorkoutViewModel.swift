@@ -202,6 +202,10 @@ final class ActiveWorkoutViewModel {
         propagateFromFirstSet(exerciseIndex: eIdx)
     }
 
+    func queueDraftPersistence() {
+        scheduleDraftPersistence()
+    }
+
     private func propagateFromFirstSet(exerciseIndex eIdx: Int) {
         guard draftExercises.indices.contains(eIdx),
               !draftExercises[eIdx].sets.isEmpty else { return }
@@ -227,6 +231,7 @@ final class ActiveWorkoutViewModel {
     private var zeroTask: Task<Void, Never>? = nil
     private var phaseUpdateTasks: [Task<Void, Never>] = []
     private var notificationTask: Task<Void, Never>? = nil
+    private var deferredPersistTask: Task<Void, Never>? = nil
     private var hasSetup = false
     private let activityManager: WorkoutActivityManager
 
@@ -298,6 +303,7 @@ final class ActiveWorkoutViewModel {
     /// at workout start — before any set is logged. This ensures the full exercise list
     /// survives a force-quit or crash and can be restored on next launch.
     private func eagerlyPersistWorkout() {
+        cancelDeferredPersistence()
         let s = ensureSession()
         for eIdx in draftExercises.indices {
             _ = ensureSnapshot(exerciseIndex: eIdx, session: s)
@@ -672,7 +678,7 @@ final class ActiveWorkoutViewModel {
         )
         applyPreviousPerformance(to: &replacement)
         draftExercises[index] = replacement
-        persistDraftState()
+        scheduleDraftPersistence()
         activityManager.update(currentActivityState)
         requestRevealCurrentFocus()
     }
@@ -692,7 +698,7 @@ final class ActiveWorkoutViewModel {
         draftExercises[index].loadTrackingMode = def.loadTrackingMode
         draftExercises[index].equipmentType = def.equipmentType
         draftExercises[index].isTimed = def.isTimed
-        persistDraftState()
+        scheduleDraftPersistence()
     }
 
     func addExercise(named name: String) {
@@ -715,7 +721,7 @@ final class ActiveWorkoutViewModel {
         )
         applyPreviousPerformance(to: &draft)
         draftExercises.append(draft)
-        persistDraftState()
+        scheduleDraftPersistence()
         UISelectionFeedbackGenerator().selectionChanged()
         requestRevealCurrentFocus()
     }
@@ -732,7 +738,7 @@ final class ActiveWorkoutViewModel {
         draftExercises[eIdx].sets[sIdx].repsText = source.repsText
         draftExercises[eIdx].sets[sIdx].durationText = source.durationText
         draftExercises[eIdx].sets[sIdx].isTouched = true
-        persistDraftState()
+        scheduleDraftPersistence()
         setManualFocus(exerciseIndex: eIdx, setIndex: sIdx)
     }
 
@@ -747,7 +753,7 @@ final class ActiveWorkoutViewModel {
         draftExercises[eIdx].sets[sIdx].repsText = above.repsText
         draftExercises[eIdx].sets[sIdx].durationText = above.durationText
         draftExercises[eIdx].sets[sIdx].isTouched = true
-        persistDraftState()
+        scheduleDraftPersistence()
         UISelectionFeedbackGenerator().selectionChanged()
         requestRevealCurrentFocus()
     }
@@ -764,7 +770,7 @@ final class ActiveWorkoutViewModel {
             removeExercise(at: eIdx)
             return
         }
-        persistDraftState()
+        scheduleDraftPersistence()
     }
 
     func unlogSet(exerciseIndex eIdx: Int, setIndex sIdx: Int) {
@@ -780,6 +786,7 @@ final class ActiveWorkoutViewModel {
 
         draftExercises[eIdx].sets[sIdx].isLogged = false
         draftExercises[eIdx].sets[sIdx].loggedRecord = nil
+        cancelDeferredPersistence()
         persistDraftState()
         try? modelContext.save()
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -796,7 +803,7 @@ final class ActiveWorkoutViewModel {
             new.setType = last.setType
         }
         draftExercises[index].sets.append(new)
-        persistDraftState()
+        scheduleDraftPersistence()
         UISelectionFeedbackGenerator().selectionChanged()
     }
 
@@ -821,6 +828,7 @@ final class ActiveWorkoutViewModel {
             if mf.exerciseIndex == index { manualFocus = nil }
             else if mf.exerciseIndex > index { manualFocus = SetFocus(exerciseIndex: mf.exerciseIndex - 1, setIndex: mf.setIndex) }
         }
+        cancelDeferredPersistence()
         persistDraftState()
         activityManager.update(currentActivityState)
     }
@@ -844,7 +852,7 @@ final class ActiveWorkoutViewModel {
         guard draftExercises.indices.contains(index),
               draftExercises.indices.contains(target) else { return }
         draftExercises.swapAt(index, target)
-        persistDraftState()
+        scheduleDraftPersistence()
         activityManager.update(currentActivityState)
         requestRevealCurrentFocus()
     }
@@ -861,7 +869,7 @@ final class ActiveWorkoutViewModel {
             dropset.durationText = last.durationText
         }
         draftExercises[index].sets.append(dropset)
-        persistDraftState()
+        scheduleDraftPersistence()
         requestRevealCurrentFocus()
     }
 
@@ -950,6 +958,7 @@ final class ActiveWorkoutViewModel {
         // Clear manual focus — auto-advance takes over
         manualFocus = nil
 
+        cancelDeferredPersistence()
         persistDraftState()
         try? modelContext.save()
         activityManager.update(currentActivityState)
@@ -1083,7 +1092,7 @@ final class ActiveWorkoutViewModel {
     func skipRest() {
         cancelTimerTasks()
         restTimer.skip()
-        persistDraftState()
+        scheduleDraftPersistence()
         cancelRestNotification()
         activityManager.update(currentActivityState)
     }
@@ -1093,14 +1102,14 @@ final class ActiveWorkoutViewModel {
         guard restTimer.isActive, let deadline = restTimer.targetEndDate else {
             // Adjustment clamped the timer to zero — treat as a skip.
             cancelTimerTasks()
-            persistDraftState()
+            scheduleDraftPersistence()
             cancelRestNotification()
             activityManager.update(currentActivityState)
             return
         }
         scheduleTimerTasks(deadline: deadline, duration: restTimer.totalDuration)
         scheduleRestNotification(endsAt: deadline)
-        persistDraftState()
+        scheduleDraftPersistence()
         activityManager.update(currentActivityState)
     }
 
@@ -1111,7 +1120,7 @@ final class ActiveWorkoutViewModel {
         let current = draftExercises[eIdx].sets[sIdx].setType
         let next = all[((all.firstIndex(of: current) ?? 0) + 1) % all.count]
         draftExercises[eIdx].sets[sIdx].setType = next
-        persistDraftState()
+        scheduleDraftPersistence()
     }
 
     func adjustWeight(exerciseIndex eIdx: Int, setIndex sIdx: Int, increment: Bool) {
@@ -1123,12 +1132,12 @@ final class ActiveWorkoutViewModel {
         if increment && current == 0 {
             let start = draftExercises[eIdx].startingWeight
             draftExercises[eIdx].sets[sIdx].weightText = formatWeight(start)
-            persistDraftState()
+            scheduleDraftPersistence()
             return
         }
         let next = increment ? current + step : max(0, current - step)
         draftExercises[eIdx].sets[sIdx].weightText = formatWeight(next)
-        persistDraftState()
+        scheduleDraftPersistence()
     }
 
     func adjustReps(exerciseIndex eIdx: Int, setIndex sIdx: Int, increment: Bool) {
@@ -1137,7 +1146,7 @@ final class ActiveWorkoutViewModel {
         let current = Int(draftExercises[eIdx].sets[sIdx].repsText) ?? 0
         let next = increment ? current + 1 : max(0, current - 1)
         draftExercises[eIdx].sets[sIdx].repsText = "\(next)"
-        persistDraftState()
+        scheduleDraftPersistence()
     }
 
     var loggedSetCount: Int {
@@ -1176,6 +1185,7 @@ final class ActiveWorkoutViewModel {
     @discardableResult
     func endWorkout() -> WorkoutSession? {
         guard let s = session else { return nil }
+        cancelDeferredPersistence()
         s.completedAt = .now
         applyPendingPRs()
         // Drop any exercises the user added but never logged a set for.
@@ -1200,6 +1210,7 @@ final class ActiveWorkoutViewModel {
 
     /// Discards the in-progress session and all logged sets without saving.
     func cancelWorkout() {
+        cancelDeferredPersistence()
         cancelRestNotification()
         activityManager.end(currentActivityState)
         if let s = session {
@@ -1298,6 +1309,7 @@ final class ActiveWorkoutViewModel {
     /// while the app was suspended — the zeroTask can't fire during suspension, so this
     /// ensures the Live Activity and in-app state are both updated immediately on resume.
     func handleForeground() {
+        cancelDeferredPersistence()
         persistDraftState()
         guard restTimer.isActive, let end = restTimer.targetEndDate, end <= .now else { return }
         cancelTimerTasks()
@@ -1307,8 +1319,29 @@ final class ActiveWorkoutViewModel {
         activityManager.update(currentActivityState)
     }
 
+    private func scheduleDraftPersistence(delay: Duration = .milliseconds(300)) {
+        guard hasSetup else { return }
+        deferredPersistTask?.cancel()
+        deferredPersistTask = Task { @MainActor [weak self] in
+            do {
+                try await Task.sleep(for: delay)
+            } catch {
+                return
+            }
+            guard let self, !Task.isCancelled else { return }
+            self.persistDraftState()
+            self.deferredPersistTask = nil
+        }
+    }
+
+    private func cancelDeferredPersistence() {
+        deferredPersistTask?.cancel()
+        deferredPersistTask = nil
+    }
+
     func persistDraftState() {
         guard hasSetup else { return }
+        deferredPersistTask = nil
         if draftExercises.isEmpty {
             try? modelContext.save()
             return

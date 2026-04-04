@@ -326,7 +326,6 @@ private struct RestTimerBar: View {
     var body: some View {
         TimelineView(.periodic(from: .now, by: 0.25)) { context in
             let now   = context.date
-            let _ = timer.tick(at: now)
             let phase = timer.tintColor(at: now)
             let color = restPhaseColor(phase)
 
@@ -480,13 +479,22 @@ private struct RestTimerActionsSheet: View {
 /// drop the file into the project and it picks up automatically.
 /// Falls back to system sound 1057 until a branded asset is ready.
 private func playRestCompleteSound() {
-    if let url = Bundle.main.url(forResource: "rest-complete", withExtension: "caf") {
-        var soundID: SystemSoundID = 0
-        AudioServicesCreateSystemSoundID(url as CFURL, &soundID)
+    if let soundID = RestCompleteSound.cachedSoundID {
         AudioServicesPlayAlertSound(soundID)
     } else {
         AudioServicesPlayAlertSound(SystemSoundID(1057))
     }
+}
+
+private enum RestCompleteSound {
+    static let cachedSoundID: SystemSoundID? = {
+        guard let url = Bundle.main.url(forResource: "rest-complete", withExtension: "caf") else {
+            return nil
+        }
+        var soundID: SystemSoundID = 0
+        let status = AudioServicesCreateSystemSoundID(url as CFURL, &soundID)
+        return status == kAudioServicesNoError ? soundID : nil
+    }()
 }
 
 private func restPhaseColor(_ phase: TimerTintPhase) -> Color {

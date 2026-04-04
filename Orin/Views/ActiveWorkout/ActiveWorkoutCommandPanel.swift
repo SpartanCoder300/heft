@@ -118,6 +118,7 @@ struct ActiveWorkoutCommandPanel: View {
                             firstTapDefault: exercise.startingWeight,
                             milestones: weightMilestones(for: exercise.equipmentType),
                             onInteractionStart: { vm.requestRevealCurrentFocus(); hasUsedSwipeControl = true; cancelHint() },
+                            onCommit: { vm.queueDraftPersistence() },
                             hintToken: hintToken
                         )
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -149,6 +150,7 @@ struct ActiveWorkoutCommandPanel: View {
                             isInteger: true,
                             firstTapDefault: 30,
                             onInteractionStart: { vm.requestRevealCurrentFocus(); hasUsedSwipeControl = true; cancelHint() },
+                            onCommit: { vm.queueDraftPersistence() },
                             hintToken: hintToken
                         )
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -176,6 +178,7 @@ struct ActiveWorkoutCommandPanel: View {
                             isInteger: true,
                             firstTapDefault: 5,
                             onInteractionStart: { vm.requestRevealCurrentFocus(); hasUsedSwipeControl = true; cancelHint() },
+                            onCommit: { vm.queueDraftPersistence() },
                             hintToken: hintToken
                         )
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
