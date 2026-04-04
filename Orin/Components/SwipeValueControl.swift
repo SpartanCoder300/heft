@@ -73,6 +73,8 @@ struct SwipeValueControl: View {
     /// Called when the user starts interacting, either by tapping into manual entry
     /// or by beginning a horizontal swipe.
     var onInteractionStart: (() -> Void)? = nil
+    /// Set to a new UUID to trigger the swipe hint animation. Nil means no hint.
+    var hintToken: UUID? = nil
 
     // MARK: Gesture state
 
@@ -93,6 +95,8 @@ struct SwipeValueControl: View {
     @State private var previousTranslation: CGFloat = 0
     /// Visual rubber-band offset applied when dragging past min/max boundary.
     @State private var rubberOffset: CGFloat = 0
+
+    @State private var hintOffset: CGFloat = 0
 
     // Haptic generators stored as @State so they survive SwiftUI re-renders during drag.
     // private let would recreate them every frame, wasting prepare() calls.
@@ -149,7 +153,7 @@ struct SwipeValueControl: View {
                 Image(systemName: "chevron.left")
                     .font(.system(size: isDragging ? 10 : 11, weight: .semibold))
                     .foregroundStyle(Color.textFaint)
-                    .opacity(isDragging ? (lastRawSteps <= 0 ? 0.9 : 0.2) : 0.32)
+                    .opacity(isDragging ? (lastRawSteps <= 0 ? 0.9 : 0.2) : 0.52)
                     .scaleEffect(isDragging && lastRawSteps < 0
                         ? 1.0 + min(CGFloat(abs(lastRawSteps)) * 0.08, 0.7) : 1.0)
                     .animation(.spring(response: 0.1, dampingFraction: 0.7), value: lastRawSteps)
@@ -192,12 +196,13 @@ struct SwipeValueControl: View {
                 .foregroundStyle(Color.textPrimary)
                 .scaleEffect(milestoneFlash ? 1.15 : 1.0)
                 .animation(.spring(response: 0.12, dampingFraction: 0.5), value: milestoneFlash)
+                .offset(x: hintOffset)
                 .frame(minWidth: isDragging ? 72 : 0)
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: isDragging ? 10 : 11, weight: .semibold))
                     .foregroundStyle(Color.textFaint)
-                    .opacity(isDragging ? (lastRawSteps >= 0 ? 0.9 : 0.2) : 0.32)
+                    .opacity(isDragging ? (lastRawSteps >= 0 ? 0.9 : 0.2) : 0.52)
                     .scaleEffect(isDragging && lastRawSteps > 0
                         ? 1.0 + min(CGFloat(abs(lastRawSteps)) * 0.08, 0.7) : 1.0)
                     .animation(.spring(response: 0.1, dampingFraction: 0.7), value: lastRawSteps)
@@ -227,6 +232,18 @@ struct SwipeValueControl: View {
         .gesture(swipeGesture)
         .onChange(of: gestureActive) { _, active in
             if !active { commitAndReset() }
+        }
+        .onChange(of: hintToken) { _, token in
+            guard token != nil else { return }
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(400))
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) { hintOffset = -6 }
+                try? await Task.sleep(for: .milliseconds(300))
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) { hintOffset = 6 }
+                try? await Task.sleep(for: .milliseconds(300))
+                withAnimation(.spring(response: 0.36, dampingFraction: 0.82)) { hintOffset = 0 }
+                UISelectionFeedbackGenerator().selectionChanged()
+            }
         }
         .onTapGesture {
             guard !isEditing else { return }

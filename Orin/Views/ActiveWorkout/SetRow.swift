@@ -74,6 +74,8 @@ struct SetRow: View {
     @State private var badgeScale: CGFloat = 0
     @State private var showDelta = false
     @State private var deltaFadeTask: Task<Void, Never>? = nil
+    @State private var pulseOpacity: Double = 0
+    @State private var logFlash: Bool = false
 
     private var isShowingPlaceholder: Bool {
         guard let _ = placeholderDisplayText else { return false }
@@ -178,21 +180,32 @@ struct SetRow: View {
                     }
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
+                    .contentTransition(.symbolEffect(.replace))
+                    .animation(.easeOut(duration: 0.10), value: isLogged)
             }
             .buttonStyle(.plain)
         }
+        .brightness(logFlash ? 0.06 : 0)
+        .animation(.easeOut(duration: 0.10), value: logFlash)
         .scaleEffect(rowScale)
         .padding(.vertical, isLogged ? 3 : isFocused ? 7 : 4)
         .padding(.leading, Spacing.xs)
         .padding(.trailing, Spacing.sm)
         .background(rowBackground)
         .overlay {
+            // Living highlight — very slow breathe (5–7%) on the focused row only
+            if isFocused {
+                rowShape.fill(accentColor.opacity(pulseOpacity))
+                    .allowsHitTesting(false)
+            }
+        }
+        .overlay {
             if isLogged || isFocused {
                 rowShape
                     .strokeBorder(
                         isLogged
                             ? Color.white.opacity(0.025)
-                            : accentColor.opacity(0.26),
+                            : accentColor.opacity(0.42),
                         lineWidth: 1
                     )
             }
@@ -230,8 +243,11 @@ struct SetRow: View {
             }
         }
         .onAppear {
-            // If this set was already a PR (e.g. view re-mounted), show badge immediately
             if isPR { badgeScale = 1.0 }
+            if isFocused { startPulse() }
+        }
+        .onChange(of: isFocused) { _, focused in
+            if focused { startPulse() } else { stopPulse() }
         }
         .onChange(of: justLogged) { _, isJust in
             deltaFadeTask?.cancel()
@@ -241,6 +257,14 @@ struct SetRow: View {
                     try? await Task.sleep(for: .milliseconds(2500))
                     guard !Task.isCancelled else { return }
                     withAnimation(Motion.standardSpring) { showDelta = false }
+                }
+                // Immediate ack: brightness flash + micro-scale dip
+                withAnimation(.easeOut(duration: 0.07)) { logFlash = true }
+                withAnimation(.easeOut(duration: 0.08)) { rowScale = 0.99 }
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(100))
+                    withAnimation(.easeOut(duration: 0.14)) { logFlash = false }
+                    withAnimation(Motion.standardSpring) { rowScale = 1.0 }
                 }
             } else {
                 withAnimation(Motion.standardSpring) { showDelta = false }
@@ -263,6 +287,18 @@ struct SetRow: View {
                     rowScale = 1.0
                 }
             }
+        }
+    }
+
+    private func startPulse() {
+        withAnimation(.easeInOut(duration: 2.2).repeatForever(autoreverses: true)) {
+            pulseOpacity = 0.07
+        }
+    }
+
+    private func stopPulse() {
+        withAnimation(.easeInOut(duration: 0.4)) {
+            pulseOpacity = 0
         }
     }
 
@@ -365,7 +401,7 @@ struct SetRow: View {
                 isLogged
                 ? Color.white.opacity(0.04)
                 : isFocused
-                    ? accentColor.opacity(0.28)
+                    ? accentColor.opacity(0.34)
                     : .clear
             )
     }

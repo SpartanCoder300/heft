@@ -12,7 +12,12 @@ struct ActiveWorkoutCommandPanel: View {
     let onDismiss: () -> Void
 
     @AppStorage("hasUsedSwipeControl") private var hasUsedSwipeControl: Bool = false
+    /// Counts how many sessions have shown the hint. Stops at 3.
+    @AppStorage("Orin.swipeHintSessionCount") private var swipeHintSessionCount: Int = 0
     @State private var isKeyboardVisible = false
+    @State private var hintToken: UUID? = nil
+    /// Prevents the hint from firing more than once within the same session.
+    @State private var didShowHintThisSession: Bool = false
 
     private let horizontalInset: CGFloat = Spacing.lg
 
@@ -111,7 +116,8 @@ struct ActiveWorkoutCommandPanel: View {
                             isInteger: false,
                             firstTapDefault: exercise.startingWeight,
                             milestones: weightMilestones(for: exercise.equipmentType),
-                            onInteractionStart: { vm.requestRevealCurrentFocus(); hasUsedSwipeControl = true }
+                            onInteractionStart: { vm.requestRevealCurrentFocus(); hasUsedSwipeControl = true },
+                            hintToken: hintToken
                         )
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
 
@@ -141,7 +147,8 @@ struct ActiveWorkoutCommandPanel: View {
                             maxValue: 600,
                             isInteger: true,
                             firstTapDefault: 30,
-                            onInteractionStart: { vm.requestRevealCurrentFocus(); hasUsedSwipeControl = true }
+                            onInteractionStart: { vm.requestRevealCurrentFocus(); hasUsedSwipeControl = true },
+                            hintToken: hintToken
                         )
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else {
@@ -167,7 +174,8 @@ struct ActiveWorkoutCommandPanel: View {
                             maxValue: 50,
                             isInteger: true,
                             firstTapDefault: 5,
-                            onInteractionStart: { vm.requestRevealCurrentFocus(); hasUsedSwipeControl = true }
+                            onInteractionStart: { vm.requestRevealCurrentFocus(); hasUsedSwipeControl = true },
+                            hintToken: hintToken
                         )
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
@@ -185,31 +193,32 @@ struct ActiveWorkoutCommandPanel: View {
                 Divider()
 
                 Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     UIApplication.shared.sendAction(
                         #selector(UIResponder.resignFirstResponder),
                         to: nil, from: nil, for: nil
                     )
                     vm.logFocusedSet()
                 } label: {
-                    VStack(spacing: 2) {
-                        HStack(spacing: Spacing.xs) {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 15, weight: .bold))
-                            Text("Log Set")
-                                .font(.system(size: 16, weight: .semibold))
-                        }
+                    HStack(spacing: Spacing.xs) {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 15, weight: .bold))
+                        Text("Log Set")
+                            .font(.system(size: 16, weight: .semibold))
                     }
                     .foregroundStyle(theme.accentColor)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(theme.accentColor.opacity(0.10))
                     .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(LogSetButtonStyle())
                 .frame(height: 60)
             }
             .glassEffect(.regular, in: RoundedRectangle(cornerRadius: Radius.large, style: .continuous))
             .modifier(CommandPanelElevation(cornerRadius: Radius.large))
             .padding(.horizontal, horizontalInset)
             .padding(.bottom, Spacing.md)
+            .onAppear { triggerHintIfNeeded() }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
                 withAnimation(.easeInOut(duration: 0.2)) { isKeyboardVisible = true }
             }
@@ -227,9 +236,24 @@ struct ActiveWorkoutCommandPanel: View {
                 .padding(.bottom, Spacing.md)
         }
     }
+
+    private func triggerHintIfNeeded() {
+        guard swipeHintSessionCount < 3, !didShowHintThisSession else { return }
+        didShowHintThisSession = true
+        swipeHintSessionCount += 1
+        hintToken = UUID()
+    }
 }
 
 // MARK: - Helpers
+
+private struct LogSetButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .animation(.spring(response: 0.14, dampingFraction: 0.6), value: configuration.isPressed)
+    }
+}
 
 private struct CommandPanelElevation: ViewModifier {
     let cornerRadius: CGFloat
