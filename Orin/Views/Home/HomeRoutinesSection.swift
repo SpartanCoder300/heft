@@ -13,31 +13,22 @@ struct HomeRoutinesSection: View {
     let onStartEmpty: () -> Void
 
     var body: some View {
+        let nonFeatured = routines.filter { $0.id != featured?.routineID }
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            SectionHeader(title: "Routines", detail: routines.isEmpty ? nil : "Tap to start a workout")
-
             if routines.isEmpty {
                 EmptyRoutinesPrompt(onTap: onNew)
             } else {
-                // Featured card appears above the full list when a suggestion exists
-                if let featured,
-                   let featuredRoutine = routines.first(where: { $0.id == featured.routineID }) {
-                    FeaturedRoutineCard(
-                        routine: featuredRoutine,
-                        suggestion: featured,
-                        avgMinutes: avgMinutes[featured.routineID],
-                        onTap: { onStart(featured.routineID) },
-                        onEdit: { onEdit(featuredRoutine) }
-                    )
-                }
-
-                ForEach(routines.filter { $0.id != featured?.routineID }) { routine in
-                    RoutineListRow(
-                        routine: routine,
-                        avgMinutes: avgMinutes[routine.id],
-                        onTap: { onStart(routine.id) },
-                        onEdit: { onEdit(routine) }
-                    )
+                if !nonFeatured.isEmpty {
+                    SectionHeader(title: featured != nil ? "Other routines" : "Routines")
+                    ForEach(nonFeatured) { routine in
+                        RoutineListRow(
+                            routine: routine,
+                            avgMinutes: avgMinutes[routine.id],
+                            onTap: { onStart(routine.id) },
+                            onEdit: { onEdit(routine) }
+                        )
+                    }
+                    .opacity(0.72)
                 }
                 NewRoutineCard(action: onNew)
             }

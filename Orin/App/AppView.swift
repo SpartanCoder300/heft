@@ -102,6 +102,7 @@ struct AppView: View {
         .task {
             guard !isRunningInPreview else { return }
             ExerciseSeeder.seedIfNeeded(in: modelContext)
+            RoutineSeeder.seedStarterRoutinesIfNeeded(in: modelContext)
             appState.workout.onLaunch(modelContext: modelContext)
         }
         .onChange(of: scenePhase) { _, newPhase in

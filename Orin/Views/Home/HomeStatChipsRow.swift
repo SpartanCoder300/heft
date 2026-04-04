@@ -42,7 +42,7 @@ struct StatChip: View {
             // ── Content ──────────────────────────────────────────────
             VStack(alignment: .leading, spacing: 3) {
                 Text(value)
-                    .font(.system(size: 23, weight: .bold, design: .rounded))
+                    .font(.system(size: 20, weight: .bold, design: .rounded))
                     .foregroundStyle(isAccented ? iconColor : .primary)
                     .monospacedDigit()
                 Text(label)
@@ -55,7 +55,7 @@ struct StatChip: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(minHeight: 92, alignment: .leading)
+        .frame(minHeight: 76, alignment: .leading)
         .background {
             RoundedRectangle(cornerRadius: Radius.medium, style: .continuous)
                 .fill(cardMaterial)

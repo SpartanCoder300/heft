@@ -41,6 +41,7 @@
 		20C237082F746D2300D5763E /* ActiveWorkoutService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236C62F746D2300D5763E /* ActiveWorkoutService.swift */; };
 		20C237092F746D2300D5763E /* ExerciseFrecencyActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236C72F746D2300D5763E /* ExerciseFrecencyActor.swift */; };
 		20C2370A2F746D2300D5763E /* ExerciseSeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236C82F746D2300D5763E /* ExerciseSeeder.swift */; };
+		3F09140969524567A3DCB51E /* RoutineSeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAAC5CAD25E444D0BEB5B92F /* RoutineSeeder.swift */; };
 		20C2370B2F746D2300D5763E /* HomeStatsActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236C92F746D2300D5763E /* HomeStatsActor.swift */; };
 		20C2370D2F746D2300D5763E /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236CB2F746D2300D5763E /* PersistenceController.swift */; };
 		20C2370E2F746D2300D5763E /* RestTimerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C236CC2F746D2300D5763E /* RestTimerState.swift */; };
@@ -169,6 +170,7 @@
 		20C236C62F746D2300D5763E /* ActiveWorkoutService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveWorkoutService.swift; sourceTree = "<group>"; };
 		20C236C72F746D2300D5763E /* ExerciseFrecencyActor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseFrecencyActor.swift; sourceTree = "<group>"; };
 		20C236C82F746D2300D5763E /* ExerciseSeeder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseSeeder.swift; sourceTree = "<group>"; };
+		FAAC5CAD25E444D0BEB5B92F /* RoutineSeeder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutineSeeder.swift; sourceTree = "<group>"; };
 		20C236C92F746D2300D5763E /* HomeStatsActor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeStatsActor.swift; sourceTree = "<group>"; };
 		20C236CB2F746D2300D5763E /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
 		20C236CC2F746D2300D5763E /* RestTimerState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestTimerState.swift; sourceTree = "<group>"; };
@@ -417,6 +419,7 @@
 				20C236C62F746D2300D5763E /* ActiveWorkoutService.swift */,
 				20C236C72F746D2300D5763E /* ExerciseFrecencyActor.swift */,
 				20C236C82F746D2300D5763E /* ExerciseSeeder.swift */,
+				FAAC5CAD25E444D0BEB5B92F /* RoutineSeeder.swift */,
 				20C236C92F746D2300D5763E /* HomeStatsActor.swift */,
 				20C236CB2F746D2300D5763E /* PersistenceController.swift */,
 				20C236CC2F746D2300D5763E /* RestTimerState.swift */,
@@ -737,6 +740,7 @@
 				20C237082F746D2300D5763E /* ActiveWorkoutService.swift in Sources */,
 				20C237092F746D2300D5763E /* ExerciseFrecencyActor.swift in Sources */,
 				20C2370A2F746D2300D5763E /* ExerciseSeeder.swift in Sources */,
+				3F09140969524567A3DCB51E /* RoutineSeeder.swift in Sources */,
 				20C2370B2F746D2300D5763E /* HomeStatsActor.swift in Sources */,
 				20C2370D2F746D2300D5763E /* PersistenceController.swift in Sources */,
 				20C2370E2F746D2300D5763E /* RestTimerState.swift in Sources */,

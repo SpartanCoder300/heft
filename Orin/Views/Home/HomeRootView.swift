@@ -31,6 +31,20 @@ struct HomeRootView: View {
         return sessions.filter { $0.routineTemplateId == rid && $0.completedAt != nil }.count + 1
     }
 
+    /// Returns the featured suggestion to show. Falls back to the first available
+    /// routine (e.g. a starter) when the stats algorithm hasn't enough history yet.
+    private var effectiveFeatured: FeaturedRoutineSuggestion? {
+        if let f = stats.featuredRoutine { return f }
+        guard let first = sortedRoutines.first else { return nil }
+        return FeaturedRoutineSuggestion(
+            routineID: first.id,
+            routineName: first.name,
+            exerciseCount: first.entries.count,
+            daysSinceLast: 0,
+            avgIntervalDays: 1
+        )
+    }
+
     private var routineAvgMinutes: [UUID: Int] {
         var byRoutine: [UUID: [TimeInterval]] = [:]
         for session in sessions {
@@ -58,12 +72,30 @@ struct HomeRootView: View {
                 } else {
                     HomeGreetingView()
 
+                    // Dominant featured card — sits above stats so it's the first decision
+                    if let featured = effectiveFeatured,
+                       let featuredRoutine = sortedRoutines.first(where: { $0.id == featured.routineID }) {
+                        FeaturedRoutineCard(
+                            routine: featuredRoutine,
+                            suggestion: featured,
+                            avgMinutes: routineAvgMinutes[featured.routineID],
+                            onTap: {
+                                appState.workout.startWorkout(routineID: featured.routineID, modelContext: modelContext)
+                            },
+                            onEdit: {
+                                routineBuilderRequest = RoutineBuilderRequest(routine: featuredRoutine)
+                            }
+                        )
+                    }
+
+                    // Stats recede — they're context, not the primary action
                     HomeStatChipsRow(stats: stats)
+                        .opacity(0.58)
 
                     HomeRoutinesSection(
                         routines: sortedRoutines,
                         avgMinutes: routineAvgMinutes,
-                        featured: stats.featuredRoutine,
+                        featured: effectiveFeatured,
                         onStart: { id in
                             appState.workout.startWorkout(routineID: id, modelContext: modelContext)
                         },

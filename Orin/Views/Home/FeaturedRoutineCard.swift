@@ -10,6 +10,7 @@ struct FeaturedRoutineCard: View {
     let onTap: () -> Void
     let onEdit: () -> Void
 
+    @Environment(\.OrinTheme) private var theme
     @Environment(\.OrinCardMaterial) private var cardMaterial
     @State private var hapticTrigger = false
 
@@ -18,46 +19,49 @@ struct FeaturedRoutineCard: View {
             hapticTrigger.toggle()
             onTap()
         } label: {
-            HStack(alignment: .center, spacing: Spacing.md) {
-                VStack(alignment: .leading, spacing: Spacing.xs) {
-                    Text("Up Next")
-                        .font(Typography.caption.weight(.semibold))
-                        .foregroundStyle(Color.textMuted)
-                        .textCase(.uppercase)
-
-                    Text(suggestion.routineName)
-                        .font(.title3)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.textPrimary)
-                        .lineLimit(2)
-
-                    if !routine.muscleGroupSummary.isEmpty {
-                        Text(routine.muscleGroupSummary)
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                HStack(alignment: .top, spacing: Spacing.md) {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(suggestion.routineName)
+                            .font(.system(size: 26, weight: .bold, design: .rounded))
+                            .foregroundStyle(Color.textPrimary)
+                            .lineLimit(2)
+                        Text(summaryLine)
                             .font(Typography.caption)
-                            .foregroundStyle(Color.textMuted)
+                            .foregroundStyle(Color.white.opacity(0.52))
                             .lineLimit(1)
                     }
 
-                    Text(summaryLine)
-                        .font(Typography.caption)
-                        .foregroundStyle(Color.textMuted)
-                        .lineLimit(1)
+                    Spacer(minLength: Spacing.sm)
                 }
 
-                Spacer(minLength: Spacing.sm)
-
-                Image(systemName: "play.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(.secondary)
+                Text("Start Workout")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(.black.opacity(0.85))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(theme.accentColor, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
-            .padding(.horizontal, Spacing.lg)
-            .padding(.vertical, Spacing.lg)
+            .padding(Spacing.lg)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(cardMaterial, in: RoundedRectangle(cornerRadius: Radius.medium, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.medium, style: .continuous)
-                    .strokeBorder(.white.opacity(0.13), lineWidth: 1)
-            )
+            .background {
+                RoundedRectangle(cornerRadius: Radius.large, style: .continuous)
+                    .fill(cardMaterial)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: Radius.large, style: .continuous)
+                            .fill(
+                                LinearGradient(
+                                    colors: [theme.accentColor.opacity(0.20), theme.accentColor.opacity(0.08)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                    }
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: Radius.large, style: .continuous)
+                    .strokeBorder(theme.accentColor.opacity(0.24), lineWidth: 1)
+            }
             .proGlass()
         }
         .buttonStyle(.plain)
@@ -70,15 +74,17 @@ struct FeaturedRoutineCard: View {
     }
 
     private var summaryLine: String {
-        var parts = ["\(suggestion.exerciseCount) exercises"]
+        var parts: [String] = []
+        if !routine.muscleGroupSummary.isEmpty {
+            parts.append(routine.muscleGroupSummary)
+        }
+        parts.append("\(suggestion.exerciseCount) exercises")
         if let avgMinutes {
             parts.append("\(avgMinutes) min avg")
         }
-        return parts.joined(separator: " • ")
+        return parts.joined(separator: " · ")
     }
 }
-
-// MARK: - RoutineTemplate helpers
 
 // MARK: - Previews
 
