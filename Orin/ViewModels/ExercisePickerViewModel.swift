@@ -33,6 +33,14 @@ final class ExercisePickerViewModel {
     /// Exercises added during this picker session — boosts them into recents immediately.
     var sessionAddedIDs: Set<UUID> = []
 
+    func toggleFilter(_ filter: PickerFilter) {
+        if selectedFilters.contains(filter) {
+            selectedFilters.remove(filter)
+        } else {
+            selectedFilters.insert(filter)
+        }
+    }
+
     // MARK: - Filtering / search
 
     /// Top-5 exercises by frecency score the user has actually used (score > 0).
