@@ -120,10 +120,10 @@ struct SetRow: View {
                         isLogged
                             ? Color.white.opacity(0.16)
                             : isShowingPlaceholder
-                                ? Color.white.opacity(0.32)
+                                ? Color.white.opacity(0.36)
                                 : isFocused
                                     ? Color.white.opacity(0.98)
-                                    : Color.white.opacity(0.46)
+                                    : Color.white.opacity(0.54)
                     )
                     .contentTransition(.numericText())
                     .animation(Motion.standardSpring, value: weightText)
@@ -164,7 +164,7 @@ struct SetRow: View {
                             ? Color.OrinGreen.opacity(0.82)
                             : isFocused
                                 ? accentColor.opacity(0.90)
-                                : Color.white.opacity(0.28)
+                                : Color.white.opacity(0.34)
                     )
                     .background {
                         if isLogged {

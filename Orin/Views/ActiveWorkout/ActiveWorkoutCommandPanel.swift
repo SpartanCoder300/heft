@@ -233,7 +233,7 @@ struct ActiveWorkoutCommandPanel: View {
                         let activeColor = isShowingLogSuccess ? Color.OrinGreen : theme.accentColor
                         buttonShape
                             // Base tint — barely perceptible surface fill
-                            .fill(activeColor.opacity(isShowingLogSuccess ? 0.05 : 0.03))
+                            .fill(activeColor.opacity(isShowingLogSuccess ? 0.05 : 0.04))
                             .overlay {
                                 // Top-edge highlight — light catching glass from above
                                 buttonShape.fill(
@@ -243,7 +243,7 @@ struct ActiveWorkoutCommandPanel: View {
                                             Color.clear
                                         ],
                                         startPoint: .top,
-                                        endPoint: UnitPoint(x: 0.5, y: 0.22)
+                                        endPoint: UnitPoint(x: 0.5, y: 0.10)
                                     )
                                 )
                                 .blur(radius: 6)
@@ -265,7 +265,7 @@ struct ActiveWorkoutCommandPanel: View {
                     }
                     .onAppear {
                         withAnimation(.easeOut(duration: 0.15)) {
-                            innerHighlightOpacity = 0.08
+                            innerHighlightOpacity = 0.07
                         }
                     }
                     .contentShape(Rectangle())

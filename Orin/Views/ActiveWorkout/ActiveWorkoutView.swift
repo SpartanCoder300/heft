@@ -428,21 +428,27 @@ private struct RestTimerBar: View {
 
     @State private var isShowingActions = false
     @State private var adjustTrigger = 0
-    @State private var skipTrigger   = 0
+    @State private var skipTrigger = 0
+    @State private var pulseScale: CGFloat = 1.0
+    @State private var countdownHapticCount = 0
 
     private let cardWidth: CGFloat = 136
     private let cardHeight: CGFloat = 54
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 0.25)) { context in
-            let now   = context.date
-            let phase = timer.tintColor(at: now)
-            let color = restPhaseColor(phase)
+            let now = context.date
+            let progress = timer.progress(at: now) ?? 1.0
+            let textColor = timerTextColor(progress: progress)
+            let remaining = timer.targetEndDate
+                .map { max(0, Int(ceil($0.timeIntervalSince(now)))) } ?? 0
+            let inFinalCountdown = remaining <= 5 && remaining > 0 && timer.isActive
 
             Button {
                 isShowingActions = true
             } label: {
-                timerContent(at: now, color: color)
+                timerContent(at: now, textColor: textColor, progress: progress)
+                    .scaleEffect(pulseScale)
                     .frame(width: cardWidth, height: cardHeight)
                     .contentShape(RoundedRectangle(cornerRadius: Radius.large, style: .continuous))
             }
@@ -453,17 +459,14 @@ private struct RestTimerBar: View {
                     .fill(.regularMaterial.opacity(0.12))
                     .overlay {
                         RoundedRectangle(cornerRadius: Radius.large, style: .continuous)
-                            .fill(color.opacity(timerCardTintOpacity(for: phase)))
+                            .fill(Color.OrinAmber.opacity(timerCardTintOpacity(progress: progress)))
                     }
             }
             .overlay {
                 RoundedRectangle(cornerRadius: Radius.large, style: .continuous)
                     .strokeBorder(
                         LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.18),
-                                Color.white.opacity(0.06)
-                            ],
+                            colors: [Color.white.opacity(0.18), Color.white.opacity(0.06)],
                             startPoint: .top,
                             endPoint: .bottom
                         ),
@@ -474,33 +477,41 @@ private struct RestTimerBar: View {
             .shadow(color: Color.black.opacity(0.10), radius: 4, y: 1)
             .sensoryFeedback(.selection, trigger: adjustTrigger)
             .sensoryFeedback(.impact(weight: .medium), trigger: skipTrigger)
-            .sensoryFeedback(.impact(weight: .heavy, intensity: 1.0),
-                             trigger: timer.pulseCount)
+            .sensoryFeedback(.impact(weight: .heavy, intensity: 1.0), trigger: timer.pulseCount)
+            .sensoryFeedback(.impact(weight: .light), trigger: countdownHapticCount)
+            .onChange(of: remaining) { _, newVal in
+                guard timer.isActive, [3, 2, 1].contains(newVal) else { return }
+                countdownHapticCount += 1
+            }
+            .onChange(of: inFinalCountdown) { _, active in
+                if active {
+                    withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                        pulseScale = 1.02
+                    }
+                } else {
+                    withAnimation(.spring(response: 0.3)) { pulseScale = 1.0 }
+                }
+            }
             .onChange(of: timer.pulseCount) { _, _ in
                 playRestCompleteSound()
+                withAnimation(.spring(response: 0.3)) { pulseScale = 1.0 }
             }
             .popover(isPresented: $isShowingActions, attachmentAnchor: .point(.bottom), arrowEdge: .top) {
                 RestTimerActionsSheet(
-                    onAdjust: { seconds in
-                        onAdjust(seconds)
-                        adjustTrigger += 1
-                    },
-                    onSkip: {
-                        onSkip()
-                        skipTrigger += 1
-                    }
+                    onAdjust: { seconds in onAdjust(seconds); adjustTrigger += 1 },
+                    onSkip: { onSkip(); skipTrigger += 1 }
                 )
             }
         }
     }
 
-    private func timerContent(at now: Date, color: Color) -> some View {
-        VStack(spacing: 2) {
+    private func timerContent(at now: Date, textColor: Color, progress: Double) -> some View {
+        let warmth = max(0.0, min(1.0, (0.30 - progress) / 0.30))
+        return VStack(spacing: 2) {
             HStack(spacing: 5) {
                 Image(systemName: "timer")
                     .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(color.opacity(0.72))
-
+                    .foregroundStyle(textColor.opacity(0.72))
                 Text("Rest")
                     .font(.system(size: 11, weight: .semibold, design: .rounded))
                     .tracking(0.3)
@@ -510,28 +521,39 @@ private struct RestTimerBar: View {
             Text(timer.remainingLabel(at: now) ?? "0:00")
                 .font(.system(size: 22, weight: .bold, design: .monospaced))
                 .monospacedDigit()
-                .foregroundStyle(color)
+                .foregroundStyle(textColor)
                 .contentTransition(.numericText(countsDown: true))
-                .shadow(color: color.opacity(0.18), radius: 6)
+                .shadow(color: textColor.opacity(0.12), radius: 6)
                 .padding(.top, -1)
 
+            // Track brightens slightly as urgency builds
             Capsule()
-                .fill(.white.opacity(0.14))
+                .fill(.white.opacity(0.12 + warmth * 0.08))
                 .overlay(alignment: .leading) {
                     Capsule()
-                        .fill(color)
-                        .frame(width: 76 * CGFloat(timer.progress(at: now) ?? 0))
+                        .fill(textColor)
+                        .frame(width: 76 * CGFloat(progress))
                 }
                 .frame(width: 76, height: 3)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private func timerCardTintOpacity(for phase: TimerTintPhase) -> Double {
-        switch phase {
-        case .calm:      0.06
-        case .readySoon: 0.10
-        }
+    /// Continuously interpolates white → OrinAmber.
+    /// Neutral until 30% remaining, then gradually warms.
+    private func timerTextColor(progress: Double) -> Color {
+        let warmth = max(0.0, min(1.0, (0.30 - progress) / 0.30))
+        return Color(
+            red:   1.0 + (0.961 - 1.0) * warmth,
+            green: 1.0 + (0.620 - 1.0) * warmth,
+            blue:  1.0 + (0.043 - 1.0) * warmth
+        ).opacity(0.88)
+    }
+
+    /// Background tint: barely present when calm, builds toward urgent.
+    private func timerCardTintOpacity(progress: Double) -> Double {
+        let warmth = max(0.0, min(1.0, (0.30 - progress) / 0.30))
+        return 0.03 + warmth * 0.07
     }
 }
 
@@ -613,14 +635,6 @@ private enum RestCompleteSound {
     }()
 }
 
-private func restPhaseColor(_ phase: TimerTintPhase) -> Color {
-    switch phase {
-    case .calm:
-        return Color.textPrimary.opacity(0.78)
-    case .readySoon:
-        return Color.OrinAmber
-    }
-}
 
 // MARK: - Empty Workout Prompt
 
