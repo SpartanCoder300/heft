@@ -21,7 +21,7 @@ struct FeaturedRoutineCard: View {
         } label: {
             VStack(alignment: .leading, spacing: Spacing.md) {
                 HStack(alignment: .top, spacing: Spacing.md) {
-                    VStack(alignment: .leading, spacing: 5) {
+                    VStack(alignment: .leading, spacing: 2) {
                         Text(suggestion.routineName)
                             .font(.system(size: 26, weight: .bold, design: .rounded))
                             .foregroundStyle(Color.textPrimary)
@@ -51,16 +51,27 @@ struct FeaturedRoutineCard: View {
                         RoundedRectangle(cornerRadius: Radius.large, style: .continuous)
                             .fill(
                                 LinearGradient(
-                                    colors: [theme.accentColor.opacity(0.20), theme.accentColor.opacity(0.08)],
+                                    colors: [theme.accentColor.opacity(0.22), theme.accentColor.opacity(0.10)],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
+                                )
+                            )
+                    }
+                    .overlay {
+                        // Inner lift — simulates light hitting the top surface
+                        RoundedRectangle(cornerRadius: Radius.large, style: .continuous)
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.white.opacity(0.06), Color.clear],
+                                    startPoint: .top,
+                                    endPoint: .center
                                 )
                             )
                     }
             }
             .overlay {
                 RoundedRectangle(cornerRadius: Radius.large, style: .continuous)
-                    .strokeBorder(theme.accentColor.opacity(0.24), lineWidth: 1)
+                    .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
             }
             .proGlass()
         }

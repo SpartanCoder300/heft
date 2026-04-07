@@ -34,20 +34,20 @@ struct StatChip: View {
         ZStack(alignment: .leading) {
             // ── Watermark ────────────────────────────────────────────
             Image(systemName: icon)
-                .font(.system(size: 46, weight: .bold))
-                .foregroundStyle(iconColor.opacity(isAccented ? 0.15 : isHighlighted ? 0.18 : 0.13))
+                .font(.system(size: 42, weight: .bold))
+                .foregroundStyle(iconColor.opacity(isAccented ? 0.26 : isHighlighted ? 0.30 : 0.24))
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
                 .offset(x: 8, y: 8)
 
             // ── Content ──────────────────────────────────────────────
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 1) {
                 Text(value)
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
-                    .foregroundStyle(isAccented ? iconColor : .primary)
+                    .font(.system(size: 20, weight: .semibold, design: .rounded))
+                    .foregroundStyle(isAccented ? iconColor : .white)
                     .monospacedDigit()
                 Text(label)
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(isAccented ? iconColor.opacity(0.7) : isHighlighted ? iconColor.opacity(0.6) : Color.textFaint)
+                    .foregroundStyle(isAccented ? iconColor.opacity(0.80) : isHighlighted ? iconColor.opacity(0.78) : .white.opacity(0.55))
                     .textCase(.uppercase)
                     .tracking(0.45)
             }
