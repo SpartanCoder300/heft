@@ -209,6 +209,16 @@ struct ActiveWorkoutCommandPanel: View {
                         triggerLogSuccess()
                     }
                 } label: {
+                    let buttonShape = UnevenRoundedRectangle(
+                        cornerRadii: .init(
+                            topLeading: 0,
+                            bottomLeading: Radius.large,
+                            bottomTrailing: Radius.large,
+                            topTrailing: 0
+                        ),
+                        style: .continuous
+                    )
+
                     HStack(spacing: Spacing.xs) {
                         Image(systemName: isShowingLogSuccess ? "checkmark.circle.fill" : "checkmark")
                             .font(.system(size: 15, weight: .bold))
@@ -219,16 +229,12 @@ struct ActiveWorkoutCommandPanel: View {
                     .foregroundStyle(isShowingLogSuccess ? Color.OrinGreen : theme.accentColor)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background {
-                        UnevenRoundedRectangle(
-                            cornerRadii: .init(
-                                topLeading: 0,
-                                bottomLeading: Radius.large,
-                                bottomTrailing: Radius.large,
-                                topTrailing: 0
-                            ),
-                            style: .continuous
-                        )
-                        .fill((isShowingLogSuccess ? Color.OrinGreen : theme.accentColor).opacity(isShowingLogSuccess ? 0.26 : 0.22))
+                        buttonShape
+                            .fill((isShowingLogSuccess ? Color.OrinGreen : theme.accentColor).opacity(isShowingLogSuccess ? 0.05 : 0.03))
+                            .overlay {
+                                buttonShape
+                                    .strokeBorder((isShowingLogSuccess ? Color.OrinGreen : theme.accentColor).opacity(isShowingLogSuccess ? 0.14 : 0.10), lineWidth: 1)
+                            }
                     }
                     .contentShape(Rectangle())
                     .animation(Motion.standardSpring, value: isShowingLogSuccess)
