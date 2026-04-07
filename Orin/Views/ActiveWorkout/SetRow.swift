@@ -372,15 +372,7 @@ struct SetRow: View {
     }
 
     private var rowShape: some InsettableShape {
-        UnevenRoundedRectangle(
-            cornerRadii: .init(
-                topLeading: isFirstInCard ? 8 : 0,
-                bottomLeading: isLastInCard ? 8 : 0,
-                bottomTrailing: isLastInCard ? 8 : 0,
-                topTrailing: isFirstInCard ? 8 : 0
-            ),
-            style: .continuous
-        )
+        Rectangle()
     }
 
     private var rowBackground: some View {
