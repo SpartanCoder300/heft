@@ -14,28 +14,81 @@ struct ThemedBackgroundModifier: ViewModifier {
                 ZStack {
                     theme.backgroundColor
 
-                    EllipticalGradient(
-                        colors: [
-                            theme.accentColor.opacity(0.16),
-                            theme.accentColor.opacity(0.08),
-                            Color.clear
-                        ],
-                        center: UnitPoint(x: 0.5, y: -0.10),
-                        startRadiusFraction: 0,
-                        endRadiusFraction: 0.50
-                    )
-                    .mask {
-                        LinearGradient(
-                            stops: [
-                                .init(color: .white, location: 0),
-                                .init(color: .white.opacity(0.82), location: 0.18),
-                                .init(color: .white.opacity(0.36), location: 0.34),
-                                .init(color: .clear, location: 0.50)
+                    // Gradient lighting — blurred to eliminate banding
+                    Group {
+                        // Ambient accent lift
+                        EllipticalGradient(
+                            colors: [
+                                theme.accentColor.opacity(0.13),
+                                theme.accentColor.opacity(0.05),
+                                Color.clear
                             ],
-                            startPoint: .top,
-                            endPoint: .bottom
+                            center: UnitPoint(x: 0.5, y: -0.15),
+                            startRadiusFraction: 0,
+                            endRadiusFraction: 0.38
                         )
+                        .mask {
+                            LinearGradient(
+                                stops: [
+                                    .init(color: .white, location: 0),
+                                    .init(color: .white.opacity(0.60), location: 0.12),
+                                    .init(color: .white.opacity(0.18), location: 0.24),
+                                    .init(color: .clear, location: 0.34)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        }
+
+                        // Depth lift — soft brightening at top-center
+                        EllipticalGradient(
+                            colors: [Color.white.opacity(0.03), Color.clear],
+                            center: UnitPoint(x: 0.5, y: 0.0),
+                            startRadiusFraction: 0,
+                            endRadiusFraction: 0.18
+                        )
+
+                        // Micro indigo tint — breaks single-hue flatness
+                        EllipticalGradient(
+                            colors: [Color.indigo.opacity(0.05), Color.clear],
+                            center: UnitPoint(x: 0.35, y: -0.05),
+                            startRadiusFraction: 0,
+                            endRadiusFraction: 0.22
+                        )
+                        .mask {
+                            LinearGradient(
+                                stops: [
+                                    .init(color: .white, location: 0),
+                                    .init(color: .clear, location: 0.20)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        }
+
+                        // Edge vignette — center lifts, sides recede
+                        LinearGradient(
+                            colors: [
+                                Color.black.opacity(0.22),
+                                Color.clear,
+                                Color.clear,
+                                Color.black.opacity(0.22)
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                        .mask {
+                            LinearGradient(
+                                stops: [
+                                    .init(color: .white, location: 0),
+                                    .init(color: .clear, location: 0.28)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        }
                     }
+                    .blur(radius: 32)
 
                     LinearGradient(
                         stops: [

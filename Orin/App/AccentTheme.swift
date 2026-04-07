@@ -13,7 +13,7 @@ enum AccentTheme: String, CaseIterable, Identifiable {
         switch self {
         case .midnight: "Midnight"
         case .graphite: "Graphite"
-        case .ember:    "Copper"
+        case .ember:    "Bronze"
         }
     }
 
@@ -38,8 +38,8 @@ enum AccentTheme: String, CaseIterable, Identifiable {
     var accentRGB: (r: Double, g: Double, b: Double) {
         switch self {
         case .midnight: return (0.290, 0.482, 0.800) // #4A7BCC steel navy
-        case .graphite: return (0.498, 0.714, 0.761) // #7FB6C2 washed cyan
-        case .ember:    return (0.722, 0.455, 0.196) // #B87432 burnished copper
+        case .graphite: return (0.700, 0.760, 0.800) // #B3C2CC cool gray, slight blue bias
+        case .ember:    return (0.720, 0.480, 0.260) // #B77A42 bronze
         }
     }
 
