@@ -338,6 +338,37 @@
 			path = Library;
 			sourceTree = "<group>";
 		};
+		20E100001234567800ABCDEF /* Exercise */ = {
+			isa = PBXGroup;
+			children = (
+				20C236E52F746D2300D5763E /* ExerciseEditorView.swift */,
+				20C236E62F746D2300D5763E /* ExercisePicker.swift */,
+				20C2372D2F74B34F00D5763E /* HighlightedText.swift */,
+				20C237352F74B34F00D5763E /* LibraryRow.swift */,
+			);
+			path = Exercise;
+			sourceTree = "<group>";
+		};
+		20E100011234567800ABCDEF /* Routines */ = {
+			isa = PBXGroup;
+			children = (
+				20C2372C2F74B34F00D5763E /* ExerciseConfigSheet.swift */,
+				20C236E72F746D2300D5763E /* RoutineBuilderView.swift */,
+			);
+			path = Routines;
+			sourceTree = "<group>";
+		};
+		20E100021234567800ABCDEF /* WorkoutSummary */ = {
+			isa = PBXGroup;
+			children = (
+				20C2374C2F74B34F00D5763E /* SummaryExerciseCard.swift */,
+				20C2374B2F74B34F00D5763E /* SummaryPRBadge.swift */,
+				20C2374A2F74B34F00D5763E /* SummaryStatChip.swift */,
+				20C236E92F746D2300D5763E /* WorkoutSummaryView.swift */,
+			);
+			path = WorkoutSummary;
+			sourceTree = "<group>";
+		};
 		20A10DD62F781E0F0053B465 /* Analytics */ = {
 			isa = PBXGroup;
 			children = (
@@ -497,19 +528,12 @@
 				20A10DD42F7815A50053B465 /* Library */,
 				20A10DCF2F78151E0053B465 /* Progress */,
 				20C236DA2F746D2300D5763E /* ActiveWorkout */,
+				20E100001234567800ABCDEF /* Exercise */,
 				20C236DD2F746D2300D5763E /* History */,
 				20C236E42F746D2300D5763E /* Home */,
-				20C2372C2F74B34F00D5763E /* ExerciseConfigSheet.swift */,
-				20C236E52F746D2300D5763E /* ExerciseEditorView.swift */,
-				20C236E62F746D2300D5763E /* ExercisePicker.swift */,
-				20C2372D2F74B34F00D5763E /* HighlightedText.swift */,
-				20C237352F74B34F00D5763E /* LibraryRow.swift */,
-				20C236E72F746D2300D5763E /* RoutineBuilderView.swift */,
+				20E100011234567800ABCDEF /* Routines */,
 				20C236E82F746D2300D5763E /* SettingsRootView.swift */,
-				20C2374A2F74B34F00D5763E /* SummaryStatChip.swift */,
-				20C2374B2F74B34F00D5763E /* SummaryPRBadge.swift */,
-				20C2374C2F74B34F00D5763E /* SummaryExerciseCard.swift */,
-				20C236E92F746D2300D5763E /* WorkoutSummaryView.swift */,
+				20E100021234567800ABCDEF /* WorkoutSummary */,
 			);
 			path = Views;
 			sourceTree = "<group>";
