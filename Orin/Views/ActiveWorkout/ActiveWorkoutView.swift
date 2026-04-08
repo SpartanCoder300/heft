@@ -134,7 +134,7 @@ struct ActiveWorkoutView: View {
                         )
                         .padding(.horizontal, Spacing.md)
                         .padding(.vertical, Spacing.sm)
-                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .transition(.move(edge: .top).combined(with: .opacity).combined(with: .scale(scale: 0.94, anchor: .top)))
                     }
                 }
                 .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -496,6 +496,7 @@ private struct RestTimerBar: View {
                 playRestCompleteSound()
                 withAnimation(.spring(response: 0.3)) { pulseScale = 1.0 }
             }
+            .onDisappear { pulseScale = 1.0 }
             .popover(isPresented: $isShowingActions, attachmentAnchor: .point(.bottom), arrowEdge: .top) {
                 RestTimerActionsSheet(
                     onAdjust: { seconds in onAdjust(seconds); adjustTrigger += 1 },

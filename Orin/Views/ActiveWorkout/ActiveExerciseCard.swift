@@ -14,15 +14,16 @@ struct ActiveExerciseCard: View {
     @State private var showingRemoveConfirm = false
     @State private var editingDefinition: ExerciseDefinition? = nil
     @State private var isShowingHistory = false
+    @State private var prefetchedDefinition: ExerciseDefinition? = nil
 
     private var exercise: ActiveWorkoutViewModel.DraftExercise? {
         guard vm.draftExercises.indices.contains(exerciseIndex) else { return nil }
         return vm.draftExercises[exerciseIndex]
     }
 
+    @ViewBuilder
     var body: some View {
-        guard let exercise else { return AnyView(EmptyView()) }
-        return AnyView(cardBody(exercise: exercise))
+        if let exercise { cardBody(exercise: exercise) }
     }
 
     @ViewBuilder
@@ -43,17 +44,7 @@ struct ActiveExerciseCard: View {
                     }
 
                     Button {
-                        if let definitionID = exercise.exerciseDefinitionID {
-                            let descriptor = FetchDescriptor<ExerciseDefinition>(predicate: #Predicate { $0.id == definitionID })
-                            editingDefinition = (try? modelContext.fetch(descriptor))?.first
-                        } else if let lineageID = exercise.exerciseLineageID {
-                            let descriptor = FetchDescriptor<ExerciseDefinition>(predicate: #Predicate { $0.id == lineageID })
-                            editingDefinition = (try? modelContext.fetch(descriptor))?.first
-                        } else {
-                            let name = exercise.exerciseName
-                            let descriptor = FetchDescriptor<ExerciseDefinition>(predicate: #Predicate { $0.name == name })
-                            editingDefinition = (try? modelContext.fetch(descriptor))?.first
-                        }
+                        editingDefinition = prefetchedDefinition
                     } label: {
                         Label("Edit Exercise", systemImage: "pencil")
                     }
@@ -190,6 +181,19 @@ struct ActiveExerciseCard: View {
         .sheet(isPresented: $isShowingHistory) {
             ExerciseHistoryView(exerciseName: exercise.exerciseName, exerciseLineageID: exercise.exerciseLineageID)
                 .environment(\.OrinCardMaterial, .regularMaterial)
+        }
+        .task(id: exerciseIndex) {
+            if let definitionID = exercise.exerciseDefinitionID {
+                let descriptor = FetchDescriptor<ExerciseDefinition>(predicate: #Predicate { $0.id == definitionID })
+                prefetchedDefinition = (try? modelContext.fetch(descriptor))?.first
+            } else if let lineageID = exercise.exerciseLineageID {
+                let descriptor = FetchDescriptor<ExerciseDefinition>(predicate: #Predicate { $0.id == lineageID })
+                prefetchedDefinition = (try? modelContext.fetch(descriptor))?.first
+            } else {
+                let name = exercise.exerciseName
+                let descriptor = FetchDescriptor<ExerciseDefinition>(predicate: #Predicate { $0.name == name })
+                prefetchedDefinition = (try? modelContext.fetch(descriptor))?.first
+            }
         }
     }
 

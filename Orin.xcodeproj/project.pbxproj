@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		202D9E862F85533800FC79C9 /* PRBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 202D9E852F85533800FC79C9 /* PRBadge.swift */; };
+		202D9E9D2F85E2C600FC79C9 /* SwipeTuningManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 202D9E9B2F85E2C600FC79C9 /* SwipeTuningManager.swift */; };
+		202D9E9E2F85E2C600FC79C9 /* SwipeTuningConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 202D9E9A2F85E2C600FC79C9 /* SwipeTuningConfig.swift */; };
+		202D9E9F2F85E2C600FC79C9 /* SwipeTunerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 202D9E992F85E2C600FC79C9 /* SwipeTunerSheet.swift */; };
 		20A10DC82F7814980053B465 /* ProgressRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A10DC72F7814980053B465 /* ProgressRootView.swift */; };
 		20A10DD12F78158F0053B465 /* LibraryRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A10DD02F78158F0053B465 /* LibraryRootView.swift */; };
 		20A10DD72F781E0F0053B465 /* ProgressAnalyticsEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A10DD52F781E0F0053B465 /* ProgressAnalyticsEngine.swift */; };
@@ -135,6 +138,9 @@
 
 /* Begin PBXFileReference section */
 		202D9E852F85533800FC79C9 /* PRBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PRBadge.swift; sourceTree = "<group>"; };
+		202D9E992F85E2C600FC79C9 /* SwipeTunerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeTunerSheet.swift; sourceTree = "<group>"; };
+		202D9E9A2F85E2C600FC79C9 /* SwipeTuningConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeTuningConfig.swift; sourceTree = "<group>"; };
+		202D9E9B2F85E2C600FC79C9 /* SwipeTuningManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeTuningManager.swift; sourceTree = "<group>"; };
 		205CFF5F2F69D7E200FFF88C /* Orin.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Orin.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		205CFF702F69D7E400FFF88C /* OrinTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OrinTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		205CFF7A2F69D7E400FFF88C /* OrinUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OrinUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -291,6 +297,16 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		202D9E9C2F85E2C600FC79C9 /* Debug */ = {
+			isa = PBXGroup;
+			children = (
+				202D9E992F85E2C600FC79C9 /* SwipeTunerSheet.swift */,
+				202D9E9A2F85E2C600FC79C9 /* SwipeTuningConfig.swift */,
+				202D9E9B2F85E2C600FC79C9 /* SwipeTuningManager.swift */,
+			);
+			path = Debug;
+			sourceTree = "<group>";
+		};
 		205CFF562F69D7E200FFF88C = {
 			isa = PBXGroup;
 			children = (
@@ -336,37 +352,6 @@
 				20A10DD02F78158F0053B465 /* LibraryRootView.swift */,
 			);
 			path = Library;
-			sourceTree = "<group>";
-		};
-		20E100001234567800ABCDEF /* Exercise */ = {
-			isa = PBXGroup;
-			children = (
-				20C236E52F746D2300D5763E /* ExerciseEditorView.swift */,
-				20C236E62F746D2300D5763E /* ExercisePicker.swift */,
-				20C2372D2F74B34F00D5763E /* HighlightedText.swift */,
-				20C237352F74B34F00D5763E /* LibraryRow.swift */,
-			);
-			path = Exercise;
-			sourceTree = "<group>";
-		};
-		20E100011234567800ABCDEF /* Routines */ = {
-			isa = PBXGroup;
-			children = (
-				20C2372C2F74B34F00D5763E /* ExerciseConfigSheet.swift */,
-				20C236E72F746D2300D5763E /* RoutineBuilderView.swift */,
-			);
-			path = Routines;
-			sourceTree = "<group>";
-		};
-		20E100021234567800ABCDEF /* WorkoutSummary */ = {
-			isa = PBXGroup;
-			children = (
-				20C2374C2F74B34F00D5763E /* SummaryExerciseCard.swift */,
-				20C2374B2F74B34F00D5763E /* SummaryPRBadge.swift */,
-				20C2374A2F74B34F00D5763E /* SummaryStatChip.swift */,
-				20C236E92F746D2300D5763E /* WorkoutSummaryView.swift */,
-			);
-			path = WorkoutSummary;
 			sourceTree = "<group>";
 		};
 		20A10DD62F781E0F0053B465 /* Analytics */ = {
@@ -541,6 +526,7 @@
 		20C236EE2F746D2300D5763E /* Orin */ = {
 			isa = PBXGroup;
 			children = (
+				202D9E9C2F85E2C600FC79C9 /* Debug */,
 				20A10DD62F781E0F0053B465 /* Analytics */,
 				20A10DC62F776E190053B465 /* Modifiers */,
 				20C236AD2F746D2300D5763E /* App */,
@@ -556,6 +542,37 @@
 				20C236ED2F746D2300D5763E /* Orin.entitlements */,
 			);
 			path = Orin;
+			sourceTree = "<group>";
+		};
+		20E100001234567800ABCDEF /* Exercise */ = {
+			isa = PBXGroup;
+			children = (
+				20C236E52F746D2300D5763E /* ExerciseEditorView.swift */,
+				20C236E62F746D2300D5763E /* ExercisePicker.swift */,
+				20C2372D2F74B34F00D5763E /* HighlightedText.swift */,
+				20C237352F74B34F00D5763E /* LibraryRow.swift */,
+			);
+			path = Exercise;
+			sourceTree = "<group>";
+		};
+		20E100011234567800ABCDEF /* Routines */ = {
+			isa = PBXGroup;
+			children = (
+				20C2372C2F74B34F00D5763E /* ExerciseConfigSheet.swift */,
+				20C236E72F746D2300D5763E /* RoutineBuilderView.swift */,
+			);
+			path = Routines;
+			sourceTree = "<group>";
+		};
+		20E100021234567800ABCDEF /* WorkoutSummary */ = {
+			isa = PBXGroup;
+			children = (
+				20C2374C2F74B34F00D5763E /* SummaryExerciseCard.swift */,
+				20C2374B2F74B34F00D5763E /* SummaryPRBadge.swift */,
+				20C2374A2F74B34F00D5763E /* SummaryStatChip.swift */,
+				20C236E92F746D2300D5763E /* WorkoutSummaryView.swift */,
+			);
+			path = WorkoutSummary;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -814,6 +831,9 @@
 				20C237252F746D2300D5763E /* SettingsRootView.swift in Sources */,
 				20C2374D2F74B34F00D5763E /* SummaryStatChip.swift in Sources */,
 				20C2374E2F74B34F00D5763E /* SummaryPRBadge.swift in Sources */,
+				202D9E9D2F85E2C600FC79C9 /* SwipeTuningManager.swift in Sources */,
+				202D9E9E2F85E2C600FC79C9 /* SwipeTuningConfig.swift in Sources */,
+				202D9E9F2F85E2C600FC79C9 /* SwipeTunerSheet.swift in Sources */,
 				20C2374F2F74B34F00D5763E /* SummaryExerciseCard.swift in Sources */,
 				20C237262F746D2300D5763E /* WorkoutSummaryView.swift in Sources */,
 			);

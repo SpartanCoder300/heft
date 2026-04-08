@@ -135,9 +135,9 @@ private func formatSteppedValue(_ v: Double, isInteger: Bool) -> String {
 
 /// Swipe-based stepped value control.
 ///
-/// Drag accumulates velocity-weighted deltas: slow drags are precise (1×), fast drags
-/// cover more ground (up to 2× at 400 pt/s). Commits the live value on release with no
-/// velocity bonus — what you see is what you get. Tap opens a numpad sheet for direct entry.
+/// Uses a rolling-anchor drag model: each committed step requires exactly `pixelsPerStep`
+/// points of horizontal travel from the previous anchor. Values only update on committed
+/// steps — never interpolated. Tap opens a numpad for direct entry.
 struct SwipeValueControl: View {
     @Binding var text: String
     let unit: String
@@ -149,6 +149,10 @@ struct SwipeValueControl: View {
     var firstTapDefault: Double? = nil
     /// Points per step. Default 14 puts the first-step threshold at ~7px.
     var pixelsPerStep: Double = 14
+    /// Minimum drag distance before the gesture locks in horizontally.
+    var dragActivationThreshold: CGFloat = 5
+    /// Points the control floats upward while dragging (so the thumb doesn't cover the value).
+    var activeLiftAmount: CGFloat = 56
     /// Specific values that trigger a stronger milestone haptic (e.g. plate combinations for barbell).
     var milestones: Set<Double>? = nil
     /// Called when the user starts interacting, either by tapping into manual entry
@@ -158,6 +162,8 @@ struct SwipeValueControl: View {
     var onCommit: (() -> Void)? = nil
     /// Set to a new UUID to trigger the swipe hint animation. Nil means no hint.
     var hintToken: UUID? = nil
+    /// Max number of extra steps applied by a momentum flick. Weight = 4, reps = 2 by default.
+    var maxMomentumSteps: Int = 3
 
     // MARK: Gesture state
 
@@ -168,16 +174,19 @@ struct SwipeValueControl: View {
     @State private var horizontalLocked: Bool = false
     @State private var dragStartValue: Double? = nil
     @State private var liveValue: Double? = nil
-    @State private var lastRawSteps: Int = 0
+    /// Net committed steps since drag start — drives chevron animations.
+    @State private var committedStepCount: Int = 0
     @State private var goingDown: Bool = false
     @State private var boundaryHapticFired: Bool = false
     /// Prevents double-fire from onEnded + onChange(gestureActive) both committing.
     @State private var didCommit: Bool = false
-    /// Velocity-weighted pixel accumulator — slow drags are 1x, fast drags up to 2x.
-    @State private var dragAccumulator: Double = 0
-    @State private var previousTranslation: CGFloat = 0
-    /// Visual rubber-band offset applied when dragging past min/max boundary.
-    @State private var rubberOffset: CGFloat = 0
+    /// Rolling anchor: the translation.x at which the last step committed.
+    @State private var lastCommittedDragX: CGFloat = 0
+    /// In-flight momentum task — cancelled on next drag start.
+    @State private var momentumTask: Task<Void, Never>? = nil
+    /// Horizontal offset applied to the lifted pill so it subtly follows the finger.
+    /// Capped so the value never drifts far from its lane.
+    @State private var dragFollowOffset: CGFloat = 0
 
     @State private var hintOffset: CGFloat = 0
 
@@ -231,15 +240,37 @@ struct SwipeValueControl: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
+            // Anchor tether — 1pt gradient stem connecting the lifted pill to its origin.
+            // Height stretches slightly with accumulated steps (tension feel).
+            // Follow offset is spring-animated so it lags a frame behind the pill.
+            let tetherHeight = max(0, activeLiftAmount - 16
+                + min(CGFloat(abs(committedStepCount)) * 1.2, 7))
+            RoundedRectangle(cornerRadius: 0.5)
+                .fill(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.10), Color.white.opacity(0)],
+                        startPoint: .bottom,
+                        endPoint: .top
+                    )
+                )
+                .frame(width: 1, height: tetherHeight)
+                .blur(radius: 1.2)
+                .offset(x: dragFollowOffset)
+                .opacity(isDragging ? 1 : 0)
+                .animation(.spring(response: 0.25, dampingFraction: 0.82), value: dragFollowOffset)
+                // Longer fade lets the spring snap-back finish before the tether disappears.
+                .animation(.easeOut(duration: 0.28), value: isDragging)
+
             HStack(spacing: isDragging ? 6 : 0) {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: isDragging ? 10 : 11, weight: .semibold))
+                    .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(Color.textFaint)
-                    .opacity(isDragging ? (lastRawSteps <= 0 ? 0.9 : 0.2) : 0.52)
-                    .scaleEffect(isDragging && lastRawSteps < 0
-                        ? 1.0 + min(CGFloat(abs(lastRawSteps)) * 0.08, 0.7) : 1.0)
-                    .animation(.spring(response: 0.1, dampingFraction: 0.7), value: lastRawSteps)
-                    .frame(width: isDragging ? 14 : 24)
+                    // Resting: very subtle — affordance hint, not a tap target.
+                    // Dragging: dim inactive side, highlight active side as direction cue only.
+                    .opacity(isDragging ? (committedStepCount <= 0 ? 0.55 : 0.08) : 0.18)
+                    .animation(.easeOut(duration: 0.1), value: isDragging)
+                    .animation(.easeOut(duration: 0.08), value: committedStepCount)
+                    .frame(width: isDragging ? 14 : 20)
 
                 VStack(spacing: 2) {
                     if isEditing {
@@ -274,38 +305,60 @@ struct SwipeValueControl: View {
                 .frame(minWidth: isDragging ? 72 : 0)
 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: isDragging ? 10 : 11, weight: .semibold))
+                    .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(Color.textFaint)
-                    .opacity(isDragging ? (lastRawSteps >= 0 ? 0.9 : 0.2) : 0.52)
-                    .scaleEffect(isDragging && lastRawSteps > 0
-                        ? 1.0 + min(CGFloat(abs(lastRawSteps)) * 0.08, 0.7) : 1.0)
-                    .animation(.spring(response: 0.1, dampingFraction: 0.7), value: lastRawSteps)
-                    .frame(width: isDragging ? 14 : 24)
+                    .opacity(isDragging ? (committedStepCount >= 0 ? 0.55 : 0.08) : 0.18)
+                    .animation(.easeOut(duration: 0.1), value: isDragging)
+                    .animation(.easeOut(duration: 0.08), value: committedStepCount)
+                    .frame(width: isDragging ? 14 : 20)
             }
-            // Glass pill — appears only when floating so the number reads clearly
-            // over whatever is behind the card. Fades in with the same spring as the lift.
-            .padding(.horizontal, isDragging ? Spacing.sm : 0)
-            .padding(.vertical, isDragging ? Spacing.xs : 0)
+            // Glass pill — tighter padding keeps it precise rather than badge-like.
+            // Opacity 0.85 lets more of the glass blur through (less solid, more material).
+            .padding(.horizontal, isDragging ? Spacing.xs : 0)
+            .padding(.vertical, isDragging ? 3 : 0)
             .fixedSize(horizontal: isDragging, vertical: false)
             .background {
                 RoundedRectangle(cornerRadius: Radius.large, style: .continuous)
                     .glassEffect(in: RoundedRectangle(cornerRadius: Radius.large, style: .continuous))
-                    .shadow(color: .black.opacity(0.18), radius: 12, y: 4)
-                    .opacity(isDragging ? 1 : 0)
+                    .shadow(color: .black.opacity(0.14), radius: 10, y: 3)
+                    .opacity(isDragging ? 0.85 : 0)
             }
-            // Float content up so thumb doesn't cover the number.
-            // Track stays anchored at the bottom of the frame.
-            .offset(x: rubberOffset, y: isDragging ? -56 : 0)
-            .scaleEffect(isDragging ? 1.04 : 1.0)
-            .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isDragging)
+            // Lift + horizontal follow. Follow is spring-animated in the gesture handler,
+            // so the pill lags slightly behind the finger — feels tethered, not glued.
+            .offset(x: isDragging ? dragFollowOffset : 0, y: isDragging ? -activeLiftAmount : 0)
+            .scaleEffect(isDragging ? 1.02 : 1.0)
+            .animation(.spring(response: 0.2, dampingFraction: 0.78), value: isDragging)
             .frame(maxWidth: .infinity)
         }
         .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isDragging)
         .frame(maxWidth: .infinity, minHeight: 52, maxHeight: .infinity)
+        // Slight scale on the whole control surface when active — makes the pill feel
+        // like it's rising from within rather than appearing on top.
+        .scaleEffect(isDragging ? 1.015 : 1.0)
+        .animation(.spring(response: 0.22, dampingFraction: 0.80), value: isDragging)
+        // Radial center brightness — subtle depth cue (no edge glow, just center lift).
+        .overlay {
+            RadialGradient(
+                colors: [Color.white.opacity(0.04), .clear],
+                center: .center, startRadius: 0, endRadius: 52
+            )
+            .allowsHitTesting(false)
+            .opacity(isDragging ? 1 : 0)
+            .animation(.easeOut(duration: 0.14), value: isDragging)
+        }
+        // Background dim — very slight darkening of the inactive surface while dragging,
+        // increasing perceived contrast on the lifted pill.
+        .overlay {
+            Color.black
+                .opacity(isDragging ? 0.03 : 0)
+                .allowsHitTesting(false)
+                .animation(.easeOut(duration: 0.14), value: isDragging)
+        }
         .contentShape(Rectangle())
         .gesture(swipeGesture)
         .onChange(of: gestureActive) { _, active in
-            if !active { commitAndReset() }
+            // Fires on system-cancelled gestures (e.g. notification pulldown). No velocity.
+            if !active { commitAndReset(finalVelocity: 0) }
         }
         .onChange(of: hintToken) { _, token in
             guard token != nil else {
@@ -344,11 +397,14 @@ struct SwipeValueControl: View {
     // MARK: Gesture
 
     private var swipeGesture: some Gesture {
-        DragGesture(minimumDistance: 5)
+        DragGesture(minimumDistance: dragActivationThreshold)
             .updating($gestureActive) { _, state, _ in state = true }
             .onChanged { value in
                 guard !isEditing else { return }
+
+                // ── Lock-in ────────────────────────────────────────────────────
                 if !horizontalLocked {
+                    // Require clearly horizontal intent before locking.
                     guard abs(value.translation.width) > abs(value.translation.height) * 0.75 else { return }
                     UIApplication.shared.sendAction(
                         #selector(UIResponder.resignFirstResponder),
@@ -356,10 +412,15 @@ struct SwipeValueControl: View {
                     )
                     horizontalLocked = true
                     dragStartValue = dragBase
-                    previousTranslation = value.translation.width  // seed so first delta is zero
+                    // Seed anchor at the lock-in point so the first step requires a full
+                    // pixelsPerStep of travel from here, not from gesture origin.
+                    lastCommittedDragX = value.translation.width
+                    committedStepCount = 0
                     isDragging = true
-                    onInteractionStart?()
                     didCommit = false
+                    momentumTask?.cancel()
+                    momentumTask = nil
+                    onInteractionStart?()
                     selectionGen.prepare()
                     impactGen.prepare()
                     milestoneGen.prepare()
@@ -367,91 +428,121 @@ struct SwipeValueControl: View {
 
                 guard let start = dragStartValue else { return }
 
-                // Accumulate velocity-weighted deltas so slow drags stay precise
-                // and fast drags cover more ground — like a physical dial with inertia.
-                let rawTranslation = value.translation.width
-                let delta = Double(rawTranslation - previousTranslation)
-                previousTranslation = rawTranslation
-                dragAccumulator += delta * velocityMultiplier(for: abs(value.velocity.width))
-
-                let newSteps = Int((dragAccumulator / pixelsPerStep).rounded())
-                let newValue = engine.steppedValue(
-                    startValue: start,
-                    translation: CGFloat(newSteps) * CGFloat(pixelsPerStep)
-                )
-
-                // Rubber-band: when value is clamped at a boundary, the raw accumulated
-                // movement keeps going. Apply a fraction of that overshoot as a visual x-offset
-                // with logarithmic decay so it feels like pressing against a physical wall.
-                let rawValue = start + Double(newSteps) * step
-                let overshootSteps = (rawValue - newValue) / step
-                if abs(overshootSteps) > 0.01 {
-                    let px = CGFloat(abs(overshootSteps))
-                    let sign: CGFloat = overshootSteps > 0 ? 1 : -1
-                    rubberOffset = sign * px * 6 / (1 + px * 0.4)
-                } else {
-                    rubberOffset = 0
+                // ── Horizontal follow ──────────────────────────────────────────
+                // Spring-animated so the pill lags slightly behind the finger.
+                // 18% of travel, ±22pt cap. At boundary the follow is compressed
+                // further to convey physical resistance (see boundary block below).
+                let targetFollow = min(22, max(-22, value.translation.width * 0.18))
+                withAnimation(.spring(response: 0.2, dampingFraction: 0.88)) {
+                    dragFollowOffset = targetFollow
                 }
 
-                if newSteps != lastRawSteps {
-                    goingDown = newSteps < lastRawSteps
-                    let atBoundary = engine.isAtMin(newValue) || engine.isAtMax(newValue)
-                    if atBoundary {
-                        if !boundaryHapticFired {
-                            impactGen.impactOccurred()
-                            boundaryHapticFired = true
-                        }
-                    } else {
-                        boundaryHapticFired = false
-                        if let milestones, milestones.contains(newValue) {
-                            milestoneGen.impactOccurred()
-                            milestoneFlash = true
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                                milestoneFlash = false
-                            }
-                        } else {
-                            selectionGen.selectionChanged()
-                        }
+                // ── Rolling anchor ─────────────────────────────────────────────
+                // deltaX measures travel since the last committed anchor.
+                // Each full pixelsPerStep consumed advances the anchor and commits one step.
+                // This gives exact 1:1 pixel-to-step mapping without any velocity weighting —
+                // slow and fast drags produce the same number of steps per pixel traveled.
+                let delta = Double(value.translation.width - lastCommittedDragX)
+                let stepsToCommit = Int(delta / pixelsPerStep)   // truncate: full steps only
+
+                guard stepsToCommit != 0 else { return }
+
+                lastCommittedDragX += CGFloat(stepsToCommit) * CGFloat(pixelsPerStep)
+                committedStepCount += stepsToCommit
+
+                let rawValue = start + Double(committedStepCount) * step
+                let newValue = engine.snappedValue(rawValue)   // snap + hard clamp
+                let previous = liveValue ?? start
+
+                // ── Boundary ───────────────────────────────────────────────────
+                if newValue == previous {
+                    if !boundaryHapticFired {
+                        impactGen.impactOccurred()
+                        boundaryHapticFired = true
                     }
-                    lastRawSteps = newSteps
+                    // Elastic resistance: compress the follow offset sharply so the pill
+                    // visually recoils from the wall instead of continuing to track.
+                    withAnimation(.spring(response: 0.22, dampingFraction: 0.65)) {
+                        dragFollowOffset *= 0.2
+                    }
+                    return
                 }
 
+                boundaryHapticFired = false
+                goingDown = newValue < previous
                 liveValue = newValue
                 text = cleanFormatted(newValue)
+                fireStepHaptic(for: newValue)
             }
-            .onEnded { _ in
-                commitAndReset()
+            .onEnded { value in
+                commitAndReset(finalVelocity: value.velocity.width)
             }
     }
 
     // MARK: Helpers
 
-    /// Smooth ramp: 1× at rest → 2× at 400 pt/s. Keeps slow drags precise
-    /// while letting fast sweeps cover roughly double the range.
-    private func velocityMultiplier(for speed: Double) -> Double {
-        1.0 + min(speed / 400.0, 1.0)
+    /// Fire the appropriate haptic the moment a step commits.
+    /// Milestone values get a stronger impact; normal steps get selection feedback.
+    private func fireStepHaptic(for value: Double) {
+        if let milestones, milestones.contains(value) {
+            milestoneGen.impactOccurred()
+            milestoneFlash = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { milestoneFlash = false }
+        } else {
+            selectionGen.selectionChanged()
+        }
     }
 
-    private func commitAndReset() {
+    private func commitAndReset(finalVelocity: CGFloat) {
         guard !didCommit else { return }
         didCommit = true
 
-        if let live = liveValue {
-            text = cleanFormatted(live)
-            onCommit?()
-        }
+        // Commit whatever the rolling anchor landed on.
+        let committedValue = liveValue ?? current
+        text = cleanFormatted(committedValue)
+        if liveValue != nil { onCommit?() }
+
+        // Capture before clearing state.
+        let momentumBase = committedValue
 
         dragStartValue = nil
-        dragAccumulator = 0
-        previousTranslation = 0
-        lastRawSteps = 0
+        committedStepCount = 0
+        lastCommittedDragX = 0
         liveValue = nil
         isDragging = false
         horizontalLocked = false
         boundaryHapticFired = false
         goingDown = false
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
-            rubberOffset = 0
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) { dragFollowOffset = 0 }
+
+        applyMomentum(from: momentumBase, velocity: finalVelocity)
+    }
+
+    /// Applies a short burst of discrete extra steps after a fast flick.
+    /// Each step is committed individually so haptics and persistence fire normally.
+    private func applyMomentum(from startValue: Double, velocity: CGFloat) {
+        let config = SwipeTuningManager.shared.config
+        guard config.momentumEnabled,
+              abs(velocity) > config.momentumVelocityThreshold else { return }
+
+        let direction: Double = velocity > 0 ? 1 : -1
+        let stepInterval = config.momentumDuration / Double(maxMomentumSteps)
+        var base = startValue
+
+        momentumTask = Task { @MainActor in
+            for _ in 0..<maxMomentumSteps {
+                try? await Task.sleep(for: .seconds(stepInterval))
+                guard !Task.isCancelled else { return }
+
+                let candidate = engine.snappedValue(base + direction * step)
+                guard candidate != base else { break }  // hit boundary
+
+                goingDown = candidate < base
+                base = candidate
+                text = cleanFormatted(candidate)
+                fireStepHaptic(for: candidate)
+                onCommit?()
+            }
         }
     }
 

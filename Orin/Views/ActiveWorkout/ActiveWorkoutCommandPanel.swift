@@ -11,6 +11,8 @@ struct ActiveWorkoutCommandPanel: View {
     let onComplete: (WorkoutSession) -> Void
     let onDismiss: () -> Void
 
+    private let tuner = SwipeTuningManager.shared
+
     @AppStorage("hasUsedSwipeControl") private var hasUsedSwipeControl: Bool = false
     /// Counts how many sessions have shown the hint. Stops at 2.
     @AppStorage("Orin.swipeHintSessionCount") private var swipeHintSessionCount: Int = 0
@@ -120,10 +122,14 @@ struct ActiveWorkoutCommandPanel: View {
                             maxValue: 999,
                             isInteger: false,
                             firstTapDefault: exercise.startingWeight,
+                            pixelsPerStep: Double(tuner.config.weightPointsPerStep),
+                            dragActivationThreshold: tuner.config.dragActivationThreshold,
+                            activeLiftAmount: tuner.config.activeLiftAmount,
                             milestones: weightMilestones(for: exercise.equipmentType),
                             onInteractionStart: { vm.requestRevealCurrentFocus(); hasUsedSwipeControl = true; cancelHint() },
                             onCommit: { vm.queueDraftPersistence() },
-                            hintToken: hintToken
+                            hintToken: hintToken,
+                            maxMomentumSteps: tuner.config.weightMaxMomentumSteps
                         )
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
 
@@ -153,9 +159,12 @@ struct ActiveWorkoutCommandPanel: View {
                             maxValue: 600,
                             isInteger: true,
                             firstTapDefault: 30,
+                            dragActivationThreshold: tuner.config.dragActivationThreshold,
+                            activeLiftAmount: tuner.config.activeLiftAmount,
                             onInteractionStart: { vm.requestRevealCurrentFocus(); hasUsedSwipeControl = true; cancelHint() },
                             onCommit: { vm.queueDraftPersistence() },
-                            hintToken: hintToken
+                            hintToken: hintToken,
+                            maxMomentumSteps: tuner.config.repsMaxMomentumSteps
                         )
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else {
@@ -181,9 +190,13 @@ struct ActiveWorkoutCommandPanel: View {
                             maxValue: 50,
                             isInteger: true,
                             firstTapDefault: 5,
+                            pixelsPerStep: Double(tuner.config.repsPointsPerStep),
+                            dragActivationThreshold: tuner.config.dragActivationThreshold,
+                            activeLiftAmount: tuner.config.activeLiftAmount,
                             onInteractionStart: { vm.requestRevealCurrentFocus(); hasUsedSwipeControl = true; cancelHint() },
                             onCommit: { vm.queueDraftPersistence() },
-                            hintToken: hintToken
+                            hintToken: hintToken,
+                            maxMomentumSteps: tuner.config.repsMaxMomentumSteps
                         )
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
@@ -354,38 +367,11 @@ private struct CommandPanelElevation: ViewModifier {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .fill(.regularMaterial.opacity(0.22))
             }
+            // Quiet single-weight border. No gradient, no glow — clean edges only.
             .overlay {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .strokeBorder(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.20),
-                                Color.white.opacity(0.07)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        ),
-                        lineWidth: 1
-                    )
-            }
-            .overlay(alignment: .top) {
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.24),
-                                Color.white.opacity(0.00)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        ),
-                        lineWidth: 1.5
-                    )
-                    .blur(radius: 0.2)
-                    .mask(alignment: .top) {
-                        Rectangle()
-                            .frame(height: 18)
-                    }
+                    .strokeBorder(Color.white.opacity(0.09), lineWidth: 1)
+                    .allowsHitTesting(false)
             }
             .shadow(color: Color.black.opacity(0.44), radius: 28, y: 18)
             .shadow(color: Color.black.opacity(0.30), radius: 9, y: 4)

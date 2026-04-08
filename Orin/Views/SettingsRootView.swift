@@ -9,6 +9,8 @@ struct SettingsRootView: View {
     @Environment(\.OrinTheme) private var theme
     @Environment(\.OrinCardMaterial) private var cardMaterial
     @State private var isShowingResetExercisesConfirm = false
+    @State private var tunerTapCount: Int = 0
+    @State private var isShowingTuner = false
 
     var body: some View {
         List {
@@ -47,12 +49,22 @@ struct SettingsRootView: View {
             Section {
                 LabeledContent("Version", value: "1.0")
                     .listRowBackground(Rectangle().fill(cardMaterial))
+                    .onTapGesture {
+                        tunerTapCount += 1
+                        if tunerTapCount >= 7 {
+                            tunerTapCount = 0
+                            isShowingTuner = true
+                        }
+                    }
             } header: {
                 Text("About")
             }
         }
         .scrollContentBackground(.hidden)
         .navigationTitle("Settings")
+        .sheet(isPresented: $isShowingTuner) {
+            SwipeTunerSheet()
+        }
         .themedBackground()
         .alert("Reset Built-In Exercises?", isPresented: $isShowingResetExercisesConfirm) {
             Button("Reset", role: .destructive) {
