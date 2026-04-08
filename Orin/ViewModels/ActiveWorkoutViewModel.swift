@@ -5,6 +5,7 @@ import Foundation
 import SwiftData
 import UIKit
 import AudioToolbox
+import UserNotifications
 
 @Observable @MainActor
 final class ActiveWorkoutViewModel {
@@ -246,6 +247,7 @@ final class ActiveWorkoutViewModel {
     private let resumeSessionID: UUID?
     private var zeroTask: Task<Void, Never>? = nil
     private var phaseUpdateTasks: [Task<Void, Never>] = []
+    private var notificationTask: Task<Void, Never>? = nil
     private var deferredPersistTask: Task<Void, Never>? = nil
     private var hasSetup = false
     private let activityManager: WorkoutActivityManager
@@ -317,6 +319,7 @@ final class ActiveWorkoutViewModel {
         }
         persistDraftState()
         activityManager.start(sessionID: ensureSession().id, routineName: routineName, state: currentActivityState)
+        requestNotificationPermissionIfNeeded()
     }
 
     /// Creates the WorkoutSession and an ExerciseSnapshot for every exercise immediately
@@ -1020,6 +1023,52 @@ final class ActiveWorkoutViewModel {
         return true
     }
 
+    // MARK: - Rest notification (local fallback for when app is fully suspended)
+    // AlertConfiguration handles the banner when the app can deliver it (backgrounded but not
+    // suspended). The local notification is the reliable fallback for when the phone is fully
+    // asleep — it is delivered by the system daemon independently of the app.
+    // Coordination: zeroTask cancels the notification before calling updateRestComplete,
+    // so only one alert fires when the app is not fully suspended.
+
+    private let restNotificationID = "restTimerComplete"
+
+    func requestNotificationPermissionIfNeeded() {
+        Task {
+            let center = UNUserNotificationCenter.current()
+            let settings = await center.notificationSettings()
+            guard settings.authorizationStatus == .notDetermined else { return }
+            _ = try? await center.requestAuthorization(options: [.alert, .sound])
+        }
+    }
+
+    func scheduleRestNotification(endsAt: Date, exerciseName: String) {
+        notificationTask?.cancel()
+        notificationTask = Task {
+            let center = UNUserNotificationCenter.current()
+            let settings = await center.notificationSettings()
+            guard case .authorized = settings.authorizationStatus else { return }
+            guard !Task.isCancelled else { return }
+            let interval = endsAt.timeIntervalSinceNow
+            guard interval > 0 else { return }
+            let content = UNMutableNotificationContent()
+            content.title = "Rest Complete"
+            content.body = exerciseName
+            content.sound = .default
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
+            let request = UNNotificationRequest(identifier: restNotificationID, content: content, trigger: trigger)
+            center.removePendingNotificationRequests(withIdentifiers: [restNotificationID])
+            try? await center.add(request)
+        }
+    }
+
+    func cancelRestNotification() {
+        notificationTask?.cancel()
+        notificationTask = nil
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [restNotificationID])
+        center.removeDeliveredNotifications(withIdentifiers: [restNotificationID])
+    }
+
     private static let restBGTaskID = "MysticByte.Orin.rest-timer-end"
 
     /// Schedules a BGAppRefreshTask to fire at the rest timer's end date.
@@ -1058,6 +1107,7 @@ final class ActiveWorkoutViewModel {
             let delay = deadline.timeIntervalSinceNow
             if delay > 0 { try? await Task.sleep(for: .seconds(delay)) }
             guard !Task.isCancelled else { return }
+            self.cancelRestNotification()
             self.restTimer.tick(at: .now)
             self.activityManager.updateRestComplete(self.currentActivityState)
         }
@@ -1085,6 +1135,8 @@ final class ActiveWorkoutViewModel {
         guard let deadline = restTimer.targetEndDate else { return }
         scheduleTimerTasks(deadline: deadline, duration: duration)
         scheduleRestBackgroundRefresh(endsAt: deadline)
+        let exerciseName = currentFocus.flatMap { draftExercises.indices.contains($0.exerciseIndex) ? draftExercises[$0.exerciseIndex].exerciseName : nil } ?? routineName
+        scheduleRestNotification(endsAt: deadline, exerciseName: exerciseName)
     }
 
     func skipRest() {
@@ -1092,6 +1144,7 @@ final class ActiveWorkoutViewModel {
         restTimer.skip()
         scheduleDraftPersistence()
         cancelRestBackgroundRefresh()
+        cancelRestNotification()
         activityManager.update(currentActivityState)
     }
 
@@ -1102,11 +1155,14 @@ final class ActiveWorkoutViewModel {
             cancelTimerTasks()
             scheduleDraftPersistence()
             cancelRestBackgroundRefresh()
+            cancelRestNotification()
             activityManager.update(currentActivityState)
             return
         }
         scheduleTimerTasks(deadline: deadline, duration: restTimer.totalDuration)
         scheduleRestBackgroundRefresh(endsAt: deadline)
+        let exerciseName = currentFocus.flatMap { draftExercises.indices.contains($0.exerciseIndex) ? draftExercises[$0.exerciseIndex].exerciseName : nil } ?? routineName
+        scheduleRestNotification(endsAt: deadline, exerciseName: exerciseName)
         scheduleDraftPersistence()
         activityManager.update(currentActivityState)
     }
@@ -1192,6 +1248,7 @@ final class ActiveWorkoutViewModel {
         }
         try? modelContext.save()
         cancelRestBackgroundRefresh()
+        cancelRestNotification()
         activityManager.end(currentActivityState)
         return s
     }
@@ -1216,6 +1273,7 @@ final class ActiveWorkoutViewModel {
     func cancelWorkout() {
         cancelDeferredPersistence()
         cancelRestBackgroundRefresh()
+        cancelRestNotification()
         activityManager.end(currentActivityState)
         if let s = session {
             modelContext.delete(s)
@@ -1317,6 +1375,7 @@ final class ActiveWorkoutViewModel {
         persistDraftState()
         guard restTimer.isActive, let end = restTimer.targetEndDate, end <= .now else { return }
         cancelTimerTasks()
+        cancelRestNotification()
         restTimer.tick(at: .now)
         persistDraftState()
         activityManager.update(currentActivityState)
