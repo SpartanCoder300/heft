@@ -189,6 +189,8 @@ struct SwipeValueControl: View {
     @State private var dragFollowOffset: CGFloat = 0
 
     @State private var hintOffset: CGFloat = 0
+    /// -1 = left chevron lit, 0 = none, 1 = right chevron lit
+    @State private var hintChevronHighlight: Int = 0
 
     // Haptic generators stored as @State so they survive SwiftUI re-renders during drag.
     // private let would recreate them every frame, wasting prepare() calls.
@@ -270,9 +272,11 @@ struct SwipeValueControl: View {
                     .foregroundStyle(Color.textFaint)
                     // Resting: very subtle — affordance hint, not a tap target.
                     // Dragging: dim inactive side, highlight active side as direction cue only.
-                    .opacity(isDragging ? (committedStepCount <= 0 ? 0.55 : 0.08) : 0.18)
+                    // Hint: briefly illuminate the active-direction chevron.
+                    .opacity(hintChevronHighlight == -1 ? 0.72 : isDragging ? (committedStepCount <= 0 ? 0.55 : 0.08) : 0.18)
                     .animation(.easeOut(duration: 0.1), value: isDragging)
                     .animation(.easeOut(duration: 0.08), value: committedStepCount)
+                    .animation(.easeOut(duration: 0.12), value: hintChevronHighlight)
                     .frame(width: isDragging ? 14 : 20)
 
                 VStack(spacing: 2) {
@@ -304,15 +308,15 @@ struct SwipeValueControl: View {
                 .foregroundStyle(Color.textPrimary)
                 .scaleEffect(milestoneFlash ? 1.15 : 1.0)
                 .animation(.spring(response: 0.12, dampingFraction: 0.5), value: milestoneFlash)
-                .offset(x: hintOffset)
                 .frame(minWidth: isDragging ? 72 : 0)
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(Color.textFaint)
-                    .opacity(isDragging ? (committedStepCount >= 0 ? 0.55 : 0.08) : 0.18)
+                    .opacity(hintChevronHighlight == 1 ? 0.72 : isDragging ? (committedStepCount >= 0 ? 0.55 : 0.08) : 0.18)
                     .animation(.easeOut(duration: 0.1), value: isDragging)
                     .animation(.easeOut(duration: 0.08), value: committedStepCount)
+                    .animation(.easeOut(duration: 0.12), value: hintChevronHighlight)
                     .frame(width: isDragging ? 14 : 20)
             }
             // Glass pill — tighter padding keeps it precise rather than badge-like.
@@ -329,6 +333,7 @@ struct SwipeValueControl: View {
             // Lift + horizontal follow. Follow is spring-animated in the gesture handler,
             // so the pill lags slightly behind the finger — feels tethered, not glued.
             .offset(x: isDragging ? dragFollowOffset : 0, y: isDragging ? -activeLiftAmount : 0)
+            .offset(x: hintOffset)
             .scaleEffect(isDragging ? 1.02 : 1.0)
             .animation(.spring(response: 0.2, dampingFraction: 0.78), value: isDragging)
             .frame(maxWidth: .infinity)
@@ -365,16 +370,35 @@ struct SwipeValueControl: View {
         }
         .onChange(of: hintToken) { _, token in
             guard token != nil else {
-                withAnimation(.spring(response: 0.2, dampingFraction: 0.85)) { hintOffset = 0 }
+                withAnimation(.spring(response: 0.2, dampingFraction: 0.85)) {
+                    hintOffset = 0
+                    hintChevronHighlight = 0
+                }
                 return
             }
+            let gen = UISelectionFeedbackGenerator()
+            gen.prepare()
             Task { @MainActor in
-                withAnimation(.spring(response: 0.28, dampingFraction: 0.76)) { hintOffset = -6 }
-                try? await Task.sleep(for: .milliseconds(210))
-                withAnimation(.spring(response: 0.28, dampingFraction: 0.76)) { hintOffset = 6 }
-                try? await Task.sleep(for: .milliseconds(210))
-                withAnimation(.spring(response: 0.30, dampingFraction: 0.82)) { hintOffset = 0 }
-                UISelectionFeedbackGenerator().selectionChanged()
+                // Step 1: nudge left, illuminate left chevron
+                withAnimation(.spring(response: 0.22, dampingFraction: 0.72)) { hintOffset = -10 }
+                hintChevronHighlight = -1
+                gen.selectionChanged()
+                try? await Task.sleep(for: .milliseconds(175))
+
+                // Step 2: nudge right, illuminate right chevron
+                withAnimation(.spring(response: 0.22, dampingFraction: 0.72)) { hintOffset = 10 }
+                hintChevronHighlight = 1
+                gen.selectionChanged()
+                try? await Task.sleep(for: .milliseconds(175))
+
+                // Step 3: small left echo
+                withAnimation(.spring(response: 0.22, dampingFraction: 0.74)) { hintOffset = -5 }
+                hintChevronHighlight = -1
+                try? await Task.sleep(for: .milliseconds(130))
+
+                // Step 4: settle
+                withAnimation(.spring(response: 0.28, dampingFraction: 0.88)) { hintOffset = 0 }
+                hintChevronHighlight = 0
             }
         }
         .onTapGesture {
