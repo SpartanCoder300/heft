@@ -68,6 +68,69 @@ struct AdherenceData {
     var avgPerWeek: Double { Double(completedLast28Days) / 4.0 }
 }
 
+struct BodyWeightTrendData {
+    let currentWeight: Double           // most recent entry in lbs
+    let change30d: Double               // lbs; negative = loss
+    let change90d: Double
+    let avgWeight30d: Double
+    /// e1RM / body weight for key lifts. Empty if no body weight logged.
+    let strengthRatios: [String: Double]
+}
+
+struct SessionDurationData {
+    enum Trend { case increasing, stable, decreasing }
+    let avgMinutes: Double              // rolling 4-week average
+    let trend: Trend                    // vs prior 4 weeks
+    let longestRecentMinutes: Double    // single longest session in last 28 days
+}
+
+struct MuscleRecoveryData {
+    let muscle: String
+    let daysSinceLastTrained: Int
+    /// Historical average days between sessions for this muscle (rolling all-time).
+    let avgRestDays: Double
+}
+
+struct RoutineAdherenceData {
+    let routineID: UUID
+    let routineName: String
+    let completionsLast28Days: Int
+    /// Historical average days between completions. Nil if fewer than 2 completions.
+    let avgIntervalDays: Double?
+    /// Days since last completion. Nil if never completed.
+    let daysSinceLast: Int?
+    /// completionsLast28Days / expected count based on avgIntervalDays. Clamped 0–1.
+    var adherenceRate: Double {
+        guard let interval = avgIntervalDays, interval > 0 else { return 0 }
+        let expected = 28.0 / interval
+        return min(1.0, Double(completionsLast28Days) / expected)
+    }
+}
+
+struct RepRangeDistributionData {
+    let muscle: String
+    let strengthPct: Double     // sets with 1–5 reps  (0–1)
+    let hypertrophyPct: Double  // sets with 6–12 reps (0–1)
+    let endurancePct: Double    // sets with 13+ reps  (0–1)
+    let totalSets: Int
+}
+
+struct DeloadReadiness {
+    enum State { case fresh, accumulating, recommended }
+    let score: Double               // 0–1; higher = more need for deload
+    let state: State                // bucketed from score
+    let fatigueFlags: Int           // muscles with isFlagged
+    let plateauedExercises: Int     // exercises with isPlateaued
+    let daysSinceLastPR: Int?       // nil if no PRs ever logged
+    let decliningIntensityCount: Int // exercises with trend == .decreasing
+}
+
+struct TrainingDensityData {
+    enum Trend { case increasing, stable, decreasing }
+    let setsPerHour: Double     // rolling 4-week average
+    let trend: Trend            // vs prior 4 weeks
+}
+
 struct ProgressAnalyticsReport {
     let weeklyVolume: [MuscleVolumeData]
     let progression: [ExerciseProgressionData]
@@ -77,6 +140,13 @@ struct ProgressAnalyticsReport {
     let prTracking: [PRTrackingData]
     let imbalances: [ImbalanceData]
     let adherence: AdherenceData
+    let bodyWeightTrend: BodyWeightTrendData?
+    let sessionDuration: SessionDurationData?
+    let muscleRecovery: [MuscleRecoveryData]
+    let routineAdherence: [RoutineAdherenceData]
+    let repRangeDistribution: [RepRangeDistributionData]
+    let deloadReadiness: DeloadReadiness
+    let trainingDensity: TrainingDensityData?
     let highlights: [String]
 }
 
@@ -87,6 +157,8 @@ struct ProgressAnalyticsReport {
 struct ProgressAnalyticsEngine {
     let sessions: [WorkoutSession]          // all completed sessions, any order
     let definitions: [ExerciseDefinition]   // full library for muscle-group lookup
+    var bodyWeightEntries: [BodyWeightEntry] = []
+    var routines: [RoutineTemplate] = []
 
     // MARK: - Public
 
@@ -99,6 +171,13 @@ struct ProgressAnalyticsEngine {
         let prs      = computePRTracking()
         let imbal    = computeImbalances()
         let adhere   = computeAdherence()
+        let bwTrend  = computeBodyWeightTrend(progression: progress)
+        let duration = computeSessionDuration()
+        let recovery = computeMuscleRecovery()
+        let routineAdh = computeRoutineAdherence()
+        let repRanges  = computeRepRangeDistribution()
+        let deload     = computeDeloadReadiness(fatigue: fatigue, progression: progress, intensity: intens, prs: prs)
+        let density    = computeTrainingDensity()
         let hi       = generateHighlights(
             volume: volume, progression: progress,
             fatigue: fatigue, imbalances: imbal, prs: prs
@@ -112,6 +191,13 @@ struct ProgressAnalyticsEngine {
             prTracking: prs,
             imbalances: imbal,
             adherence: adhere,
+            bodyWeightTrend: bwTrend,
+            sessionDuration: duration,
+            muscleRecovery: recovery,
+            routineAdherence: routineAdh,
+            repRangeDistribution: repRanges,
+            deloadReadiness: deload,
+            trainingDensity: density,
             highlights: hi
         )
     }
@@ -204,15 +290,19 @@ struct ProgressAnalyticsEngine {
                 .filter { $0.workoutSession?.completedAt != nil }
                 .sorted { $0.workoutSession!.completedAt! > $1.workoutSession!.completedAt! }
 
-            guard let currentE1RM = bestE1RM(for: sorted.first?.sets ?? []) else { continue }
+            // Use best e1RM across last 3 sessions so a single bad day doesn't deflate current strength.
+            let currentE1RM = bestE1RM(for: sorted.prefix(3).flatMap(\.sets))
+            guard let currentE1RM else { continue }
 
-            // e1RM ~30 days ago: find the snapshot closest to 30 days back
+            // e1RM ~30 days ago: best across the 2-3 sessions closest to the 30-day mark.
             let recent = sorted.filter { $0.workoutSession!.completedAt! >= ago30 }
             let older  = sorted.filter {
                 let d = $0.workoutSession!.completedAt!
                 return d >= ago60 && d < ago30
             }
-            let baseE1RM = bestE1RM(for: (older.first ?? recent.last)?.sets ?? []) ?? currentE1RM
+            // Use up to 3 sessions from the base window; fall back to the oldest recent session.
+            let baseSnaps = older.isEmpty ? Array(recent.suffix(1)) : Array(older.prefix(3))
+            let baseE1RM = bestE1RM(for: baseSnaps.flatMap(\.sets)) ?? currentE1RM
 
             // Plateau: last 3 sessions all within 2% of each other
             let last3E1RMs = recent.prefix(3).compactMap { bestE1RM(for: $0.sets) }
@@ -269,13 +359,17 @@ struct ProgressAnalyticsEngine {
             for snap in session.exercises { byExercise[snap.exerciseName, default: []].append(snap) }
         }
 
-        func avgIntensity(snaps: [ExerciseSnapshot]) -> Double? {
+        // allTimeSnaps is passed in so the denominator (best ever e1RM) stays fixed across both
+        // time windows, making the trend comparison stable.
+        func avgIntensity(snaps: [ExerciseSnapshot], allTimeSnaps: [ExerciseSnapshot]) -> Double? {
             let allWorking = snaps.flatMap { $0.sets }.filter { $0.setType != .warmup && $0.weight > 0 && $0.reps > 0 }
             guard !allWorking.isEmpty else { return nil }
-            let bestAll = allWorking.map { e1rm(weight: $0.weight, reps: $0.reps) }.max() ?? 1
-            guard bestAll > 0 else { return nil }
+            let allTimeBest = allTimeSnaps.flatMap { $0.sets }
+                .filter { $0.setType != .warmup && $0.weight > 0 && $0.reps > 0 }
+                .map { e1rm(weight: $0.weight, reps: $0.reps) }.max() ?? 1
+            guard allTimeBest > 0 else { return nil }
             let avg = allWorking.map { $0.weight }.reduce(0, +) / Double(allWorking.count)
-            return avg / bestAll
+            return avg / allTimeBest
         }
 
         var results: [IntensityData] = []
@@ -283,8 +377,8 @@ struct ProgressAnalyticsEngine {
             let recent  = snaps.filter { $0.workoutSession?.completedAt.map { $0 >= ago14 } ?? false }
             let earlier = snaps.filter { ($0.workoutSession?.completedAt).map { $0 >= ago28 && $0 < ago14 } ?? false }
 
-            guard let currentIntensity = avgIntensity(snaps: recent) else { continue }
-            let priorIntensity = avgIntensity(snaps: earlier)
+            guard let currentIntensity = avgIntensity(snaps: recent, allTimeSnaps: snaps) else { continue }
+            let priorIntensity = avgIntensity(snaps: earlier, allTimeSnaps: snaps)
 
             let trend: IntensityData.Trend = {
                 guard let prior = priorIntensity else { return .stable }
@@ -362,7 +456,7 @@ struct ProgressAnalyticsEngine {
         let pushMuscles: Set<String> = ["Chest", "Shoulders", "Triceps"]
         let pullMuscles: Set<String> = ["Back", "Biceps"]
         let upperMuscles: Set<String> = ["Chest", "Back", "Shoulders", "Biceps", "Triceps", "Forearms"]
-        let lowerMuscles: Set<String> = ["Legs"]
+        let lowerMuscles: Set<String> = ["Legs", "Glutes", "Hamstrings", "Quads", "Calves"]
 
         func sets(for muscles: Set<String>, in sessions: [WorkoutSession]) -> Int {
             sessions.flatMap { $0.exercises }.reduce(0) { total, snap in
@@ -389,6 +483,275 @@ struct ProgressAnalyticsEngine {
         let cutoff = Date.now.addingTimeInterval(-28 * 86400)
         let count  = completed.filter { $0.completedAt! >= cutoff }.count
         return AdherenceData(completedLast28Days: count)
+    }
+
+    // MARK: - 9. Body weight trend
+
+    private func computeBodyWeightTrend(progression: [ExerciseProgressionData]) -> BodyWeightTrendData? {
+        let sorted = bodyWeightEntries.sorted { $0.date > $1.date }
+        guard let latest = sorted.first else { return nil }
+
+        let now   = Date.now
+        let ago30 = now.addingTimeInterval(-30 * 86400)
+        let ago90 = now.addingTimeInterval(-90 * 86400)
+
+        let current = latest.weight
+        let entries30 = sorted.filter { $0.date >= ago30 }
+
+        let avg30 = entries30.isEmpty ? current
+            : entries30.map(\.weight).reduce(0, +) / Double(entries30.count)
+
+        let base30 = sorted.first(where: { $0.date <= ago30 })?.weight ?? current
+        let base90 = sorted.first(where: { $0.date <= ago90 })?.weight ?? current
+
+        var ratios: [String: Double] = [:]
+        if current > 0 {
+            for prog in progression {
+                ratios[prog.exercise] = prog.currentE1RM / current
+            }
+        }
+
+        return BodyWeightTrendData(
+            currentWeight: current,
+            change30d: current - base30,
+            change90d: current - base90,
+            avgWeight30d: avg30,
+            strengthRatios: ratios
+        )
+    }
+
+    // MARK: - 10. Session duration
+
+    private func computeSessionDuration() -> SessionDurationData? {
+        let now    = Date.now
+        let ago28  = now.addingTimeInterval(-28 * 86400)
+        let ago56  = now.addingTimeInterval(-56 * 86400)
+
+        func minutes(for sessions: [WorkoutSession]) -> [Double] {
+            sessions.compactMap { s -> Double? in
+                guard let start = s.startedAt, let end = s.completedAt, end > start else { return nil }
+                return end.timeIntervalSince(start) / 60.0
+            }
+        }
+
+        let recent   = completed.filter { $0.completedAt! >= ago28 }
+        let earlier  = completed.filter { $0.completedAt! >= ago56 && $0.completedAt! < ago28 }
+        let recentMins  = minutes(for: recent)
+        let earlierMins = minutes(for: earlier)
+
+        guard !recentMins.isEmpty else { return nil }
+
+        let avgRecent  = recentMins.reduce(0, +) / Double(recentMins.count)
+        let avgEarlier = earlierMins.isEmpty ? avgRecent
+            : earlierMins.reduce(0, +) / Double(earlierMins.count)
+        let longest    = recentMins.max() ?? avgRecent
+
+        let trend: SessionDurationData.Trend = {
+            let delta = avgRecent - avgEarlier
+            if delta > 5  { return .increasing }
+            if delta < -5 { return .decreasing }
+            return .stable
+        }()
+
+        return SessionDurationData(avgMinutes: avgRecent, trend: trend, longestRecentMinutes: longest)
+    }
+
+    // MARK: - 11. Muscle recovery
+
+    private func computeMuscleRecovery() -> [MuscleRecoveryData] {
+        let now = Date.now
+
+        // Build per-muscle list of session dates, sorted newest-first.
+        // Collect muscles per session first to avoid duplicate dates when multiple exercises
+        // in the same session target the same muscle.
+        var datesByMuscle: [String: [Date]] = [:]
+        for session in completed {
+            guard let date = session.completedAt else { continue }
+            var musclesThisSession: Set<String> = []
+            for snap in session.exercises {
+                for muscle in muscleGroupMap[snap.exerciseName] ?? [] {
+                    musclesThisSession.insert(muscle)
+                }
+            }
+            for muscle in musclesThisSession {
+                datesByMuscle[muscle, default: []].append(date)
+            }
+        }
+
+        return datesByMuscle.sorted { $0.key < $1.key }.compactMap { muscle, dates in
+            let sorted = dates.sorted(by: >)
+            guard let lastDate = sorted.first else { return nil }
+            let daysSince = Int(now.timeIntervalSince(lastDate) / 86400)
+
+            // Average gap between consecutive sessions
+            let avgRest: Double = {
+                guard sorted.count >= 2 else { return 0 }
+                let gaps = zip(sorted, sorted.dropFirst()).map { $0.timeIntervalSince($1) / 86400 }
+                return gaps.reduce(0, +) / Double(gaps.count)
+            }()
+
+            return MuscleRecoveryData(muscle: muscle, daysSinceLastTrained: daysSince, avgRestDays: avgRest)
+        }
+    }
+
+    // MARK: - 12. Per-routine adherence
+
+    private func computeRoutineAdherence() -> [RoutineAdherenceData] {
+        let now   = Date.now
+        let ago28 = now.addingTimeInterval(-28 * 86400)
+
+        // Group completed session dates by routineTemplateId
+        var datesByRoutine: [UUID: [Date]] = [:]
+        for session in completed {
+            guard let rid = session.routineTemplateId, let date = session.completedAt else { continue }
+            datesByRoutine[rid, default: []].append(date)
+        }
+
+        return routines.map { routine in
+            let allDates   = (datesByRoutine[routine.id] ?? []).sorted(by: >)
+            let recent     = allDates.filter { $0 >= ago28 }
+            let lastDate   = allDates.first
+            let daysSince  = lastDate.map { Int(now.timeIntervalSince($0) / 86400) }
+
+            let avgInterval: Double? = {
+                guard allDates.count >= 2 else { return nil }
+                let gaps = zip(allDates, allDates.dropFirst()).map { $0.timeIntervalSince($1) / 86400 }
+                return gaps.reduce(0, +) / Double(gaps.count)
+            }()
+
+            return RoutineAdherenceData(
+                routineID: routine.id,
+                routineName: routine.name,
+                completionsLast28Days: recent.count,
+                avgIntervalDays: avgInterval,
+                daysSinceLast: daysSince
+            )
+        }
+    }
+
+    // MARK: - 13. Rep range distribution
+
+    private func computeRepRangeDistribution() -> [RepRangeDistributionData] {
+        let cutoff = Date.now.addingTimeInterval(-28 * 86400)
+        let recent = completed.filter { $0.completedAt! >= cutoff }
+
+        var setsByMuscle: [String: (strength: Int, hypertrophy: Int, endurance: Int)] = [:]
+        for session in recent {
+            for snap in session.exercises {
+                let muscles = muscleGroupMap[snap.exerciseName] ?? []
+                // weight > 0 excluded to include bodyweight exercises; reps > 0 excludes timed sets.
+                let working = snap.sets.filter { $0.setType != .warmup && $0.reps > 0 }
+                for set in working {
+                    for muscle in muscles {
+                        var counts = setsByMuscle[muscle] ?? (0, 0, 0)
+                        switch set.reps {
+                        case 1...5:   counts.strength     += 1
+                        case 6...12:  counts.hypertrophy  += 1
+                        default:      counts.endurance    += 1
+                        }
+                        setsByMuscle[muscle] = counts
+                    }
+                }
+            }
+        }
+
+        return setsByMuscle.sorted { $0.key < $1.key }.compactMap { muscle, counts in
+            let total = counts.strength + counts.hypertrophy + counts.endurance
+            guard total > 0 else { return nil }
+            let d = Double(total)
+            return RepRangeDistributionData(
+                muscle: muscle,
+                strengthPct: Double(counts.strength) / d,
+                hypertrophyPct: Double(counts.hypertrophy) / d,
+                endurancePct: Double(counts.endurance) / d,
+                totalSets: total
+            )
+        }
+    }
+
+    // MARK: - 14. Deload readiness
+
+    private func computeDeloadReadiness(
+        fatigue: [FatigueData],
+        progression: [ExerciseProgressionData],
+        intensity: [IntensityData],
+        prs: [PRTrackingData]
+    ) -> DeloadReadiness {
+        let flaggedCount    = fatigue.filter(\.isFlagged).count
+        let plateauedCount  = progression.filter(\.isPlateaued).count
+        let decliningCount  = intensity.filter { $0.trend == .decreasing }.count
+
+        let daysSincePR: Int? = prs
+            .compactMap(\.lastPRDaysAgo)
+            .min()
+
+        // Weighted composite: fatigue flags carry the most weight
+        let fatigueScore    = min(1.0, Double(flaggedCount) / 3.0)   * 0.40
+        let plateauScore    = min(1.0, Double(plateauedCount) / 4.0) * 0.25
+        let intensityScore  = min(1.0, Double(decliningCount) / 4.0) * 0.20
+        let prDroughtScore: Double = {
+            guard let days = daysSincePR else { return 0.15 }  // no PRs ever = max drought
+            switch days {
+            case ..<14:  return 0.0
+            case 14..<30: return 0.075
+            default:     return 0.15
+            }
+        }()
+
+        let score = fatigueScore + plateauScore + intensityScore + prDroughtScore
+
+        let state: DeloadReadiness.State = {
+            if score >= 0.55 { return .recommended }
+            if score >= 0.25 { return .accumulating }
+            return .fresh
+        }()
+
+        return DeloadReadiness(
+            score: score,
+            state: state,
+            fatigueFlags: flaggedCount,
+            plateauedExercises: plateauedCount,
+            daysSinceLastPR: daysSincePR,
+            decliningIntensityCount: decliningCount
+        )
+    }
+
+    // MARK: - 15. Training density
+
+    private func computeTrainingDensity() -> TrainingDensityData? {
+        let now   = Date.now
+        let ago28 = now.addingTimeInterval(-28 * 86400)
+        let ago56 = now.addingTimeInterval(-56 * 86400)
+
+        func density(for sessions: [WorkoutSession]) -> Double? {
+            let pairs: [(sets: Int, hours: Double)] = sessions.compactMap { s in
+                guard let start = s.startedAt, let end = s.completedAt, end > start else { return nil }
+                let hours = end.timeIntervalSince(start) / 3600.0
+                guard hours > 0 else { return nil }
+                let sets = workingSets(in: s).count
+                return (sets, hours)
+            }
+            guard !pairs.isEmpty else { return nil }
+            let totalSets  = pairs.map(\.sets).reduce(0, +)
+            let totalHours = pairs.map(\.hours).reduce(0, +)
+            return totalHours > 0 ? Double(totalSets) / totalHours : nil
+        }
+
+        let recent  = completed.filter { $0.completedAt! >= ago28 }
+        let earlier = completed.filter { $0.completedAt! >= ago56 && $0.completedAt! < ago28 }
+
+        guard let recentDensity = density(for: recent) else { return nil }
+        let priorDensity = density(for: earlier)
+
+        let trend: TrainingDensityData.Trend = {
+            guard let prior = priorDensity else { return .stable }
+            let delta = recentDensity - prior
+            if delta > 2  { return .increasing }
+            if delta < -2 { return .decreasing }
+            return .stable
+        }()
+
+        return TrainingDensityData(setsPerHour: recentDensity, trend: trend)
     }
 
     // MARK: - Highlights (plain English for AI context)

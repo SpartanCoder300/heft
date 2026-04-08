@@ -1250,6 +1250,13 @@ final class ActiveWorkoutViewModel {
         cancelRestBackgroundRefresh()
         cancelRestNotification()
         activityManager.end(currentActivityState)
+
+        let sessionID = s.persistentModelID
+        let container = modelContext.container
+        Task.detached {
+            await SessionService(modelContainer: container).upsertWeeklySnapshot(for: sessionID)
+        }
+
         return s
     }
 

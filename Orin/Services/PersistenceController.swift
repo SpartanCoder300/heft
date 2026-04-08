@@ -12,6 +12,8 @@ enum PersistenceController {
         ExerciseSnapshot.self,
         SetRecord.self,
         BodyWeightEntry.self,
+        WeeklySnapshot.self,
+        AITrainingContext.self,
     ])
 
     static let sharedModelContainer: ModelContainer = {

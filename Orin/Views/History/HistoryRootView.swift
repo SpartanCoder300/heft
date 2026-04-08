@@ -70,7 +70,11 @@ struct HistoryRootView: View {
                                 .listRowBackground(Rectangle().fill(cardMaterial))
                                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                     Button(role: .destructive) {
-                                        modelContext.delete(session)
+                                        let id = session.persistentModelID
+                                        let container = modelContext.container
+                                        Task.detached {
+                                            await SessionService(modelContainer: container).deleteSession(id)
+                                        }
                                     } label: {
                                         Label("Delete", systemImage: "trash")
                                     }

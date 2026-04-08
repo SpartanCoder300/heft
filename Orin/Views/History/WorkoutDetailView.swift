@@ -73,8 +73,12 @@ struct WorkoutDetailView: View {
         }
         .alert("Delete Workout?", isPresented: $showDeleteAlert) {
             Button("Delete", role: .destructive) {
-                modelContext.delete(session)
+                let id = session.persistentModelID
+                let container = modelContext.container
                 dismiss()
+                Task.detached {
+                    await SessionService(modelContainer: container).deleteSession(id)
+                }
             }
             Button("Cancel", role: .cancel) {}
         } message: {
