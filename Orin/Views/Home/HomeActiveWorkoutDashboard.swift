@@ -146,7 +146,7 @@ struct HomeActiveWorkoutDashboard: View {
             }
         }
         .padding(.horizontal, Spacing.md)
-        .padding(.vertical, 10)
+        .padding(.vertical, 7)
     }
 
     // MARK: - Footer

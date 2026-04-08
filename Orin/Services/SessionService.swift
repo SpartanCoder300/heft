@@ -84,9 +84,9 @@ actor SessionService {
     // MARK: - Snapshot field computation
 
     private func totalVolume(_ sessions: [WorkoutSession]) -> Double {
-        sessions.flatMap { $0.exercises }.flatMap { $0.sets }
+        let sets = sessions.flatMap { $0.exercises }.flatMap { $0.sets }
             .filter { $0.setType != .warmup && $0.weight > 0 }
-            .reduce(0) { $0 + $1.weight * Double($1.reps) }
+        return sets.reduce(0) { $0 + $1.weight * Double($1.reps) }
     }
 
     private func totalWorkingSets(_ sessions: [WorkoutSession]) -> Int {

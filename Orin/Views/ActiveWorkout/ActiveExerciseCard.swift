@@ -15,6 +15,8 @@ struct ActiveExerciseCard: View {
     @State private var editingDefinition: ExerciseDefinition? = nil
     @State private var isShowingHistory = false
 
+    private let cardShape = RoundedRectangle(cornerRadius: Radius.medium, style: .continuous)
+
     private var exercise: ActiveWorkoutViewModel.DraftExercise? {
         guard vm.draftExercises.indices.contains(exerciseIndex) else { return nil }
         return vm.draftExercises[exerciseIndex]
@@ -24,6 +26,7 @@ struct ActiveExerciseCard: View {
     var body: some View {
         if let exercise {
             cardBody(exercise: exercise)
+                .contentShape(cardShape)
                 .contextMenu {
                     Button { isShowingHistory = true } label: {
                         Label("View History", systemImage: "chart.line.uptrend.xyaxis")
@@ -59,66 +62,26 @@ struct ActiveExerciseCard: View {
 
     @ViewBuilder
     private func cardBody(exercise: ActiveWorkoutViewModel.DraftExercise) -> some View {
-        Section {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(exercise.exerciseName)
+                .font(.title3.weight(.bold))
+                .foregroundStyle(Color.textPrimary)
+                .lineLimit(1)
+                .padding(.horizontal, Spacing.md)
+                .padding(.top, Spacing.md)
+                .padding(.bottom, Spacing.sm)
+
             ForEach(Array(exercise.sets.enumerated()), id: \.element.id) { sIdx, set in
-                SetRow(
-                    setNumber: sIdx + 1,
-                    weightText: set.weightText,
-                    repsText: set.repsText,
-                    durationText: set.durationText,
-                    isTimed: exercise.isTimed,
-                    tracksWeight: exercise.tracksWeight,
-                    setType: set.setType,
-                    isLogged: set.isLogged,
-                    isFocused: vm.currentFocus == ActiveWorkoutViewModel.SetFocus(
-                        exerciseIndex: exerciseIndex, setIndex: sIdx
-                    ),
-                    isFirstInCard: sIdx == 0,
-                    isLastInCard: sIdx == exercise.sets.count - 1,
-                    isPR: set.isPR,
-                    justGotPR: vm.lastPRSetID != nil && vm.lastPRSetID == set.loggedRecord?.id,
-                    accentColor: theme.accentColor,
-                    placeholderDisplayText: placeholderText(for: exercise, setIndex: sIdx),
-                    placeholderDelay: Double(max(0, sIdx - 1)) * 0.05,
-                    previousSet: sIdx < exercise.previousSets.count ? exercise.previousSets[sIdx] : exercise.previousSets.last,
-                    justLogged: vm.lastLoggedFocus == ActiveWorkoutViewModel.SetFocus(exerciseIndex: exerciseIndex, setIndex: sIdx),
-                    onCycleType: { vm.cycleSetType(exerciseIndex: exerciseIndex, setIndex: sIdx) },
-                    onFocus: { vm.setManualFocus(exerciseIndex: exerciseIndex, setIndex: sIdx) },
-                    onLog: { vm.logSet(exerciseIndex: exerciseIndex, setIndex: sIdx) },
-                    onDelete: { vm.removeSet(exerciseIndex: exerciseIndex, setIndex: sIdx) },
-                    onUndo: { vm.unlogSet(exerciseIndex: exerciseIndex, setIndex: sIdx) },
-                    onCopyFromAbove: sIdx > 0 ? { vm.copySetFromAbove(exerciseIndex: exerciseIndex, setIndex: sIdx) } : nil,
-                    onAdoptPlaceholder: sIdx > 0 ? { vm.adoptPlaceholderValues(exerciseIndex: exerciseIndex, setIndex: sIdx) } : nil
-                )
-                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                    if set.isLogged {
-                        Button {
-                            vm.unlogSet(exerciseIndex: exerciseIndex, setIndex: sIdx)
-                        } label: {
-                            Label("Undo", systemImage: "arrow.uturn.backward")
-                        }
-                        .tint(.orange)
-                    } else {
-                        Button(role: .destructive) {
-                            vm.removeSet(exerciseIndex: exerciseIndex, setIndex: sIdx)
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
-                    }
+                setRow(exercise: exercise, set: set, setIndex: sIdx)
+
+                if sIdx < exercise.sets.count - 1 {
+                    cardDivider
+                        .padding(.leading, Spacing.md)
                 }
-                .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                    if sIdx > 0 && !set.isLogged {
-                        Button {
-                            vm.copySetFromAbove(exerciseIndex: exerciseIndex, setIndex: sIdx)
-                        } label: {
-                            Label("Copy", systemImage: "arrow.up.doc.on.clipboard")
-                        }
-                        .tint(Color.OrinBlue)
-                    }
-                }
-                .listRowSeparatorTint(Color.white.opacity(0.08))
             }
             .animation(Motion.standardSpring, value: exercise.sets.count)
+
+            cardDivider
 
             Button {
                 vm.addSet(toExerciseAt: exerciseIndex)
@@ -132,15 +95,9 @@ struct ActiveExerciseCard: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .listRowSeparatorTint(Color.white.opacity(0.08))
-        } header: {
-            Text(exercise.exerciseName)
-                .font(.title3.weight(.bold))
-                .foregroundStyle(Color.textPrimary)
-                .lineLimit(1)
-                .textCase(nil)
-                .padding(.top, Spacing.xs)
         }
+        .cardSurface(border: true)
+        .clipShape(cardShape)
         .alert("Remove \(exercise.exerciseName)?", isPresented: $showingRemoveConfirm) {
             Button("Remove", role: .destructive) {
                 vm.removeExercise(at: exerciseIndex)
@@ -158,6 +115,49 @@ struct ActiveExerciseCard: View {
             ExerciseHistoryView(exerciseName: exercise.exerciseName, exerciseLineageID: exercise.exerciseLineageID)
                 .environment(\.OrinCardMaterial, .regularMaterial)
         }
+    }
+
+    @ViewBuilder
+    private func setRow(
+        exercise: ActiveWorkoutViewModel.DraftExercise,
+        set: ActiveWorkoutViewModel.DraftSet,
+        setIndex: Int
+    ) -> some View {
+        SetRow(
+            setNumber: setIndex + 1,
+            weightText: set.weightText,
+            repsText: set.repsText,
+            durationText: set.durationText,
+            isTimed: exercise.isTimed,
+            tracksWeight: exercise.tracksWeight,
+            setType: set.setType,
+            isLogged: set.isLogged,
+            isFocused: vm.currentFocus == ActiveWorkoutViewModel.SetFocus(
+                exerciseIndex: exerciseIndex, setIndex: setIndex
+            ),
+            isFirstInCard: setIndex == 0,
+            isLastInCard: setIndex == exercise.sets.count - 1,
+            isPR: set.isPR,
+            justGotPR: vm.lastPRSetID != nil && vm.lastPRSetID == set.loggedRecord?.id,
+            accentColor: theme.accentColor,
+            placeholderDisplayText: placeholderText(for: exercise, setIndex: setIndex),
+            placeholderDelay: Double(max(0, setIndex - 1)) * 0.05,
+            previousSet: setIndex < exercise.previousSets.count ? exercise.previousSets[setIndex] : exercise.previousSets.last,
+            justLogged: vm.lastLoggedFocus == ActiveWorkoutViewModel.SetFocus(exerciseIndex: exerciseIndex, setIndex: setIndex),
+            onCycleType: { vm.cycleSetType(exerciseIndex: exerciseIndex, setIndex: setIndex) },
+            onFocus: { vm.setManualFocus(exerciseIndex: exerciseIndex, setIndex: setIndex) },
+            onLog: { vm.logSet(exerciseIndex: exerciseIndex, setIndex: setIndex) },
+            onDelete: { vm.removeSet(exerciseIndex: exerciseIndex, setIndex: setIndex) },
+            onUndo: { vm.unlogSet(exerciseIndex: exerciseIndex, setIndex: setIndex) },
+            onCopyFromAbove: setIndex > 0 ? { vm.copySetFromAbove(exerciseIndex: exerciseIndex, setIndex: setIndex) } : nil,
+            onAdoptPlaceholder: setIndex > 0 ? { vm.adoptPlaceholderValues(exerciseIndex: exerciseIndex, setIndex: setIndex) } : nil
+        )
+        .padding(.horizontal, Spacing.md)
+    }
+
+    private var cardDivider: some View {
+        Divider()
+            .overlay(Color.white.opacity(0.08))
     }
 
     private func resolveDefinition(for exercise: ActiveWorkoutViewModel.DraftExercise) -> ExerciseDefinition? {
@@ -225,11 +225,11 @@ struct ActiveExerciseCard: View {
         vm.draftExercises[0].sets[1].weightText = "135"
         vm.draftExercises[0].sets[1].repsText = "8"
         return NavigationStack {
-            List {
+            ScrollView {
                 ActiveExerciseCard(vm: vm, exerciseIndex: 0, theme: AccentTheme.midnight)
+                    .padding(.horizontal, ActiveWorkoutLayout.horizontalInset)
+                    .padding(.top, Spacing.sm)
             }
-            .listStyle(.insetGrouped)
-            .scrollContentBackground(.hidden)
             .themedBackground()
         }
     }()
@@ -251,11 +251,11 @@ struct ActiveExerciseCard: View {
             .init(weight: 215, reps: 6),
         ]
         return NavigationStack {
-            List {
+            ScrollView {
                 ActiveExerciseCard(vm: vm, exerciseIndex: 0, theme: AccentTheme.midnight)
+                    .padding(.horizontal, ActiveWorkoutLayout.horizontalInset)
+                    .padding(.top, Spacing.sm)
             }
-            .listStyle(.insetGrouped)
-            .scrollContentBackground(.hidden)
             .themedBackground()
         }
     }()

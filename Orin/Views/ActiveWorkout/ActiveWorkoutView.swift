@@ -15,6 +15,8 @@ struct ActiveWorkoutView: View {
     @State private var presentationSettleTask: Task<Void, Never>? = nil
     @Environment(\.OrinTheme) private var theme
 
+    private let contentBottomInset: CGFloat = 220
+
     private var shouldRunSetupTask: Bool {
         let environment = ProcessInfo.processInfo.environment
         return environment["XCODE_RUNNING_FOR_PREVIEWS"] != "1"
@@ -62,6 +64,58 @@ struct ActiveWorkoutView: View {
         }
     }
 
+    @ViewBuilder
+    private var workoutScrollContent: some View {
+        if vm.draftExercises.isEmpty {
+            EmptyWorkoutPrompt(accentColor: theme.accentColor)
+        } else {
+            LazyVStack(spacing: Spacing.lg) {
+                ForEach(Array(vm.draftExercises.enumerated()), id: \.element.id) { idx, exercise in
+                    ActiveExerciseCard(
+                        vm: vm,
+                        exerciseIndex: idx,
+                        theme: theme
+                    )
+                    .id(exercise.id)
+                }
+            }
+        }
+    }
+
+    private func workoutScrollView(proxy: ScrollViewProxy) -> some View {
+        ScrollView {
+            workoutScrollContent
+                .padding(.horizontal, ActiveWorkoutLayout.horizontalInset)
+                .padding(.top, Spacing.sm)
+                .padding(.bottom, contentBottomInset)
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .scrollEdgeEffectStyle(.soft, for: .bottom)
+        .onAppear {
+            settlePresentationWindow()
+            Task { @MainActor in
+                scrollToCurrentFocus(with: proxy, animated: false)
+            }
+        }
+        .onChange(of: vm.currentFocus) { _, newFocus in
+            guard newFocus != nil else { return }
+            scrollToCurrentFocus(
+                with: proxy,
+                animated: !isSettlingAfterPresentation && !isUserScrolling
+            )
+        }
+        .onChange(of: vm.focusRevealRequestID) { _, _ in
+            guard !isUserScrolling else { return }
+            scrollToCurrentFocus(
+                with: proxy,
+                animated: !isSettlingAfterPresentation
+            )
+        }
+        .onScrollPhaseChange { _, newPhase in
+            isUserScrolling = newPhase.isScrolling
+        }
+    }
+
 
     var body: some View {
         @Bindable var vm = vm
@@ -69,49 +123,7 @@ struct ActiveWorkoutView: View {
         ZStack {
             NavigationStack {
                 ScrollViewReader { proxy in
-                    List {
-                        if vm.draftExercises.isEmpty {
-                            EmptyWorkoutPrompt(accentColor: theme.accentColor)
-                                .listRowBackground(Color.clear)
-                                .listRowSeparator(.hidden)
-                        } else {
-                            ForEach(Array(vm.draftExercises.enumerated()), id: \.element.id) { idx, exercise in
-                                ActiveExerciseCard(
-                                    vm: vm,
-                                    exerciseIndex: idx,
-                                    theme: theme
-                                )
-                                .id(exercise.id)
-                            }
-                        }
-                    }
-                    .listStyle(.insetGrouped)
-                    .scrollContentBackground(.hidden)
-                    .scrollDismissesKeyboard(.interactively)
-                    .scrollEdgeEffectStyle(.soft, for: .bottom)
-                    .onAppear {
-                        settlePresentationWindow()
-                        Task { @MainActor in
-                            scrollToCurrentFocus(with: proxy, animated: false)
-                        }
-                    }
-                    .onChange(of: vm.currentFocus) { _, newFocus in
-                        guard newFocus != nil else { return }
-                        scrollToCurrentFocus(
-                            with: proxy,
-                            animated: !isSettlingAfterPresentation && !isUserScrolling
-                        )
-                    }
-                    .onChange(of: vm.focusRevealRequestID) { _, _ in
-                        guard !isUserScrolling else { return }
-                        scrollToCurrentFocus(
-                            with: proxy,
-                            animated: !isSettlingAfterPresentation
-                        )
-                    }
-                    .onScrollPhaseChange { _, newPhase in
-                        isUserScrolling = newPhase.isScrolling
-                    }
+                    workoutScrollView(proxy: proxy)
                 }
                 .themedBackground()
                 .onTapGesture {

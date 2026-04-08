@@ -90,9 +90,31 @@ struct SetRow: View {
         static let incompleteForeground = Color.white.opacity(0.40)
     }
 
+    private enum SecondaryActionStyle {
+        static let iconSize: CGFloat = 12
+        static let buttonSize = CGSize(width: 28, height: 28)
+        static let cornerRadius: CGFloat = 8
+    }
+
     private var isShowingPlaceholder: Bool {
         guard let _ = placeholderDisplayText else { return false }
         return !isLogged && weightText.isEmpty && repsText.isEmpty && durationText.isEmpty
+    }
+
+    private var showsCopyAction: Bool {
+        isFocused && onCopyFromAbove != nil && !isLogged
+    }
+
+    private var showsUndoAction: Bool {
+        isFocused && isLogged
+    }
+
+    private var showsDeleteAction: Bool {
+        isFocused && !isLogged
+    }
+
+    private var showsSecondaryActions: Bool {
+        showsCopyAction || showsUndoAction || showsDeleteAction
     }
 
     var body: some View {
@@ -221,6 +243,33 @@ struct SetRow: View {
 
             Spacer(minLength: Spacing.sm)
 
+            if showsSecondaryActions {
+                HStack(spacing: 6) {
+                    if let onCopyFromAbove, showsCopyAction {
+                        secondaryActionButton(
+                            systemImage: "arrow.up.doc.on.clipboard",
+                            tint: Color.OrinBlue,
+                            action: onCopyFromAbove
+                        )
+                    }
+
+                    if showsUndoAction {
+                        secondaryActionButton(
+                            systemImage: "arrow.uturn.backward",
+                            tint: .orange,
+                            action: onUndo
+                        )
+                    } else if showsDeleteAction {
+                        secondaryActionButton(
+                            systemImage: "trash",
+                            tint: .red,
+                            action: onDelete
+                        )
+                    }
+                }
+                .transition(.scale(scale: 0.92).combined(with: .opacity))
+            }
+
             Button(action: isLogged ? onUndo : onLog) {
                 Image(systemName: isLogged ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 20))
@@ -236,7 +285,7 @@ struct SetRow: View {
                                 .frame(width: 30, height: 30)
                         }
                     }
-                    .frame(width: 44, height: 44)
+                    .frame(width: 44, height: 36)
                     .contentShape(Rectangle())
                     .contentTransition(.symbolEffect(.replace))
                     .scaleEffect(checkScale)
@@ -244,14 +293,15 @@ struct SetRow: View {
             .buttonStyle(.plain)
         }
         .scaleEffect(rowScale)
-        .padding(.vertical, isFocused ? 6 : 3)
-        .padding(.leading, Spacing.xs)
+        .padding(.top, isFirstInCard ? 8 : (isFocused ? 6 : 3))
+        .padding(.bottom, isFocused ? 6 : 3)
         .padding(.trailing, Spacing.sm)
         .overlay {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(accentColor.opacity(ActiveRowStyle.fillOpacity))
                 .opacity(isFocused ? 1 : 0)
-                .padding(.vertical, 1)
+                .padding(.top, isFirstInCard ? 6 : 1)
+                .padding(.bottom, 1)
                 .allowsHitTesting(false)
         }
         .overlay {
@@ -261,14 +311,16 @@ struct SetRow: View {
                     lineWidth: ActiveRowStyle.strokeWidth
                 )
                 .opacity(isFocused ? 1 : 0)
-                .padding(.vertical, 1)
+                .padding(.top, isFirstInCard ? 6 : 1)
+                .padding(.bottom, 1)
                 .allowsHitTesting(false)
         }
         .overlay {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(accentColor.opacity(0.14))
                 .opacity(logHighlightOpacity)
-                .padding(.vertical, 1)
+                .padding(.top, isFirstInCard ? 6 : 1)
+                .padding(.bottom, 1)
                 .allowsHitTesting(false)
         }
         .contentShape(Rectangle())
@@ -287,6 +339,30 @@ struct SetRow: View {
                 onLog()
             }
         }
+    }
+
+    private func secondaryActionButton(
+        systemImage: String,
+        tint: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: SecondaryActionStyle.iconSize, weight: .semibold))
+                .foregroundStyle(tint)
+                .frame(
+                    width: SecondaryActionStyle.buttonSize.width,
+                    height: SecondaryActionStyle.buttonSize.height
+                )
+                .background(
+                    RoundedRectangle(
+                        cornerRadius: SecondaryActionStyle.cornerRadius,
+                        style: .continuous
+                    )
+                    .fill(tint.opacity(0.14))
+                )
+        }
+        .buttonStyle(.plain)
     }
 
     private var setNumberColor: some ShapeStyle {

@@ -11,6 +11,9 @@
 		202D9E9D2F85E2C600FC79C9 /* SwipeTuningManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 202D9E9B2F85E2C600FC79C9 /* SwipeTuningManager.swift */; };
 		202D9E9E2F85E2C600FC79C9 /* SwipeTuningConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 202D9E9A2F85E2C600FC79C9 /* SwipeTuningConfig.swift */; };
 		202D9E9F2F85E2C600FC79C9 /* SwipeTunerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 202D9E992F85E2C600FC79C9 /* SwipeTunerSheet.swift */; };
+		202D9EA22F87045600FC79C9 /* AITrainingContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 202D9EA02F87045600FC79C9 /* AITrainingContext.swift */; };
+		202D9EA32F87045600FC79C9 /* WeeklySnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 202D9EA12F87045600FC79C9 /* WeeklySnapshot.swift */; };
+		202D9EA52F87046300FC79C9 /* SessionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 202D9EA42F87046300FC79C9 /* SessionService.swift */; };
 		20A10DC82F7814980053B465 /* ProgressRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A10DC72F7814980053B465 /* ProgressRootView.swift */; };
 		20A10DD12F78158F0053B465 /* LibraryRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A10DD02F78158F0053B465 /* LibraryRootView.swift */; };
 		20A10DD72F781E0F0053B465 /* ProgressAnalyticsEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A10DD52F781E0F0053B465 /* ProgressAnalyticsEngine.swift */; };
@@ -141,6 +144,9 @@
 		202D9E992F85E2C600FC79C9 /* SwipeTunerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeTunerSheet.swift; sourceTree = "<group>"; };
 		202D9E9A2F85E2C600FC79C9 /* SwipeTuningConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeTuningConfig.swift; sourceTree = "<group>"; };
 		202D9E9B2F85E2C600FC79C9 /* SwipeTuningManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeTuningManager.swift; sourceTree = "<group>"; };
+		202D9EA02F87045600FC79C9 /* AITrainingContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AITrainingContext.swift; sourceTree = "<group>"; };
+		202D9EA12F87045600FC79C9 /* WeeklySnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklySnapshot.swift; sourceTree = "<group>"; };
+		202D9EA42F87046300FC79C9 /* SessionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionService.swift; sourceTree = "<group>"; };
 		205CFF5F2F69D7E200FFF88C /* Orin.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Orin.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		205CFF702F69D7E400FFF88C /* OrinTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OrinTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		205CFF7A2F69D7E400FFF88C /* OrinUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OrinUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -401,6 +407,8 @@
 		20C236C12F746D2300D5763E /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				202D9EA02F87045600FC79C9 /* AITrainingContext.swift */,
+				202D9EA12F87045600FC79C9 /* WeeklySnapshot.swift */,
 				20C236B82F746D2300D5763E /* BodyWeightEntry.swift */,
 				20C236B92F746D2300D5763E /* ExerciseDefinition.swift */,
 				20C236BA2F746D2300D5763E /* ExerciseSnapshot.swift */,
@@ -435,6 +443,7 @@
 		20C236CE2F746D2300D5763E /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				202D9EA42F87046300FC79C9 /* SessionService.swift */,
 				20C236C62F746D2300D5763E /* ActiveWorkoutService.swift */,
 				20C236C72F746D2300D5763E /* ExerciseFrecencyActor.swift */,
 				20C236C82F746D2300D5763E /* ExerciseSeeder.swift */,
@@ -769,6 +778,8 @@
 				20C236FB2F746D2300D5763E /* ThemedBackground.swift in Sources */,
 				20C236FC2F746D2300D5763E /* WheelPickerSheet.swift in Sources */,
 				20C236FD2F746D2300D5763E /* BodyWeightEntry.swift in Sources */,
+				202D9EA22F87045600FC79C9 /* AITrainingContext.swift in Sources */,
+				202D9EA32F87045600FC79C9 /* WeeklySnapshot.swift in Sources */,
 				20C236FE2F746D2300D5763E /* ExerciseDefinition.swift in Sources */,
 				20C236FF2F746D2300D5763E /* ExerciseSnapshot.swift in Sources */,
 				20C237002F746D2300D5763E /* RoutineEntry.swift in Sources */,
@@ -825,6 +836,7 @@
 				20C237472F74B34F00D5763E /* FeaturedRoutineCard.swift in Sources */,
 				20C237482F74B34F00D5763E /* RoutineListRow.swift in Sources */,
 				20C237492F74B34F00D5763E /* EmptyRoutinesPrompt.swift in Sources */,
+				202D9EA52F87046300FC79C9 /* SessionService.swift in Sources */,
 				HAWD000200002F74B34F00D5 /* HomeActiveWorkoutDashboard.swift in Sources */,
 				HPBC000200002F74B34F00D5 /* HomePreviousBestsCard.swift in Sources */,
 				20C237242F746D2300D5763E /* RoutineBuilderView.swift in Sources */,

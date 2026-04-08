@@ -364,9 +364,9 @@ struct ProgressAnalyticsEngine {
         func avgIntensity(snaps: [ExerciseSnapshot], allTimeSnaps: [ExerciseSnapshot]) -> Double? {
             let allWorking = snaps.flatMap { $0.sets }.filter { $0.setType != .warmup && $0.weight > 0 && $0.reps > 0 }
             guard !allWorking.isEmpty else { return nil }
-            let allTimeBest = allTimeSnaps.flatMap { $0.sets }
+            let allTimeSets = allTimeSnaps.flatMap { $0.sets }
                 .filter { $0.setType != .warmup && $0.weight > 0 && $0.reps > 0 }
-                .map { e1rm(weight: $0.weight, reps: $0.reps) }.max() ?? 1
+            let allTimeBest = allTimeSets.map { e1rm(weight: $0.weight, reps: $0.reps) }.max() ?? 1
             guard allTimeBest > 0 else { return nil }
             let avg = allWorking.map { $0.weight }.reduce(0, +) / Double(allWorking.count)
             return avg / allTimeBest
