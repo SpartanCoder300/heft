@@ -195,7 +195,7 @@ enum ExerciseSeeder {
         exercise("Decline Dumbbell Press", ["Chest", "Triceps"], equipmentType: "Dumbbell", start: 10),
         exercise("Dumbbell Fly", ["Chest"], equipmentType: "Dumbbell", start: 10),
         exercise("Incline Dumbbell Fly", ["Chest"], equipmentType: "Dumbbell", start: 10),
-        exercise("Cable Fly", ["Chest"], equipmentType: "Cable", increment: 5, start: 10),
+        exercise("Cable Fly", ["Chest"], equipmentType: "Cable", increment: 2.5, start: 10),
         exercise("Low Cable Fly", ["Chest"], equipmentType: "Cable", increment: 5, start: 10),
         exercise("High Cable Fly", ["Chest"], equipmentType: "Cable", increment: 5, start: 10),
         exercise("Machine Chest Press", ["Chest", "Triceps"], equipmentType: "Machine", increment: 5, start: 10),

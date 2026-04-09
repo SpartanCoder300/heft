@@ -183,7 +183,7 @@ final class ExercisePickerViewModel {
         "Lateral Raise": 2,
         "Face Pull": 2,
         "Seated Dumbbell Shoulder Press": 2,
-        "Cable Fly": 2,
+        "Cable Fly": 2.5,
         "Leg Extension": 2,
         "Lying Leg Curl": 2,
         "Crunch": 2,
