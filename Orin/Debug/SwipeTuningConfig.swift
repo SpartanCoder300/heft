@@ -8,7 +8,7 @@ struct SwipeTuningConfig {
     var weightPointsPerStep: CGFloat = 18
 
     /// Points of horizontal drag to advance reps by one step.
-    var repsPointsPerStep: CGFloat = 20
+    var repsPointsPerStep: CGFloat = 25
 
     /// Minimum horizontal drag distance before the gesture locks in.
     var dragActivationThreshold: CGFloat = 7

@@ -9,6 +9,7 @@ struct ActiveExerciseCard: View {
     let vm: ActiveWorkoutViewModel
     let exerciseIndex: Int
     let theme: AccentTheme
+    @Binding var openSwipeSetID: UUID?
 
     @Environment(\.modelContext) private var modelContext
     @State private var showingRemoveConfirm = false
@@ -123,41 +124,110 @@ struct ActiveExerciseCard: View {
         set: ActiveWorkoutViewModel.DraftSet,
         setIndex: Int
     ) -> some View {
-        SetRow(
-            setNumber: setIndex + 1,
-            weightText: set.weightText,
-            repsText: set.repsText,
-            durationText: set.durationText,
-            isTimed: exercise.isTimed,
-            tracksWeight: exercise.tracksWeight,
-            setType: set.setType,
-            isLogged: set.isLogged,
-            isFocused: vm.currentFocus == ActiveWorkoutViewModel.SetFocus(
-                exerciseIndex: exerciseIndex, setIndex: setIndex
-            ),
-            isFirstInCard: setIndex == 0,
-            isLastInCard: setIndex == exercise.sets.count - 1,
-            isPR: set.isPR,
-            justGotPR: vm.lastPRSetID != nil && vm.lastPRSetID == set.loggedRecord?.id,
-            accentColor: theme.accentColor,
-            placeholderDisplayText: placeholderText(for: exercise, setIndex: setIndex),
-            placeholderDelay: Double(max(0, setIndex - 1)) * 0.05,
-            previousSet: setIndex < exercise.previousSets.count ? exercise.previousSets[setIndex] : exercise.previousSets.last,
-            justLogged: vm.lastLoggedFocus == ActiveWorkoutViewModel.SetFocus(exerciseIndex: exerciseIndex, setIndex: setIndex),
-            onCycleType: { vm.cycleSetType(exerciseIndex: exerciseIndex, setIndex: setIndex) },
-            onFocus: { vm.setManualFocus(exerciseIndex: exerciseIndex, setIndex: setIndex) },
-            onLog: { vm.logSet(exerciseIndex: exerciseIndex, setIndex: setIndex) },
-            onDelete: { vm.removeSet(exerciseIndex: exerciseIndex, setIndex: setIndex) },
-            onUndo: { vm.unlogSet(exerciseIndex: exerciseIndex, setIndex: setIndex) },
-            onCopyFromAbove: setIndex > 0 ? { vm.copySetFromAbove(exerciseIndex: exerciseIndex, setIndex: setIndex) } : nil,
-            onAdoptPlaceholder: setIndex > 0 ? { vm.adoptPlaceholderValues(exerciseIndex: exerciseIndex, setIndex: setIndex) } : nil
-        )
-        .padding(.horizontal, Spacing.md)
+        SwipeableSetRow(
+            rowID: set.id,
+            actions: swipeActions(for: set, setIndex: setIndex),
+            openRowID: $openSwipeSetID
+        ) { isSwiping, swipeProgress in
+            SetRow(
+                setNumber: setIndex + 1,
+                weightText: set.weightText,
+                repsText: set.repsText,
+                durationText: set.durationText,
+                isTimed: exercise.isTimed,
+                tracksWeight: exercise.tracksWeight,
+                setType: set.setType,
+                isLogged: set.isLogged,
+                isFocused: vm.currentFocus == ActiveWorkoutViewModel.SetFocus(
+                    exerciseIndex: exerciseIndex, setIndex: setIndex
+                ),
+                isSwiping: isSwiping,
+                isFirstInCard: setIndex == 0,
+                isLastInCard: setIndex == exercise.sets.count - 1,
+                isPR: set.isPR,
+                justGotPR: vm.lastPRSetID != nil && vm.lastPRSetID == set.loggedRecord?.id,
+                accentColor: theme.accentColor,
+                placeholderDisplayText: placeholderText(for: exercise, setIndex: setIndex),
+                placeholderDelay: Double(max(0, setIndex - 1)) * 0.05,
+                previousSet: setIndex < exercise.previousSets.count ? exercise.previousSets[setIndex] : exercise.previousSets.last,
+                justLogged: vm.lastLoggedFocus == ActiveWorkoutViewModel.SetFocus(exerciseIndex: exerciseIndex, setIndex: setIndex),
+                onCycleType: { vm.cycleSetType(exerciseIndex: exerciseIndex, setIndex: setIndex) },
+                onFocus: {
+                    openSwipeSetID = nil
+                    vm.setManualFocus(exerciseIndex: exerciseIndex, setIndex: setIndex)
+                },
+                onLog: {
+                    openSwipeSetID = nil
+                    vm.logSet(exerciseIndex: exerciseIndex, setIndex: setIndex)
+                },
+                onDelete: {
+                    openSwipeSetID = nil
+                    vm.removeSet(exerciseIndex: exerciseIndex, setIndex: setIndex)
+                },
+                onUndo: {
+                    openSwipeSetID = nil
+                    vm.unlogSet(exerciseIndex: exerciseIndex, setIndex: setIndex)
+                },
+                onCopyFromAbove: setIndex > 0 ? {
+                    openSwipeSetID = nil
+                    vm.copySetFromAbove(exerciseIndex: exerciseIndex, setIndex: setIndex)
+                } : nil,
+                onAdoptPlaceholder: setIndex > 0 ? {
+                    openSwipeSetID = nil
+                    vm.adoptPlaceholderValues(exerciseIndex: exerciseIndex, setIndex: setIndex)
+                } : nil,
+                swipeProgress: swipeProgress
+            )
+            .padding(.horizontal, Spacing.md)
+        }
     }
 
     private var cardDivider: some View {
         Divider()
             .overlay(Color.white.opacity(0.08))
+    }
+
+    private func swipeActions(
+        for set: ActiveWorkoutViewModel.DraftSet,
+        setIndex: Int
+    ) -> [SwipeSetAction] {
+        var actions: [SwipeSetAction] = []
+
+        if setIndex > 0 && !set.isLogged {
+            actions.append(
+                SwipeSetAction(
+                    systemImage: "arrow.up.doc.on.clipboard",
+                    tint: Color.white.opacity(0.72),
+                    accessibilityLabel: "Copy from above"
+                ) {
+                    vm.copySetFromAbove(exerciseIndex: exerciseIndex, setIndex: setIndex)
+                }
+            )
+        }
+
+        if set.isLogged {
+            actions.append(
+                SwipeSetAction(
+                    systemImage: "arrow.uturn.backward",
+                    tint: .orange,
+                    accessibilityLabel: "Undo set"
+                ) {
+                    vm.unlogSet(exerciseIndex: exerciseIndex, setIndex: setIndex)
+                }
+            )
+        } else {
+            actions.append(
+                SwipeSetAction(
+                    systemImage: "trash",
+                    tint: .red,
+                    accessibilityLabel: "Delete set"
+                ) {
+                    vm.removeSet(exerciseIndex: exerciseIndex, setIndex: setIndex)
+                }
+            )
+        }
+
+        return actions
     }
 
     private func resolveDefinition(for exercise: ActiveWorkoutViewModel.DraftExercise) -> ExerciseDefinition? {
@@ -226,7 +296,12 @@ struct ActiveExerciseCard: View {
         vm.draftExercises[0].sets[1].repsText = "8"
         return NavigationStack {
             ScrollView {
-                ActiveExerciseCard(vm: vm, exerciseIndex: 0, theme: AccentTheme.midnight)
+                ActiveExerciseCard(
+                    vm: vm,
+                    exerciseIndex: 0,
+                    theme: AccentTheme.midnight,
+                    openSwipeSetID: .constant(nil)
+                )
                     .padding(.horizontal, ActiveWorkoutLayout.horizontalInset)
                     .padding(.top, Spacing.sm)
             }
@@ -252,7 +327,12 @@ struct ActiveExerciseCard: View {
         ]
         return NavigationStack {
             ScrollView {
-                ActiveExerciseCard(vm: vm, exerciseIndex: 0, theme: AccentTheme.midnight)
+                ActiveExerciseCard(
+                    vm: vm,
+                    exerciseIndex: 0,
+                    theme: AccentTheme.midnight,
+                    openSwipeSetID: .constant(nil)
+                )
                     .padding(.horizontal, ActiveWorkoutLayout.horizontalInset)
                     .padding(.top, Spacing.sm)
             }

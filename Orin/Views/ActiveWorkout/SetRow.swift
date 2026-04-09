@@ -49,6 +49,7 @@ struct SetRow: View {
     let setType: SetType
     let isLogged: Bool
     let isFocused: Bool
+    let isSwiping: Bool
     let isFirstInCard: Bool
     let isLastInCard: Bool
     let isPR: Bool
@@ -69,6 +70,7 @@ struct SetRow: View {
     let onUndo: () -> Void
     let onCopyFromAbove: (() -> Void)?
     let onAdoptPlaceholder: (() -> Void)?
+    let swipeProgress: CGFloat
 
     @State private var rowScale: CGFloat = 1.0
     @State private var badgeScale: CGFloat = 0
@@ -82,6 +84,9 @@ struct SetRow: View {
         static let fillOpacity = 0.045
         static let strokeOpacity = 0.045
         static let strokeWidth: CGFloat = 1
+        static let swipeFillBoost = 0.028
+        static let swipeStrokeBoost = 0.024
+        static let swipeScale: CGFloat = 0.995
     }
 
     private enum CompletedCheckmarkStyle {
@@ -90,31 +95,19 @@ struct SetRow: View {
         static let incompleteForeground = Color.white.opacity(0.40)
     }
 
-    private enum SecondaryActionStyle {
-        static let iconSize: CGFloat = 12
-        static let buttonSize = CGSize(width: 28, height: 28)
-        static let cornerRadius: CGFloat = 8
-    }
-
     private var isShowingPlaceholder: Bool {
         guard let _ = placeholderDisplayText else { return false }
         return !isLogged && weightText.isEmpty && repsText.isEmpty && durationText.isEmpty
     }
 
-    private var showsCopyAction: Bool {
-        isFocused && onCopyFromAbove != nil && !isLogged
+    private var rowFillOpacity: Double {
+        let base = isFocused ? ActiveRowStyle.fillOpacity : 0
+        return base + Double(min(1, max(0, swipeProgress))) * ActiveRowStyle.swipeFillBoost
     }
 
-    private var showsUndoAction: Bool {
-        isFocused && isLogged
-    }
-
-    private var showsDeleteAction: Bool {
-        isFocused && !isLogged
-    }
-
-    private var showsSecondaryActions: Bool {
-        showsCopyAction || showsUndoAction || showsDeleteAction
+    private var rowStrokeOpacity: Double {
+        let base = isFocused ? ActiveRowStyle.strokeOpacity : 0
+        return base + Double(min(1, max(0, swipeProgress))) * ActiveRowStyle.swipeStrokeBoost
     }
 
     var body: some View {
@@ -243,33 +236,6 @@ struct SetRow: View {
 
             Spacer(minLength: Spacing.sm)
 
-            if showsSecondaryActions {
-                HStack(spacing: 6) {
-                    if let onCopyFromAbove, showsCopyAction {
-                        secondaryActionButton(
-                            systemImage: "arrow.up.doc.on.clipboard",
-                            tint: Color.OrinBlue,
-                            action: onCopyFromAbove
-                        )
-                    }
-
-                    if showsUndoAction {
-                        secondaryActionButton(
-                            systemImage: "arrow.uturn.backward",
-                            tint: .orange,
-                            action: onUndo
-                        )
-                    } else if showsDeleteAction {
-                        secondaryActionButton(
-                            systemImage: "trash",
-                            tint: .red,
-                            action: onDelete
-                        )
-                    }
-                }
-                .transition(.scale(scale: 0.92).combined(with: .opacity))
-            }
-
             Button(action: isLogged ? onUndo : onLog) {
                 Image(systemName: isLogged ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 20))
@@ -289,17 +255,18 @@ struct SetRow: View {
                     .contentShape(Rectangle())
                     .contentTransition(.symbolEffect(.replace))
                     .scaleEffect(checkScale)
+                    .opacity(isSwiping ? 0.55 : 1.0)
             }
             .buttonStyle(.plain)
         }
-        .scaleEffect(rowScale)
+        .scaleEffect(rowScale * (isSwiping ? ActiveRowStyle.swipeScale : 1.0))
         .padding(.top, isFirstInCard ? 8 : (isFocused ? 6 : 3))
         .padding(.bottom, isFocused ? 6 : 3)
         .padding(.trailing, Spacing.sm)
         .overlay {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(accentColor.opacity(ActiveRowStyle.fillOpacity))
-                .opacity(isFocused ? 1 : 0)
+                .fill(accentColor.opacity(rowFillOpacity))
+                .opacity((isFocused || isSwiping) ? 1 : 0)
                 .padding(.top, isFirstInCard ? 6 : 1)
                 .padding(.bottom, 1)
                 .allowsHitTesting(false)
@@ -307,10 +274,10 @@ struct SetRow: View {
         .overlay {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .strokeBorder(
-                    accentColor.opacity(ActiveRowStyle.strokeOpacity),
+                    accentColor.opacity(rowStrokeOpacity),
                     lineWidth: ActiveRowStyle.strokeWidth
                 )
-                .opacity(isFocused ? 1 : 0)
+                .opacity((isFocused || isSwiping) ? 1 : 0)
                 .padding(.top, isFirstInCard ? 6 : 1)
                 .padding(.bottom, 1)
                 .allowsHitTesting(false)
@@ -339,30 +306,6 @@ struct SetRow: View {
                 onLog()
             }
         }
-    }
-
-    private func secondaryActionButton(
-        systemImage: String,
-        tint: Color,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Image(systemName: systemImage)
-                .font(.system(size: SecondaryActionStyle.iconSize, weight: .semibold))
-                .foregroundStyle(tint)
-                .frame(
-                    width: SecondaryActionStyle.buttonSize.width,
-                    height: SecondaryActionStyle.buttonSize.height
-                )
-                .background(
-                    RoundedRectangle(
-                        cornerRadius: SecondaryActionStyle.cornerRadius,
-                        style: .continuous
-                    )
-                    .fill(tint.opacity(0.14))
-                )
-        }
-        .buttonStyle(.plain)
     }
 
     private var setNumberColor: some ShapeStyle {
@@ -484,6 +427,7 @@ struct SetRow: View {
         setType: .normal,
         isLogged: false,
         isFocused: true,
+        isSwiping: false,
         isFirstInCard: true,
         isLastInCard: false,
         isPR: false,
@@ -492,7 +436,8 @@ struct SetRow: View {
         placeholderDisplayText: nil,
         placeholderDelay: 0,
         previousSet: nil, justLogged: false,
-        onCycleType: {}, onFocus: {}, onLog: {}, onDelete: {}, onUndo: {}, onCopyFromAbove: nil, onAdoptPlaceholder: nil
+        onCycleType: {}, onFocus: {}, onLog: {}, onDelete: {}, onUndo: {}, onCopyFromAbove: nil, onAdoptPlaceholder: nil,
+        swipeProgress: 0
     )
     .padding()
     .preferredColorScheme(.dark)
@@ -509,6 +454,7 @@ struct SetRow: View {
         setType: .normal,
         isLogged: false,
         isFocused: false,
+        isSwiping: false,
         isFirstInCard: false,
         isLastInCard: false,
         isPR: false,
@@ -517,7 +463,8 @@ struct SetRow: View {
         placeholderDisplayText: "185 × 5",
         placeholderDelay: 0.05,
         previousSet: nil, justLogged: false,
-        onCycleType: {}, onFocus: {}, onLog: {}, onDelete: {}, onUndo: {}, onCopyFromAbove: {}, onAdoptPlaceholder: {}
+        onCycleType: {}, onFocus: {}, onLog: {}, onDelete: {}, onUndo: {}, onCopyFromAbove: {}, onAdoptPlaceholder: {},
+        swipeProgress: 0
     )
     .padding()
     .preferredColorScheme(.dark)
@@ -534,6 +481,7 @@ struct SetRow: View {
         setType: .normal,
         isLogged: true,
         isFocused: false,
+        isSwiping: false,
         isFirstInCard: false,
         isLastInCard: false,
         isPR: true,
@@ -542,7 +490,8 @@ struct SetRow: View {
         placeholderDisplayText: nil,
         placeholderDelay: 0,
         previousSet: nil, justLogged: false,
-        onCycleType: {}, onFocus: {}, onLog: {}, onDelete: {}, onUndo: {}, onCopyFromAbove: {}, onAdoptPlaceholder: nil
+        onCycleType: {}, onFocus: {}, onLog: {}, onDelete: {}, onUndo: {}, onCopyFromAbove: {}, onAdoptPlaceholder: nil,
+        swipeProgress: 0
     )
     .padding()
     .preferredColorScheme(.dark)
@@ -559,6 +508,7 @@ struct SetRow: View {
         setType: .warmup,
         isLogged: false,
         isFocused: false,
+        isSwiping: false,
         isFirstInCard: false,
         isLastInCard: true,
         isPR: false,
@@ -567,7 +517,8 @@ struct SetRow: View {
         placeholderDisplayText: nil,
         placeholderDelay: 0,
         previousSet: nil, justLogged: false,
-        onCycleType: {}, onFocus: {}, onLog: {}, onDelete: {}, onUndo: {}, onCopyFromAbove: {}, onAdoptPlaceholder: nil
+        onCycleType: {}, onFocus: {}, onLog: {}, onDelete: {}, onUndo: {}, onCopyFromAbove: {}, onAdoptPlaceholder: nil,
+        swipeProgress: 0
     )
     .padding()
     .preferredColorScheme(.dark)

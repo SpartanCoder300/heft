@@ -12,6 +12,7 @@ struct ActiveWorkoutView: View {
     @State private var isShowingCancelPRWarning = false
     @State private var isSettlingAfterPresentation = true
     @State private var isUserScrolling = false
+    @State private var openSwipeSetID: UUID? = nil
     @State private var presentationSettleTask: Task<Void, Never>? = nil
     @Environment(\.OrinTheme) private var theme
 
@@ -74,7 +75,8 @@ struct ActiveWorkoutView: View {
                     ActiveExerciseCard(
                         vm: vm,
                         exerciseIndex: idx,
-                        theme: theme
+                        theme: theme,
+                        openSwipeSetID: $openSwipeSetID
                     )
                     .id(exercise.id)
                 }
@@ -98,6 +100,7 @@ struct ActiveWorkoutView: View {
             }
         }
         .onChange(of: vm.currentFocus) { _, newFocus in
+            openSwipeSetID = nil
             guard newFocus != nil else { return }
             scrollToCurrentFocus(
                 with: proxy,
@@ -105,6 +108,7 @@ struct ActiveWorkoutView: View {
             )
         }
         .onChange(of: vm.focusRevealRequestID) { _, _ in
+            openSwipeSetID = nil
             guard !isUserScrolling else { return }
             scrollToCurrentFocus(
                 with: proxy,
@@ -113,6 +117,9 @@ struct ActiveWorkoutView: View {
         }
         .onScrollPhaseChange { _, newPhase in
             isUserScrolling = newPhase.isScrolling
+            if newPhase.isScrolling {
+                openSwipeSetID = nil
+            }
         }
     }
 
@@ -127,6 +134,7 @@ struct ActiveWorkoutView: View {
                 }
                 .themedBackground()
                 .onTapGesture {
+                    openSwipeSetID = nil
                     dismissKeyboard()
                 }
                 .navigationBarTitleDisplayMode(.inline)
