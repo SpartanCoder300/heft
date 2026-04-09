@@ -11,7 +11,10 @@ enum RoutineSeeder {
         guard !UserDefaults.standard.bool(forKey: seededKey) else { return }
 
         let existing = (try? context.fetch(FetchDescriptor<RoutineTemplate>())) ?? []
-        let existingNames = Set(existing.map(\.name))
+        guard existing.isEmpty else {
+            UserDefaults.standard.set(true, forKey: seededKey)
+            return
+        }
 
         let allDefs = (try? context.fetch(FetchDescriptor<ExerciseDefinition>())) ?? []
         func def(named name: String) -> ExerciseDefinition? {
@@ -46,10 +49,6 @@ enum RoutineSeeder {
 
         var changed = false
         for starter in starters {
-            // Skip any routine whose name already exists — prevents duplicates after a
-            // reinstall where CloudKit delivers data before (or concurrently with) seeding.
-            guard !existingNames.contains(starter.name) else { continue }
-
             let routine = RoutineTemplate(name: starter.name)
             context.insert(routine)
             for (order, ex) in starter.exercises.enumerated() {
