@@ -189,14 +189,6 @@ struct SetRow: View {
                 .foregroundStyle(setNumberColor)
                 .frame(width: 20, alignment: .center)
 
-            if setType != .normal {
-                Button(action: onCycleType) {
-                    SetTypeLabel(setType: setType)
-                }
-                .buttonStyle(.plain)
-                .allowsHitTesting(!isLogged)
-            }
-
             VStack(alignment: .leading, spacing: 1) {
                 if isFocused, let prev = previousDisplayText {
                     Text(prev)

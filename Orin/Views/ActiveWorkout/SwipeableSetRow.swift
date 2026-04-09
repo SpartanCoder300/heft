@@ -19,6 +19,7 @@ struct SwipeableSetRow<Content: View>: View {
 
     @State private var offsetX: CGFloat = 0
     @State private var panStartOffsetX: CGFloat = 0
+    @State private var isPastCommitThreshold = false
 
     private let actionWidth: CGFloat = 44
     private let actionSpacing: CGFloat = 8
@@ -152,6 +153,7 @@ struct SwipeableSetRow<Content: View>: View {
 
     private func handlePanBegan() {
         panStartOffsetX = isOpen ? -revealWidth : 0
+        isPastCommitThreshold = false
     }
 
     private func handlePanChanged(_ translationX: CGFloat) {
@@ -161,6 +163,13 @@ struct SwipeableSetRow<Content: View>: View {
 
         if offsetX < 0 {
             openRowID = rowID
+        }
+
+        let exposedWidth = max(0, -offsetX)
+        let isNowPastCommitThreshold = exposedWidth > revealWidth + commitOverswipeThreshold
+        if isNowPastCommitThreshold != isPastCommitThreshold {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: 0.7)
+            isPastCommitThreshold = isNowPastCommitThreshold
         }
     }
 
@@ -190,6 +199,7 @@ struct SwipeableSetRow<Content: View>: View {
 
     private func resetPanState() {
         panStartOffsetX = 0
+        isPastCommitThreshold = false
         if offsetX == 0 {
             openRowID = nil
         }
@@ -339,7 +349,7 @@ private struct HorizontalSwipePanGesture: UIGestureRecognizerRepresentable {
             _ gestureRecognizer: UIGestureRecognizer,
             shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
         ) -> Bool {
-            true
+            false
         }
     }
 }
