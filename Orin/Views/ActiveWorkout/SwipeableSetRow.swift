@@ -47,6 +47,7 @@ struct SwipeableSetRow<Content: View>: View {
             content(isInteracting, swipeProgress)
                 .contentShape(Rectangle())
                 .offset(x: offsetX)
+                .allowsHitTesting(offsetX == 0)
         }
         .clipped()
         .gesture(

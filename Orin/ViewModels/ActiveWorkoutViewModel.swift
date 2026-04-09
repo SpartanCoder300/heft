@@ -780,7 +780,6 @@ final class ActiveWorkoutViewModel {
         scheduleDraftPersistence()
         UISelectionFeedbackGenerator().selectionChanged()
         activityManager.update(currentActivityState)
-        requestRevealCurrentFocus()
     }
 
     func removeSet(exerciseIndex eIdx: Int, setIndex sIdx: Int) {
